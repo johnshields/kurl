@@ -47,10 +47,14 @@ class _ResolveScreenState extends State<ResolveScreen> {
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               const Text(
                 'kurl',
                 style: TextStyle(
@@ -62,7 +66,7 @@ class _ResolveScreenState extends State<ResolveScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Paste a song link. Pick a platform. Done.',
+                'Share any song. To anyone. On any streaming service.',
                 style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
               ),
               const SizedBox(height: 20),
@@ -124,11 +128,14 @@ class _ResolveScreenState extends State<ResolveScreen> {
                   style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13),
                 ),
               ],
-              if (_result != null) ...[
-                const SizedBox(height: 16),
-                ResultCard(result: _result!),
-              ],
-            ],
+                    if (_result != null) ...[
+                      const SizedBox(height: 16),
+                      ResultCard(result: _result!),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
