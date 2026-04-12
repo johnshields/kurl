@@ -1,0 +1,4 @@
+fastapi[standard]>=0.115,<1.0
+httpx>=0.28
+redis>=5.0
+pydantic-settings>=2.0

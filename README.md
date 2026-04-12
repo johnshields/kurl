@@ -47,21 +47,15 @@ flowchart TD
 
 ---
 
+## Status
+
+Planning / pre-build.
+
+---
+
 ## Docs
 
 - [Architecture](_docs/ARCHITECTURE.md) - tech stack, project structure, why SQLite
 - [API](_docs/API.md) - endpoint details
 - [Development](_docs/DEVELOPMENT.md) - local setup, packages
 - [Roadmap](_docs/ROADMAP.md) - phases, supported platforms
-
----
-
-## Name
-
-**kurl** - URL + the curl motion of passing something to someone.
-
----
-
-## Status
-
-Planning / pre-build.
