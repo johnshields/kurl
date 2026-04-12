@@ -5,11 +5,14 @@ venv/
 .env
 *.egg-info/
 
-# Node
-node_modules/
-dist/
-dist-ssr/
-*.local
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+build/
+*.iml
+pubspec.lock
 
 # Logs
 *.log
