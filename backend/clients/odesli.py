@@ -3,6 +3,9 @@ from fastapi import HTTPException
 
 from app.config import settings
 from app.constants import ERROR_MESSAGES
+from utils.logging import get_logger
+
+logger = get_logger()
 
 _client: httpx.AsyncClient | None = None
 
@@ -19,9 +22,16 @@ async def resolve(url: str) -> dict:
     if settings.ODESLI_API_KEY:
         params["key"] = settings.ODESLI_API_KEY
 
+    logger.info("Calling Odesli: %s", url)
     response = await _get_client().get(settings.ODESLI_BASE_URL, params=params)
 
     if response.status_code != 200:
+        logger.warning(
+            "Odesli returned %s for %s: %s",
+            response.status_code,
+            url,
+            response.text[:500],
+        )
         raise HTTPException(
             status_code=502,
             detail=f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})",

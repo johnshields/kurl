@@ -1,9 +1,10 @@
-import logging
 from functools import wraps
 
 from fastapi import HTTPException
 
-logger = logging.getLogger("uvicorn.error")
+from utils.logging import get_logger
+
+logger = get_logger()
 
 
 def wrap_route(label: str):
@@ -13,10 +14,11 @@ def wrap_route(label: str):
             logger.info("%s request...", label)
             try:
                 return await func(*args, **kwargs)
-            except HTTPException:
+            except HTTPException as e:
+                logger.warning("%s failed (%s): %s", label, e.status_code, e.detail)
                 raise
             except Exception as e:
-                logger.error("%s error: %s", label, e)
+                logger.error("%s error: %s", label, e, exc_info=True)
                 raise
         return wrapper
     return decorator
