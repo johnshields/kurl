@@ -4,6 +4,7 @@ class ResolveResult {
   final String resolvedUrl;
   final String platform;
   final bool cached;
+  final String via;
 
   const ResolveResult({
     this.title,
@@ -11,7 +12,10 @@ class ResolveResult {
     required this.resolvedUrl,
     required this.platform,
     required this.cached,
+    required this.via,
   });
+
+  bool get isSearch => via == 'search';
 
   factory ResolveResult.fromJson(Map<String, dynamic> json) {
     return ResolveResult(
@@ -20,6 +24,7 @@ class ResolveResult {
       resolvedUrl: json['resolved_url'],
       platform: json['platform'],
       cached: json['cached'] ?? false,
+      via: json['via'] ?? 'direct',
     );
   }
 }

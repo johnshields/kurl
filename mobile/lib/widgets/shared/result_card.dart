@@ -67,7 +67,9 @@ class ResultCard extends StatelessWidget {
                       const SizedBox(width: 8),
                     ],
                     Text(
-                      'Open on ${platform?.name ?? result.platform}',
+                      result.isSearch
+                          ? 'Search on ${platform?.name ?? result.platform}'
+                          : 'Open on ${platform?.name ?? result.platform}',
                       style: TextStyle(
                         color: onColour,
                         fontSize: 14,
@@ -79,6 +81,14 @@ class ResultCard extends StatelessWidget {
               ),
             ),
           ),
+          if (result.isSearch)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                "No exact match — this is a search on the target platform",
+                style: TextStyle(color: Color(0xFF888888), fontSize: 11),
+              ),
+            ),
           if (result.cached)
             const Padding(
               padding: EdgeInsets.only(top: 8),

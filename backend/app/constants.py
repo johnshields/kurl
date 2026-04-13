@@ -26,3 +26,8 @@ ERROR_MESSAGES = {
     "ODESLI_ERROR": "Odesli API error",
     "INTERNAL_ERROR": "Internal server error",
 }
+
+SEARCH_URL_TEMPLATES = {
+    "spotify": "https://open.spotify.com/search/{query}",
+    "appleMusic": "https://music.apple.com/search?term={query}",
+}

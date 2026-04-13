@@ -17,19 +17,18 @@ def _get_client() -> httpx.AsyncClient:
     return _client
 
 
-async def resolve(url: str) -> dict:
-    params = {"url": url, "userCountry": "IE"}
+async def _call(params: dict) -> dict:
+    params = {**params, "userCountry": params.get("userCountry", "IE")}
     if settings.ODESLI_API_KEY:
         params["key"] = settings.ODESLI_API_KEY
 
-    logger.info("Calling Odesli: %s", url)
     response = await _get_client().get(settings.ODESLI_BASE_URL, params=params)
 
     if response.status_code != 200:
         logger.warning(
             "Odesli returned %s for %s: %s",
             response.status_code,
-            url,
+            params,
             response.text[:500],
         )
         raise HTTPException(
@@ -38,6 +37,18 @@ async def resolve(url: str) -> dict:
         )
 
     return response.json()
+
+
+async def resolve_by_id(platform: str, track_id: str) -> dict:
+    """Resolve a track via Odesli's by-id form (more precise than URL parsing)."""
+    logger.info("Calling Odesli: %s type=song id=%s", platform, track_id)
+    return await _call({"platform": platform, "type": "song", "id": track_id})
+
+
+async def resolve(url: str) -> dict:
+    """Resolve a track via Odesli's by-url form (fallback when parsing fails)."""
+    logger.info("Calling Odesli: %s", url)
+    return await _call({"url": url})
 
 
 def extract_url(data: dict, platform: str) -> str | None:
