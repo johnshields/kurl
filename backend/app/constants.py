@@ -40,6 +40,7 @@ ERROR_MESSAGES = {
 SEARCH_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/search/{query}",
     "appleMusic": "https://music.apple.com/search?term={query}",
+    "youtubeMusic": "https://music.youtube.com/search?q={query}",
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
