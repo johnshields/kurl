@@ -9,7 +9,7 @@ from utils.logging import get_logger
 from utils.responses import success
 from utils.search_url import build_search_url
 from utils.url import normalise_url
-from utils.url_parser import parse_track
+from utils.url_parser import is_search_url, parse_track
 from utils.wrap_route import wrap_route
 
 logger = get_logger()
@@ -26,6 +26,9 @@ async def kurl(url: str, target_platform: str):
 
     url = normalise_url(url)
     logger.info("Kurling %s -> %s", url, target_platform)
+
+    if is_search_url(url):
+        raise HTTPException(status_code=400, detail=ERROR_MESSAGES["SEARCH_URL"])
 
     cache_key = hashlib.md5(
         f"{url}{target_platform}".encode()

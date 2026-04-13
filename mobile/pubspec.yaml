@@ -13,6 +13,8 @@ dependencies:
   url_launcher: ^6.3.0
   simple_icons: ^14.0.0
   google_fonts: ^6.2.1
+  receive_sharing_intent: ^1.8.1
+  app_links: ^6.3.2
 
 dev_dependencies:
   flutter_test:

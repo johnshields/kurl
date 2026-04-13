@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/kurl_result.dart';
@@ -7,6 +8,17 @@ class ResultCard extends StatelessWidget {
   final KurlResult result;
 
   const ResultCard({super.key, required this.result});
+
+  void _copy(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: result.resolvedUrl));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link copied'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,35 +63,54 @@ class ResultCard extends StatelessWidget {
                 ]),
               ),
             ),
-          Material(
-            color: colour,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: () => launchUrl(Uri.parse(result.resolvedUrl)),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (platform != null) ...[
-                      Icon(platform.icon, size: 18, color: onColour),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      result.isSearch
-                          ? 'Search on ${platform?.name ?? result.platform}'
-                          : 'Open on ${platform?.name ?? result.platform}',
-                      style: TextStyle(
-                        color: onColour,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Expanded(
+                child: Material(
+                  color: colour,
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: () => launchUrl(Uri.parse(result.resolvedUrl)),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (platform != null) ...[
+                            Icon(platform.icon, size: 18, color: onColour),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            result.isSearch
+                                ? 'Search on ${platform?.name ?? result.platform}'
+                                : 'Open on ${platform?.name ?? result.platform}',
+                            style: TextStyle(
+                              color: onColour,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Material(
+                color: const Color(0xFF222222),
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => _copy(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(Icons.copy, size: 18, color: Color(0xFFE5E5E5)),
+                  ),
+                ),
+              ),
+            ],
           ),
           if (result.isSearch)
             const Padding(

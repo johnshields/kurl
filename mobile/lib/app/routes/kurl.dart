@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/api_service.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 class KurlScreen extends StatefulWidget {
   const KurlScreen({super.key});
@@ -17,6 +21,59 @@ class _KurlScreenState extends State<KurlScreen> {
   KurlResult? _result;
   bool _loading = false;
   String? _error;
+  StreamSubscription<List<SharedMediaFile>>? _shareSub;
+  StreamSubscription<Uri>? _linkSub;
+  final _appLinks = AppLinks();
+
+  @override
+  void initState() {
+    super.initState();
+    _listenForShares();
+    _listenForUniversalLinks();
+    _handleUri(Uri.base);
+  }
+
+  void _listenForShares() {
+    // Live shares while the app is open
+    _shareSub = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen(_handleSharedMedia, onError: (_) {});
+
+    // Share that launched the app cold
+    ReceiveSharingIntent.instance.getInitialMedia().then((items) {
+      _handleSharedMedia(items);
+      ReceiveSharingIntent.instance.reset();
+    });
+  }
+
+  void _listenForUniversalLinks() {
+    _linkSub = _appLinks.uriLinkStream.listen(_handleUri, onError: (_) {});
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _handleUri(uri);
+    });
+  }
+
+  void _handleSharedMedia(List<SharedMediaFile> items) {
+    final url = items
+        .map((i) => i.path)
+        .firstWhere((p) => p.startsWith('http'), orElse: () => '');
+    if (url.isEmpty) return;
+    _populateUrl(url);
+  }
+
+  void _handleUri(Uri uri) {
+    final encoded = uri.queryParameters['u'];
+    if (encoded == null || encoded.isEmpty) return;
+    _populateUrl(Uri.decodeComponent(encoded));
+  }
+
+  void _populateUrl(String url) {
+    setState(() {
+      _urlController.text = url;
+      _result = null;
+      _error = null;
+    });
+  }
 
   Future<void> _handleKurl() async {
     final url = _urlController.text.trim();
@@ -149,6 +206,8 @@ class _KurlScreenState extends State<KurlScreen> {
 
   @override
   void dispose() {
+    _shareSub?.cancel();
+    _linkSub?.cancel();
     _urlController.dispose();
     super.dispose();
   }

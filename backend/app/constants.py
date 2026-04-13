@@ -35,6 +35,7 @@ ERROR_MESSAGES = {
     "PLATFORM_NOT_FOUND": "No URL found for this track",
     "ODESLI_ERROR": "Odesli API error",
     "INTERNAL_ERROR": "Internal server error",
+    "SEARCH_URL": "That's a search URL — paste the link to a specific track",
 }
 
 SEARCH_URL_TEMPLATES = {

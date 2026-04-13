@@ -16,6 +16,20 @@ _TIDAL_TRACK = re.compile(r"/track/(\d+)")
 _AMAZON_ALBUM = re.compile(r"/albums/([A-Z0-9]+)")
 _YOUTUBE_MUSIC = ("music.youtube.com",)
 
+_SEARCH_PATTERNS = (
+    re.compile(r"spotify\.com/search/"),
+    re.compile(r"music\.apple\.com/.*/?search"),
+    re.compile(r"music\.youtube\.com/search"),
+    re.compile(r"deezer\.com/.*/?search"),
+    re.compile(r"tidal\.com/.*/?search"),
+    re.compile(r"music\.amazon\.com/.*/?search"),
+)
+
+
+def is_search_url(url: str) -> bool:
+    """Detect search result pages so we can fail fast with a friendly error."""
+    return any(p.search(url) for p in _SEARCH_PATTERNS)
+
 
 def parse_track(url: str) -> ParsedTrack | None:
     """Parse a streaming URL and return (platform, track_id) if it's a track."""

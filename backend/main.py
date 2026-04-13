@@ -57,6 +57,22 @@ async def favicon():
     return FileResponse("public/static/favicon.ico")
 
 
+@app.get("/.well-known/apple-app-site-association", include_in_schema=False)
+async def apple_app_site_association():
+    return FileResponse(
+        "public/.well-known/apple-app-site-association",
+        media_type="application/json",
+    )
+
+
+@app.get("/.well-known/assetlinks.json", include_in_schema=False)
+async def assetlinks():
+    return FileResponse(
+        "public/.well-known/assetlinks.json",
+        media_type="application/json",
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return error(ERROR_MESSAGES["INTERNAL_ERROR"], status_code=500)
