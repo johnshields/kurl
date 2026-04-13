@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.config import NAME, VERSION, DESCRIPTION, ENVIRONMENT, HOST, PORT, BASE_URL, CORS_ORIGINS
 from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
@@ -43,6 +44,11 @@ app.add_middleware(
 app.include_router(system.root_router)
 app.include_router(system.router)
 app.include_router(urls.router)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse("favicon.ico")
 
 
 @app.exception_handler(Exception)
