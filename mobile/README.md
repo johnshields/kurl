@@ -2,7 +2,7 @@
 
 ```bash
 flutter pub get
-flutter run
+flutter run -d chrome --web-port 3000
 ```
 
 ## Config

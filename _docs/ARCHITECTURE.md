@@ -43,10 +43,10 @@ kurl/
 │   │   │   │   └── prefs_dao.dart   # user pref queries
 │   │   │   ├── models/
 │   │   │   │   ├── platform.dart    # streaming platform enum
-│   │   │   │   ├── resolved_link.dart
+│   │   │   │   ├── resolve_result.dart
 │   │   │   │   └── friend.dart      # phase 2
 │   │   │   └── repositories/
-│   │   │       ├── link_repository.dart   # calls backend, caches locally
+│   │   │       ├── url_repository.dart    # calls backend, caches locally
 │   │   │       └── friend_repository.dart # phase 2
 │   │   ├── services/
 │   │   │   ├── share_service.dart   # incoming share intent
@@ -73,7 +73,7 @@ kurl/
 │   │   ├── main.py
 │   │   ├── config.py                # env vars, settings
 │   │   ├── routers/
-│   │   │   ├── links.py             # POST /resolve
+│   │   │   ├── urls.py              # POST /resolve
 │   │   │   └── users.py             # phase 2 - auth, profile
 │   │   ├── services/
 │   │   │   ├── odesli.py            # Odesli API client

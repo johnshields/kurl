@@ -8,5 +8,5 @@ router = APIRouter(prefix="/api")
 
 @router.post("/resolve", tags=["URLs"])
 async def post_resolve(body: ResolveRequest):
-    """Resolve a streaming link to another platform."""
-    return await service.resolve_link(str(body.url), body.target_platform)
+    """Resolve a streaming URL to another platform."""
+    return await service.resolve_url(str(body.url), body.target_platform)

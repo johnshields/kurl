@@ -2,13 +2,26 @@ import os
 
 from pydantic_settings import BaseSettings
 
+from app.constants import ALLOWED_ORIGINS
+
 NAME = "kurl_api"
 VERSION = "0.1.0"
 DESCRIPTION = "Share any song. To anyone. On any streaming service."
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 BASE_URL = os.getenv("BASE_URL", f"http://localhost:{PORT}").rstrip("/")
+
+CORS_ORIGINS = (
+    [o.strip() for o in os.getenv("CORS_ORIGINS").split(",") if o.strip()]
+    if os.getenv("CORS_ORIGINS")
+    else ALLOWED_ORIGINS
+)
+
+
+def is_production() -> bool:
+    return ENVIRONMENT == "production"
 
 
 class Settings(BaseSettings):

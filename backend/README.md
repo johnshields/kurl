@@ -9,6 +9,11 @@ fastapi dev main.py
 ## .env
 
 ```
+ENVIRONMENT=development
+HOST=0.0.0.0
+PORT=8000
+BASE_URL=http://localhost:8000
+CORS_ORIGINS=http://localhost:3000,https://kurlshare.com
 REDIS_URL=redis://localhost:6379
 ODESLI_BASE_URL=https://api.song.link/v1-alpha.1/links
 ODESLI_API_KEY=

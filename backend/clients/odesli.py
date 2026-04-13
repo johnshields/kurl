@@ -2,6 +2,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.config import settings
+from app.constants import ERROR_MESSAGES
 
 _client: httpx.AsyncClient | None = None
 
@@ -23,13 +24,13 @@ async def resolve(url: str) -> dict:
     if response.status_code != 200:
         raise HTTPException(
             status_code=502,
-            detail=f"Odesli API returned {response.status_code}",
+            detail=f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})",
         )
 
     return response.json()
 
 
-def extract_link(data: dict, platform: str) -> str | None:
+def extract_url(data: dict, platform: str) -> str | None:
     platform_data = data.get("linksByPlatform", {}).get(platform)
     if not platform_data:
         return None
