@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 from fastapi import HTTPException
 
@@ -8,6 +10,9 @@ from utils.logging import get_logger
 logger = get_logger()
 
 _client: httpx.AsyncClient | None = None
+
+MAX_RETRIES = 3
+BACKOFF_SECONDS = (1, 2, 4)
 
 
 def _get_client() -> httpx.AsyncClient:
@@ -22,21 +27,32 @@ async def _call(params: dict) -> dict:
     if settings.ODESLI_API_KEY:
         params["key"] = settings.ODESLI_API_KEY
 
-    response = await _get_client().get(settings.ODESLI_BASE_URL, params=params)
+    for attempt in range(MAX_RETRIES):
+        response = await _get_client().get(settings.ODESLI_BASE_URL, params=params)
 
-    if response.status_code != 200:
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 429 and attempt < MAX_RETRIES - 1:
+            wait = BACKOFF_SECONDS[attempt]
+            logger.warning("Odesli 429; retrying in %ss (attempt %s/%s)", wait, attempt + 1, MAX_RETRIES)
+            await asyncio.sleep(wait)
+            continue
+
         logger.warning(
             "Odesli returned %s for %s: %s",
             response.status_code,
             params,
             response.text[:500],
         )
-        raise HTTPException(
-            status_code=502,
-            detail=f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})",
+        detail = (
+            "Rate limited by Odesli, try again shortly"
+            if response.status_code == 429
+            else f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})"
         )
+        raise HTTPException(status_code=502, detail=detail)
 
-    return response.json()
+    raise HTTPException(status_code=502, detail="Rate limited by Odesli, try again shortly")
 
 
 async def resolve_by_id(platform: str, track_id: str) -> dict:

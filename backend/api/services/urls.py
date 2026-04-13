@@ -4,7 +4,7 @@ import json
 from fastapi import HTTPException
 
 from app.constants import ERROR_MESSAGES, PLATFORMS
-from clients import cache, odesli
+from clients import cache, metadata, odesli
 from utils.logging import get_logger
 from utils.responses import success
 from utils.search_url import build_search_url
@@ -39,31 +39,51 @@ async def resolve_url(url: str, target_platform: str):
         return success("URL resolved from cache", data)
 
     parsed = parse_track(url)
-    if parsed:
-        logger.info("Parsed track: %s id=%s", parsed.platform, parsed.track_id)
-        odesli_data = await odesli.resolve_by_id(parsed.platform, parsed.track_id)
-    else:
-        odesli_data = await odesli.resolve(url)
+    odesli_data: dict = {}
+    odesli_error: HTTPException | None = None
 
-    resolved_url = odesli.extract_url(odesli_data, target_platform)
-    title, artist = odesli.extract_metadata(odesli_data)
+    try:
+        if parsed:
+            logger.info("Parsed track: %s id=%s", parsed.platform, parsed.track_id)
+            odesli_data = await odesli.resolve_by_id(parsed.platform, parsed.track_id)
+        else:
+            odesli_data = await odesli.resolve(url)
+    except HTTPException as e:
+        odesli_error = e
+        logger.warning("Odesli unavailable (%s): %s", e.status_code, e.detail)
+
+    resolved_url = odesli.extract_url(odesli_data, target_platform) if odesli_data else None
+    title, artist = odesli.extract_metadata(odesli_data) if odesli_data else (None, None)
     via = "direct"
 
-    if not resolved_url:
-        available = sorted(odesli_data.get("linksByPlatform", {}).keys())
-        logger.warning(
-            "No %s URL; Odesli returned platforms: %s", target_platform, available
-        )
+    if resolved_url:
+        logger.info("Resolved: %s - %s -> %s", artist, title, resolved_url)
+    else:
+        if odesli_data:
+            available = sorted(odesli_data.get("linksByPlatform", {}).keys())
+            logger.warning(
+                "No %s URL; Odesli returned platforms: %s", target_platform, available
+            )
+
+        # If Odesli didn't give us metadata, try scraping the source URL directly.
+        if (not title or not artist) and parsed:
+            scraped_title, scraped_artist = await metadata.fetch_metadata(
+                parsed.platform, url, parsed.track_id
+            )
+            title = title or scraped_title
+            artist = artist or scraped_artist
+            logger.info("Scraped metadata: %s - %s", artist, title)
+
         resolved_url = build_search_url(target_platform, title, artist)
         if not resolved_url:
+            if odesli_error:
+                raise odesli_error
             raise HTTPException(
                 status_code=404,
                 detail=f"{ERROR_MESSAGES['PLATFORM_NOT_FOUND']} ({target_platform})",
             )
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
-    else:
-        logger.info("Resolved: %s - %s -> %s", artist, title, resolved_url)
 
     result = {
         "title": title,
