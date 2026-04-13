@@ -4,11 +4,12 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import NAME, VERSION, DESCRIPTION, ENVIRONMENT, HOST, PORT, BASE_URL, CORS_ORIGINS
 from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
 from api.middleware.request_logger import RequestLoggerMiddleware
-from api.routes import system, urls
+from api.routes import docs, system, urls
 from clients import cache
 from utils.logging import get_logger
 from utils.responses import error
@@ -30,6 +31,8 @@ app = FastAPI(
     servers=[{"url": BASE_URL, "description": "API Server"}],
     openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
 )
 
 app.add_middleware(RequestLoggerMiddleware)
@@ -41,14 +44,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="public/static"), name="static")
+
 app.include_router(system.root_router)
 app.include_router(system.router)
 app.include_router(urls.router)
+app.include_router(docs.router)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    return FileResponse("favicon.ico")
+    return FileResponse("public/static/favicon.ico")
 
 
 @app.exception_handler(Exception)

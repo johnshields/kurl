@@ -1,6 +1,18 @@
-# ISRC Resolver Plan
+# ISRC Kurler Plan
 
 Move off Odesli for the four big platforms by matching on universal identifiers (ISRC for tracks, UPC for albums).
+
+## Current state
+
+Already shipped in the prototype and feeding into the kurler plan:
+
+- **URL parser** — [utils/url_parser.py](../backend/utils/url_parser.py) extracts `(platform, track_id)` from Spotify / Apple Music / YouTube Music / Deezer / Tidal / Amazon Music track URLs.
+- **Odesli by-id calls** — [clients/odesli.py](../backend/clients/odesli.py) calls Odesli with `platform + type + id` instead of raw URL for more precise matching, with 3x retry + 1s/2s/4s backoff on 429.
+- **Metadata scraping** — [clients/metadata.py](../backend/clients/metadata.py) scrapes source URLs for title and artist when Odesli is unavailable (Spotify `/embed/track/{id}` `__NEXT_DATA__`, Apple Music OG tags).
+- **Search URL fallback** — [utils/search_url.py](../backend/utils/search_url.py) builds a target-platform search URL (Spotify, Apple Music) when no direct match exists. Returns `via: "search"` so the UI can show "Search on X" instead of "Open on X".
+- **Tracking param stripping** — [utils/url.py](../backend/utils/url.py) removes `si`, `utm_*`, `fbclid`, etc. before hashing and before calling Odesli.
+
+What's still missing for a full ISRC kurler: direct Spotify / Apple Music / Deezer / Tidal API clients that return and search by ISRC.
 
 ## Why
 
@@ -94,13 +106,13 @@ No public API for ISRC search. Deferred to fuzzy-match fallback.
 Covers 80%+ of real sharing. Start here.
 
 **Supported:** Spotify, Apple Music, Deezer, Tidal (all four support ISRC search).
-**Deferred fallback:** YouTube Music, Amazon Music, Pandora (via Odesli or fuzzy match).
+**Deferred fallback:** YouTube Music, Amazon Music, Pandora (via Odesli or the search-URL fallback that's already in place).
 
 Flow:
 ```
-1. Parse URL → (platform, entity_type="track", track_id)
-2. Call source platform API → get ISRC
-3. Call target platform API with ISRC → get matched track URL
+1. Parse URL → (platform, entity_type="track", track_id)   [done]
+2. Call source platform API → get ISRC                      [needs spotify/apple/deezer/tidal clients]
+3. Call target platform API with ISRC → get matched URL     [needs spotify/apple/deezer/tidal clients]
 4. Return match
 ```
 
@@ -143,14 +155,16 @@ backend/clients/
   tidal.py             # OAuth + track/album/artist endpoints (phase 1.2)
 
 backend/utils/
-  url_parser.py        # parse any streaming URL → (platform, entity_type, id)
-  resolver.py          # coordinates source → target resolution per entity
+  url_parser.py        # [done] parse any streaming URL → (platform, entity_type, id)
+  kurler.py            # coordinates source → target resolution per entity
 
 backend/api/services/
-  urls.py              # existing — entry point, calls resolver
+  urls.py              # [done] entry point, calls kurler with Odesli fallback
 ```
 
-### URL parser signature
+### URL parser signature (expanded)
+
+Current parser returns `(platform, track_id)`. To support albums and artists, expand to:
 
 ```python
 @dataclass
@@ -165,13 +179,13 @@ def parse_music_url(url: str) -> ParsedMusicUrl | None:
     ...
 ```
 
-### Resolver signature
+### Kurler signature
 
 ```python
-async def resolve(
+async def kurl(
     source: ParsedMusicUrl,
     target_platform: str,
-) -> ResolvedMatch | None:
+) -> KurlMatch | None:
     # For tracks: get ISRC from source, search target by ISRC
     # For albums: get UPC from source, search target by UPC
     # For artists: get name from source, search target by name
@@ -189,26 +203,34 @@ async def resolve(
 
 ## Fallback strategy
 
-Per-request fallback order:
-1. Parse URL → known platform? If no, fall back to Odesli.
-2. Source platform supported for ID extraction? If no, Odesli.
-3. Target platform supported for ID search? If no, Odesli.
-4. ID search returns no match? Try fuzzy fallback (artist + title).
-5. Still no match? Return 404 with clear diagnostic.
+Current order (already in the prototype):
 
-Keeps the fast path fast, and Odesli becomes the long-tail fallback instead of the primary.
+1. Parse URL → known platform? If no, call Odesli by-URL.
+2. Parsed → call Odesli by-id (with retry on 429).
+3. Odesli has target platform link? Return it.
+4. Odesli has no target link but has metadata? Build search URL on target platform.
+5. Odesli failed entirely (after retries)? Scrape source URL for title + artist → build search URL.
+6. No metadata anywhere? 404.
+
+When the kurler phases land, inserted between steps 1 and 2:
+
+- Try direct source → ISRC lookup
+- Try target ISRC → URL search
+- Only fall to Odesli if either fails
+
+This keeps the fast path fast and makes Odesli a long-tail fallback instead of the primary.
 
 ## Cache strategy
 
-- Cache by `(normalised_source_url, target_platform)` — already in place.
-- Also cache the **ISRC/UPC lookup itself** with TTL — `isrc:spotify:{track_id}` → ISRC. Avoids repeated calls for the same popular track.
+- **URL → target mapping** cached by `md5(normalised_url + target_platform)` — already in place, 24h TTL.
+- **ISRC/UPC lookups** should be cached separately — `isrc:spotify:{track_id}` → ISRC. Avoids repeated calls for the same popular track.
 - Separate cache namespace for negative results (short TTL, e.g. 15 min) so we don't hammer a broken match.
 
 ## Risks
 
 - **Spotify rate limits** — generous but real. Cache ISRC lookups aggressively.
 - **Apple Music JWT** — private key leak is catastrophic. Store in env, never log, rotate if exposed.
-- **Deezer undocumented endpoint** — `/track/isrc:{code}` could disappear. Have Odesli fallback.
+- **Deezer undocumented endpoint** — `/track/isrc:{code}` could disappear. Keep Odesli + search-URL fallback.
 - **Spotify short links (`spotify.link`)** — client-side JS redirect, not followable with a simple HTTP GET. May require a headless fetch or rejection with "please use full link".
 - **Regional ISRC mismatches** — rare, but re-releases sometimes get new ISRCs. Cache negative results short.
 - **Album tracks with `?i=` differ by region** — an Apple Music track in `us` vs `au` may have different track IDs but the same ISRC. Normalise country before hashing.
@@ -216,10 +238,10 @@ Keeps the fast path fast, and Odesli becomes the long-tail fallback instead of t
 ## Success criteria
 
 **Phase 1.1 (tracks):**
-- Resolve Spotify track → Apple Music track without calling Odesli
-- Resolve Apple Music track (`?i=`) → Spotify track without Odesli
-- Resolve Deezer track → Spotify track
-- Resolve Tidal track → Spotify track
+- Kurl Spotify track → Apple Music track without calling Odesli
+- Kurl Apple Music track (`?i=`) → Spotify track without Odesli
+- Kurl Deezer track → Spotify track
+- Kurl Tidal track → Spotify track
 - Sub-500ms p50 including cache miss
 - No rate-limit errors under realistic load (100 rps burst)
 

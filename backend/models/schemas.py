@@ -1,12 +1,12 @@
 from pydantic import BaseModel, HttpUrl
 
 
-class ResolveRequest(BaseModel):
+class KurlRequest(BaseModel):
     url: HttpUrl
     target_platform: str
 
 
-class ResolveResponse(BaseModel):
+class KurlResponse(BaseModel):
     title: str | None = None
     artist: str | None = None
     resolved_url: str

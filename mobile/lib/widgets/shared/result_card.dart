@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
-import 'package:kurl/models/resolve_result.dart';
+import 'package:kurl/models/kurl_result.dart';
 
 class ResultCard extends StatelessWidget {
-  final ResolveResult result;
+  final KurlResult result;
 
   const ResultCard({super.key, required this.result});
 

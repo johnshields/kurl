@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:kurl/app/config.dart';
-import 'package:kurl/models/resolve_result.dart';
+import 'package:kurl/models/kurl_result.dart';
 
 class ApiService {
-  static Future<ResolveResult> resolve(String url, String targetPlatform) async {
-    final endpoint = '$apiBaseUrl/api/resolve';
+  static Future<KurlResult> kurl(String url, String targetPlatform) async {
+    final endpoint = '$apiBaseUrl/api/kurl';
     developer.log('POST $endpoint [$targetPlatform] $url', name: 'kurl.api');
 
     final response = await http.post(
@@ -29,6 +29,6 @@ class ApiService {
       throw Exception(json['message'] ?? json['detail'] ?? 'Request failed');
     }
 
-    return ResolveResult.fromJson(json['data']);
+    return KurlResult.fromJson(json['data']);
   }
 }

@@ -73,7 +73,7 @@ kurl/
 │   │   ├── main.py
 │   │   ├── config.py                # env vars, settings
 │   │   ├── routers/
-│   │   │   ├── urls.py              # POST /resolve
+│   │   │   ├── urls.py              # POST /api/kurl
 │   │   │   └── users.py             # phase 2 - auth, profile
 │   │   ├── services/
 │   │   │   ├── odesli.py            # Odesli API client

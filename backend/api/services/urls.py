@@ -15,9 +15,9 @@ from utils.wrap_route import wrap_route
 logger = get_logger()
 
 
-@wrap_route("Resolve")
-async def resolve_url(url: str, target_platform: str):
-    """Resolve a streaming URL to the target platform via Odesli."""
+@wrap_route("Kurl")
+async def kurl(url: str, target_platform: str):
+    """Kurl a streaming URL to the target platform via Odesli."""
     if target_platform not in PLATFORMS:
         raise HTTPException(
             status_code=400,
@@ -25,7 +25,7 @@ async def resolve_url(url: str, target_platform: str):
         )
 
     url = normalise_url(url)
-    logger.info("Resolving %s -> %s", url, target_platform)
+    logger.info("Kurling %s -> %s", url, target_platform)
 
     cache_key = hashlib.md5(
         f"{url}{target_platform}".encode()
@@ -36,7 +36,7 @@ async def resolve_url(url: str, target_platform: str):
         data = json.loads(cached)
         data["cached"] = True
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
-        return success("URL resolved from cache", data)
+        return success("Kurled from cache", data)
 
     parsed = parse_track(url)
     odesli_data: dict = {}
@@ -57,7 +57,7 @@ async def resolve_url(url: str, target_platform: str):
     via = "direct"
 
     if resolved_url:
-        logger.info("Resolved: %s - %s -> %s", artist, title, resolved_url)
+        logger.info("Kurled: %s - %s -> %s", artist, title, resolved_url)
     else:
         if odesli_data:
             available = sorted(odesli_data.get("linksByPlatform", {}).keys())
@@ -94,4 +94,4 @@ async def resolve_url(url: str, target_platform: str):
     await cache.set(cache_key, json.dumps(result))
 
     result["cached"] = False
-    return success("URL resolved", result)
+    return success("Kurled", result)

@@ -1,7 +1,8 @@
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from api import templates
 from app.config import NAME, VERSION, DESCRIPTION
 
 root_router = APIRouter()
@@ -25,13 +26,10 @@ def _info() -> dict:
     }
 
 
-@root_router.get("/", tags=["System"])
-def root():
-    """Return service name and description."""
-    return {
-        "service": NAME,
-        "description": DESCRIPTION,
-    }
+@root_router.get("/", include_in_schema=False)
+def root(request: Request):
+    """Landing page — service info fetched client-side from /api."""
+    return templates.TemplateResponse(request, "index.html", {"name": NAME})
 
 
 @router.get("/", tags=["System"])

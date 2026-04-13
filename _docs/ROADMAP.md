@@ -18,7 +18,7 @@ All matched via ISRC through Odesli - no direct API deals needed.
 
 - [ ] Flutter share extension on iOS and Android
 - [ ] Platform picker UI
-- [ ] FastAPI `/resolve` endpoint
+- [ ] FastAPI `/api/kurl` endpoint
 - [ ] Odesli integration
 - [ ] Redis caching
 - [ ] System share sheet handoff
