@@ -1,17 +1,18 @@
-import time
 from contextlib import asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
-from app.middleware.request_logger import RequestLoggerMiddleware
-from api.routes import urls
-from services import cache
-from utils.response import create_error
+from app.config import NAME, VERSION, DESCRIPTION, HOST, PORT, BASE_URL
+from app.constants import OPENAPI_TAGS
+from api.middleware.request_logger import RequestLoggerMiddleware
+from api.routes import system, urls
+from clients import cache
+from utils.logging import get_logger
+from utils.responses import error
 
-VERSION = "0.1.0"
-started_at = time.time()
+logger = get_logger()
 
 
 @asynccontextmanager
@@ -21,7 +22,14 @@ async def lifespan(app: FastAPI):
     await cache.disconnect()
 
 
-app = FastAPI(title="kurl_api", version=VERSION, lifespan=lifespan)
+app = FastAPI(
+    title=NAME,
+    version=VERSION,
+    description=DESCRIPTION,
+    servers=[{"url": BASE_URL, "description": "API Server"}],
+    openapi_tags=OPENAPI_TAGS,
+    lifespan=lifespan,
+)
 
 app.add_middleware(RequestLoggerMiddleware)
 app.add_middleware(
@@ -31,45 +39,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(urls.router, prefix="/api")
+app.include_router(system.router)
+app.include_router(urls.router)
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(
-        status_code=500,
-        content=create_error("Internal server error"),
-    )
+    return error("Internal server error", status_code=500)
 
 
-@app.get("/")
-async def root():
-    """Service info."""
-    return {
-        "status": "OK",
-        "service": "kurl_api",
-        "version": VERSION,
-        "uptime_seconds": round(time.time() - started_at, 1),
-        "message": "kurl_api is live...",
-    }
-
-
-@app.get("/api")
-async def api_root():
-    """API info."""
-    return {
-        "status": "OK",
-        "service": "kurl_api",
-        "version": VERSION,
-        "uptime_seconds": round(time.time() - started_at, 1),
-    }
-
-
-@app.get("/api/healthz")
-async def healthz():
-    """Liveness check."""
-    return {
-        "status": "healthy",
-        "service": "kurl_api",
-        "uptime_seconds": round(time.time() - started_at, 1),
-    }
+if __name__ == "__main__":
+    logger.info("%s booting up...", NAME)
+    logger.info("%s running at %s", NAME, BASE_URL)
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)

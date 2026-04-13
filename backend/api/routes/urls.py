@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 
-from api.controllers import url_controller as controller
+from api.services import urls as service
 from models.schemas import ResolveRequest
 
-router = APIRouter(tags=["url"])
+router = APIRouter(prefix="/api")
 
 
-@router.post("/resolve")
+@router.post("/resolve", tags=["URLs"])
 async def post_resolve(body: ResolveRequest):
     """Resolve a streaming link to another platform."""
-    return await controller.resolve_link(str(body.url), body.target_platform)
+    return await service.resolve_link(str(body.url), body.target_platform)

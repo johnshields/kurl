@@ -3,11 +3,13 @@ import json
 
 from fastapi import HTTPException
 
-from models.schemas import PLATFORMS
-from services import cache, odesli
-from utils.response import create_response
+from app.constants import PLATFORMS
+from clients import cache, odesli
+from utils.responses import success
+from utils.wrap_route import wrap_route
 
 
+@wrap_route("Resolve")
 async def resolve_link(url: str, target_platform: str):
     """Resolve a streaming URL to the target platform via Odesli."""
     if target_platform not in PLATFORMS:
@@ -20,14 +22,12 @@ async def resolve_link(url: str, target_platform: str):
         f"{url}{target_platform}".encode()
     ).hexdigest()
 
-    # Check cache first
     cached = await cache.get(cache_key)
     if cached:
         data = json.loads(cached)
         data["cached"] = True
-        return create_response(data, "Link resolved from cache")
+        return success("Link resolved from cache", data)
 
-    # Call Odesli
     odesli_data = await odesli.resolve(url)
 
     resolved_url = odesli.extract_link(odesli_data, target_platform)
@@ -46,8 +46,7 @@ async def resolve_link(url: str, target_platform: str):
         "platform": target_platform,
     }
 
-    # Cache the result
     await cache.set(cache_key, json.dumps(result))
 
     result["cached"] = False
-    return create_response(result, "Link resolved")
+    return success("Link resolved", result)

@@ -1,10 +1,9 @@
-import logging
-
 from redis.asyncio import Redis
 
 from app.config import settings
+from utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 _client: Redis | None = None
 

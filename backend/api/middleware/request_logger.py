@@ -1,10 +1,11 @@
-import logging
 import time
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-logger = logging.getLogger("uvicorn.error")
+from utils.logging import get_logger
+
+logger = get_logger()
 
 
 class RequestLoggerMiddleware(BaseHTTPMiddleware):

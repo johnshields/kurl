@@ -1,17 +1,6 @@
 from pydantic import BaseModel, HttpUrl
 
 
-PLATFORMS = {
-    "spotify",
-    "appleMusic",
-    "youtubeMusic",
-    "deezer",
-    "tidal",
-    "amazonMusic",
-    "pandora",
-}
-
-
 class ResolveRequest(BaseModel):
     url: HttpUrl
     target_platform: str
