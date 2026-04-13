@@ -11,11 +11,22 @@ class ResultCard extends StatelessWidget {
 
   void _copy(BuildContext context) {
     Clipboard.setData(ClipboardData(text: result.resolvedUrl));
+    final width = MediaQuery.of(context).size.width;
+    final horizontal = ((width - 200) / 2).clamp(16.0, double.infinity);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Link copied'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.check, size: 16, color: Color(0xFF1DB954)),
+            SizedBox(width: 8),
+            Text('Link copied'),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(bottom: 80, left: horizontal, right: horizontal),
       ),
     );
   }
