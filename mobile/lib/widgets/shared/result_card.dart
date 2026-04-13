@@ -1,5 +1,8 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/kurl_result.dart';
@@ -8,6 +11,16 @@ class ResultCard extends StatelessWidget {
   final KurlResult result;
 
   const ResultCard({super.key, required this.result});
+
+  Future<void> _share(BuildContext context) async {
+    try {
+      final res = await Share.shareUri(Uri.parse(result.resolvedUrl));
+      developer.log('share status=${res.status}', name: 'kurl.share');
+    } catch (e, st) {
+      developer.log('share failed: $e', name: 'kurl.share', error: e, stackTrace: st);
+      if (context.mounted) _copy(context);
+    }
+  }
 
   void _copy(BuildContext context) {
     Clipboard.setData(ClipboardData(text: result.resolvedUrl));
@@ -81,7 +94,7 @@ class ResultCard extends StatelessWidget {
                   color: colour,
                   borderRadius: BorderRadius.circular(8),
                   child: InkWell(
-                    onTap: () => launchUrl(Uri.parse(result.resolvedUrl)),
+                    onTap: () => _share(context),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -93,9 +106,7 @@ class ResultCard extends StatelessWidget {
                             const SizedBox(width: 8),
                           ],
                           Text(
-                            result.isSearch
-                                ? 'Search on ${platform?.name ?? result.platform}'
-                                : 'Open on ${platform?.name ?? result.platform}',
+                            'Share ${platform?.name ?? result.platform} link',
                             style: TextStyle(
                               color: onColour,
                               fontSize: 14,
@@ -105,6 +116,19 @@ class ResultCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: const Color(0xFF222222),
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => launchUrl(Uri.parse(result.resolvedUrl)),
+                  borderRadius: BorderRadius.circular(8),
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(Icons.visibility_outlined, size: 18, color: Color(0xFFE5E5E5)),
                   ),
                 ),
               ),

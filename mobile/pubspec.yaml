@@ -15,6 +15,7 @@ dependencies:
   google_fonts: ^6.2.1
   receive_sharing_intent: ^1.8.1
   app_links: ^6.3.2
+  share_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:

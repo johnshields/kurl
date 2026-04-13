@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/api_service.dart';
@@ -28,8 +29,10 @@ class _KurlScreenState extends State<KurlScreen> {
   @override
   void initState() {
     super.initState();
-    _listenForShares();
-    _listenForUniversalLinks();
+    if (!kIsWeb) {
+      _listenForShares();
+      _listenForUniversalLinks();
+    }
     _handleUri(Uri.base);
   }
 
@@ -43,14 +46,14 @@ class _KurlScreenState extends State<KurlScreen> {
     ReceiveSharingIntent.instance.getInitialMedia().then((items) {
       _handleSharedMedia(items);
       ReceiveSharingIntent.instance.reset();
-    });
+    }).catchError((_) {});
   }
 
   void _listenForUniversalLinks() {
     _linkSub = _appLinks.uriLinkStream.listen(_handleUri, onError: (_) {});
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) _handleUri(uri);
-    });
+    }).catchError((_) {});
   }
 
   void _handleSharedMedia(List<SharedMediaFile> items) {
