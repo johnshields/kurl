@@ -40,6 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(system.root_router)
 app.include_router(system.router)
 app.include_router(urls.router)
 

@@ -40,22 +40,26 @@ class PlatformPicker extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       p.icon,
                       size: 16,
                       color: isSelected ? onColour : p.colour,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      p.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isSelected ? onColour : const Color(0xFFE5E5E5),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        p.name,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected ? onColour : const Color(0xFFE5E5E5),
+                        ),
                       ),
                     ),
                   ],
