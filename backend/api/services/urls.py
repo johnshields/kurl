@@ -67,9 +67,7 @@ async def resolve_url(url: str, target_platform: str):
 
         # If Odesli didn't give us metadata, try scraping the source URL directly.
         if (not title or not artist) and parsed:
-            scraped_title, scraped_artist = await metadata.fetch_metadata(
-                parsed.platform, url, parsed.track_id
-            )
+            scraped_title, scraped_artist = await metadata.fetch_metadata(parsed, url)
             title = title or scraped_title
             artist = artist or scraped_artist
             logger.info("Scraped metadata: %s - %s", artist, title)

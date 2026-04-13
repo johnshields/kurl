@@ -8,16 +8,26 @@ PLATFORMS = {
     "pandora",
 }
 
-OPENAPI_TAGS = [
-    {"name": "System", "description": "Health checks, API information, and system status"},
-    {"name": "URLs", "description": "Cross-platform URL resolution"},
-]
+PLATFORM_NAMES = {
+    "spotify": "Spotify",
+    "appleMusic": "Apple Music",
+    "youtubeMusic": "YouTube Music",
+    "deezer": "Deezer",
+    "tidal": "Tidal",
+    "amazonMusic": "Amazon Music",
+    "pandora": "Pandora",
+}
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://kurlshare.com",
     "https://www.kurlshare.com",
+]
+
+OPENAPI_TAGS = [
+    {"name": "System", "description": "Health checks, API information, and system status"},
+    {"name": "URLs", "description": "Cross-platform URL resolution"},
 ]
 
 ERROR_MESSAGES = {
@@ -31,3 +41,10 @@ SEARCH_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/search/{query}",
     "appleMusic": "https://music.apple.com/search?term={query}",
 }
+
+SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
+
+SCRAPER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
