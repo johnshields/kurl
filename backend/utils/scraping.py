@@ -3,10 +3,16 @@ import re
 from app.constants import PLATFORM_NAMES
 
 _OG_TITLE = re.compile(
-    r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']', re.I
+    r'<meta\s+property=["\']og:title["\']\s+content="([^"]+)"', re.I
+)
+_OG_TITLE_SQ = re.compile(
+    r"<meta\s+property=[\"']og:title[\"']\s+content='([^']+)'", re.I
 )
 _OG_DESC = re.compile(
-    r'<meta\s+property=["\']og:description["\']\s+content=["\']([^"\']+)["\']', re.I
+    r'<meta\s+property=["\']og:description["\']\s+content="([^"]+)"', re.I
+)
+_OG_DESC_SQ = re.compile(
+    r"<meta\s+property=[\"']og:description[\"']\s+content='([^']+)'", re.I
 )
 _NEXT_DATA = re.compile(
     r'<script[^>]*id="__NEXT_DATA__"[^>]*>([^<]+)</script>'
@@ -21,13 +27,19 @@ _PLATFORM_SUFFIX = re.compile(
 
 
 def extract_og_title(html: str) -> str | None:
-    m = _OG_TITLE.search(html)
-    return m.group(1).strip() if m else None
+    m = _OG_TITLE.search(html) or _OG_TITLE_SQ.search(html)
+    return _decode_entities(m.group(1).strip()) if m else None
 
 
 def extract_og_description(html: str) -> str | None:
-    m = _OG_DESC.search(html)
-    return m.group(1).strip() if m else None
+    m = _OG_DESC.search(html) or _OG_DESC_SQ.search(html)
+    return _decode_entities(m.group(1).strip()) if m else None
+
+
+def _decode_entities(text: str) -> str:
+    """Decode common HTML entities (&#x27; &#39; &amp; etc.)."""
+    import html
+    return html.unescape(text)
 
 
 def extract_next_data(html: str) -> str | None:

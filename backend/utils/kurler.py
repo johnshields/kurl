@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
+from clients import metadata
 from clients.platforms import apple, deezer, spotify, tidal
 from utils.logging import get_logger
-from utils.url_parser import ParsedMusicUrl
+from utils.url_parser import ParsedMusicUrl, ParsedTrack
 
 logger = get_logger()
 
@@ -142,8 +143,8 @@ async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None
     Returns a KurlMatch if successful, or None to signal the caller
     should fall back to Odesli.
     """
-    # Only attempt direct resolution for platforms with API clients.
-    if source.platform not in ISRC_PLATFORMS and target_platform not in ISRC_PLATFORMS:
+    # Attempt if at least the target has a configured client.
+    if not _get_client(target_platform):
         return None
 
     if source.entity_type == "track":
@@ -159,20 +160,84 @@ async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None
 
 
 async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
+    # Try ISRC path first (source creds required).
     isrc, title, artist = await _get_track_isrc(source)
-    if not isrc:
+    if isrc:
+        url, match_title, match_artist = await _search_track_by_isrc(target_platform, isrc)
+        if url:
+            return KurlMatch(
+                url=url,
+                title=match_title or title,
+                artist=match_artist or artist,
+                via="isrc",
+            )
+
+    # Fallback: scrape metadata from source, search target API by title + artist.
+    if not title or not artist:
+        parsed_track = ParsedTrack(source.platform, source.id)
+        source_url = _build_source_url(source)
+        scraped_title, scraped_artist = await metadata.fetch_metadata(parsed_track, source_url)
+        title = title or scraped_title
+        artist = artist or scraped_artist
+
+    if not title or not artist:
         return None
 
-    url, match_title, match_artist = await _search_track_by_isrc(target_platform, isrc)
-    if not url:
+    return await _search_track_by_metadata(target_platform, title, artist)
+
+
+async def _search_track_by_metadata(target_platform: str, title: str, artist: str) -> KurlMatch | None:
+    """Search a target platform by title + artist. Lower confidence than ISRC."""
+    client = _get_client(target_platform)
+    if not client or not hasattr(client, "search_track"):
         return None
 
-    return KurlMatch(
-        url=url,
-        title=match_title or title,
-        artist=match_artist or artist,
-        via="isrc",
-    )
+    try:
+        match = await client.search_track(title, artist)
+        if not match:
+            return None
+
+        if target_platform == "appleMusic":
+            url = client.extract_song_url(match)
+        else:
+            url = client.extract_track_url(match)
+
+        if not url:
+            return None
+
+        match_title, match_artist = client.extract_metadata(match)
+        logger.info("Metadata search on %s: %s - %s -> %s", target_platform, artist, title, url)
+        return KurlMatch(
+            url=url,
+            title=match_title or title,
+            artist=match_artist or artist,
+            via="search_api",
+        )
+    except Exception as e:
+        logger.warning("Metadata search on %s failed: %s", target_platform, e)
+        return None
+
+
+def _build_source_url(source: ParsedMusicUrl) -> str:
+    """Reconstruct a URL from a parsed source for metadata scraping."""
+    if source.platform == "spotify":
+        return f"https://open.spotify.com/track/{source.id}"
+    if source.platform == "appleMusic":
+        country = source.country or "us"
+        if source.album_id:
+            return f"https://music.apple.com/{country}/album/_/{source.album_id}?i={source.id}"
+        return f"https://music.apple.com/{country}/song/_/{source.id}"
+    if source.platform == "deezer":
+        return f"https://www.deezer.com/track/{source.id}"
+    if source.platform == "tidal":
+        return f"https://tidal.com/track/{source.id}"
+    if source.platform == "youtubeMusic":
+        return f"https://music.youtube.com/watch?v={source.id}"
+    if source.platform == "amazonMusic":
+        if source.album_id:
+            return f"https://music.amazon.com/albums/{source.album_id}?trackAsin={source.id}"
+        return f"https://music.amazon.com/albums/{source.id}"
+    return ""
 
 
 async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:

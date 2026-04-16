@@ -107,6 +107,15 @@ async def search_artist(name: str) -> dict | None:
     return items[0].get("resource", items[0]) if items else None
 
 
+async def search_track(title: str, artist: str) -> dict | None:
+    """Search for a track by title and artist. Returns the first match or None."""
+    data = await _api_get("/search", params={"query": f"{artist} {title}", "type": "TRACKS", "limit": 1})
+    items = data.get("tracks", [])
+    if not items:
+        return None
+    return items[0].get("resource", items[0])
+
+
 def extract_isrc(track: dict) -> str | None:
     return track.get("isrc")
 
