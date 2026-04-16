@@ -36,6 +36,7 @@ class PlatformPicker extends StatelessWidget {
               onTap: disabled ? null : () => onSelect(p.id),
               borderRadius: BorderRadius.circular(8),
               child: Container(
+                clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: isSelected ? p.colour : const Color(0xFF333333),
@@ -51,7 +52,7 @@ class PlatformPicker extends StatelessWidget {
                       size: 16,
                       color: isSelected ? onColour : p.colour,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         p.name,

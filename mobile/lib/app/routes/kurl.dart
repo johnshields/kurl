@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/api_service.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
@@ -16,19 +18,25 @@ class KurlScreen extends StatefulWidget {
   State<KurlScreen> createState() => _KurlScreenState();
 }
 
-class _KurlScreenState extends State<KurlScreen> {
+class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateMixin {
   final _urlController = TextEditingController();
   String? _selectedPlatform;
   KurlResult? _result;
   bool _loading = false;
+  bool _pressed = false;
   String? _error;
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
   StreamSubscription<Uri>? _linkSub;
   final _appLinks = AppLinks();
+  late final AnimationController _spinController;
 
   @override
   void initState() {
     super.initState();
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat();
     if (!kIsWeb) {
       _listenForShares();
       _listenForUniversalLinks();
@@ -73,6 +81,21 @@ class _KurlScreenState extends State<KurlScreen> {
   void _populateUrl(String url) {
     setState(() {
       _urlController.text = url;
+      _result = null;
+      _error = null;
+    });
+  }
+
+  Future<void> _handlePaste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty) return;
+    _populateUrl(text);
+  }
+
+  void _handleClear() {
+    _urlController.clear();
+    setState(() {
       _result = null;
       _error = null;
     });
@@ -146,6 +169,19 @@ class _KurlScreenState extends State<KurlScreen> {
                         filled: true,
                         fillColor: const Color(0xFF141414),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        suffixIcon: _urlController.text.isEmpty
+                            ? IconButton(
+                                onPressed: _loading ? null : _handlePaste,
+                                icon: const Icon(Icons.content_paste, size: 18),
+                                color: const Color(0xFF888888),
+                                tooltip: 'Paste',
+                              )
+                            : IconButton(
+                                onPressed: _loading ? null : _handleClear,
+                                icon: const Icon(Icons.close, size: 18),
+                                color: const Color(0xFF888888),
+                                tooltip: 'Clear',
+                              ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(color: Color(0xFF333333)),
@@ -167,25 +203,7 @@ class _KurlScreenState extends State<KurlScreen> {
                       disabled: _loading,
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: canKurl ? _handleKurl : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE5E5E5),
-                          foregroundColor: const Color(0xFF0A0A0A),
-                          disabledBackgroundColor: const Color(0xFFE5E5E5).withValues(alpha: 0.3),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          _loading ? 'kurling...' : 'kurl it',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
+                    _buildKurlButton(canKurl),
                     if (_error != null) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -207,10 +225,85 @@ class _KurlScreenState extends State<KurlScreen> {
     );
   }
 
+  Widget _buildKurlButton(bool canKurl) {
+    final platformColour = findPlatform(_selectedPlatform ?? '')?.colour;
+    final bg = platformColour ?? const Color(0xFFE5E5E5);
+
+    return GestureDetector(
+      onTapDown: canKurl ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: canKurl ? (_) => setState(() => _pressed = false) : null,
+      onTapCancel: canKurl ? () => setState(() => _pressed = false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: canKurl && platformColour != null
+                ? [
+                    BoxShadow(
+                      color: platformColour.withValues(alpha: 0.35),
+                      blurRadius: 24,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canKurl ? _handleKurl : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: bg,
+                foregroundColor: const Color(0xFF0A0A0A),
+                disabledBackgroundColor: const Color(0xFFE5E5E5).withValues(alpha: 0.3),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                animationDuration: const Duration(milliseconds: 200),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_loading)
+                    RotationTransition(
+                      turns: _spinController,
+                      child: Icon(
+                        findPlatform(_selectedPlatform ?? '')?.icon ?? Icons.music_note,
+                        size: 18,
+                      ),
+                    )
+                  else
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    _loading ? 'kurling...' : 'kurl it',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _shareSub?.cancel();
     _linkSub?.cancel();
+    _spinController.dispose();
     _urlController.dispose();
     super.dispose();
   }

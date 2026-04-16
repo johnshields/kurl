@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/widgets/shared/marquee_text.dart';
 
 class ResultCard extends StatelessWidget {
   final KurlResult result;
@@ -63,28 +64,34 @@ class ResultCard extends StatelessWidget {
           if (result.artist != null || result.title != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text.rich(
-                TextSpan(children: [
-                  if (result.artist != null)
-                    TextSpan(
-                      text: result.artist,
-                      style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
-                    ),
-                  if (result.artist != null && result.title != null)
-                    const TextSpan(
-                      text: ' — ',
-                      style: TextStyle(color: Color(0xFF888888), fontSize: 14),
-                    ),
-                  if (result.title != null)
-                    TextSpan(
-                      text: result.title,
-                      style: const TextStyle(
-                        color: Color(0xFFE5E5E5),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+              child: MarqueeText(
+                key: ValueKey('${result.artist}|${result.title}'),
+                child: Text.rich(
+                  TextSpan(children: [
+                    if (result.artist != null)
+                      TextSpan(
+                        text: result.artist,
+                        style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
                       ),
-                    ),
-                ]),
+                    if (result.artist != null && result.title != null)
+                      const TextSpan(
+                        text: ' — ',
+                        style: TextStyle(color: Color(0xFF888888), fontSize: 14),
+                      ),
+                    if (result.title != null)
+                      TextSpan(
+                        text: result.title,
+                        style: const TextStyle(
+                          color: Color(0xFFE5E5E5),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ]),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                ),
               ),
             ),
           Row(
@@ -105,12 +112,16 @@ class ResultCard extends StatelessWidget {
                             Icon(platform.icon, size: 18, color: onColour),
                             const SizedBox(width: 8),
                           ],
-                          Text(
-                            'Share ${platform?.name ?? result.platform} link',
-                            style: TextStyle(
-                              color: onColour,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              'Share ${platform?.name ?? result.platform} link',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: onColour,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
