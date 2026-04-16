@@ -1,10 +1,11 @@
-import base64
 import time
 
 import httpx
 
 from app.config import settings
 from app.constants import CLIENT_TIMEOUT, DEFAULT_COUNTRY, TIDAL_ACCEPT_HEADER, TIDAL_API_BASE, TIDAL_TOKEN_URL
+from clients.platforms._oauth import fetch_client_credentials_token
+from utils.canonical_url import build_album_url, build_artist_url, build_track_url
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -28,24 +29,14 @@ async def _get_token() -> str:
     if _token and time.time() < _token_expires_at - 60:
         return _token
 
-    credentials = base64.b64encode(
-        f"{settings.TIDAL_CLIENT_ID}:{settings.TIDAL_CLIENT_SECRET}".encode()
-    ).decode()
-
-    response = await _get_client().post(
+    _token, expires_in = await fetch_client_credentials_token(
+        _get_client(),
         TIDAL_TOKEN_URL,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "client_credentials"},
+        settings.TIDAL_CLIENT_ID,
+        settings.TIDAL_CLIENT_SECRET,
     )
-    response.raise_for_status()
-
-    data = response.json()
-    _token = data["access_token"]
-    _token_expires_at = time.time() + data.get("expires_in", 86400)
-    logger.info("Tidal token refreshed, expires in %ss", data.get("expires_in"))
+    _token_expires_at = time.time() + expires_in
+    logger.info("Tidal token refreshed, expires in %ss", expires_in)
     return _token
 
 
@@ -126,23 +117,33 @@ def extract_upc(album: dict) -> str | None:
 
 def extract_track_url(track: dict) -> str | None:
     tid = track.get("id")
-    return f"https://tidal.com/track/{tid}" if tid else None
+    return build_track_url("tidal", str(tid)) if tid else None
 
 
 def extract_album_url(album: dict) -> str | None:
     aid = album.get("id")
-    return f"https://tidal.com/album/{aid}" if aid else None
+    return build_album_url("tidal", str(aid)) if aid else None
 
 
 def extract_artist_url(artist: dict) -> str | None:
     aid = artist.get("id")
-    return f"https://tidal.com/artist/{aid}" if aid else None
+    return build_artist_url("tidal", str(aid)) if aid else None
 
 
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
-    title = track.get("title")
-    artists = track.get("artists", [])
-    if artists:
-        names = [a.get("name") for a in artists if a.get("name")]
-        return title, ", ".join(names) if names else None
-    return title, None
+    return track.get("title"), _join_artists(track.get("artists"))
+
+
+def extract_album_metadata(album: dict) -> tuple[str | None, str | None]:
+    return album.get("title"), _join_artists(album.get("artists"))
+
+
+def extract_artist_name(artist: dict) -> str | None:
+    return artist.get("name")
+
+
+def _join_artists(artists: list | None) -> str | None:
+    if not artists:
+        return None
+    names = [a.get("name") for a in artists if a.get("name")]
+    return ", ".join(names) if names else None

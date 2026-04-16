@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
+from app.constants import DEFAULT_STOREFRONT
 from clients import metadata
 from clients.platforms import apple, deezer, spotify, tidal
+from utils.canonical_url import build_track_url
 from utils.logging import get_logger
 from utils.url_parser import ParsedMusicUrl, ParsedTrack
 
@@ -10,131 +12,33 @@ logger = get_logger()
 # Platforms that support direct ISRC/UPC lookup.
 ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal"}
 
+_CLIENTS = {
+    "spotify": spotify,
+    "appleMusic": apple,
+    "deezer": deezer,
+    "tidal": tidal,
+}
+
 
 @dataclass
 class KurlMatch:
     url: str
     title: str | None = None
     artist: str | None = None
-    via: str = "isrc"  # isrc, upc, name
+    via: str = "isrc"  # isrc, upc, name, search_api
 
 
 def _get_client(platform: str):
     """Return the client module for a platform, or None if unconfigured."""
-    clients = {
-        "spotify": spotify,
-        "appleMusic": apple,
-        "deezer": deezer,
-        "tidal": tidal,
-    }
-    client = clients.get(platform)
-    if client and client.is_configured():
-        return client
-    return None
+    client = _CLIENTS.get(platform)
+    return client if client and client.is_configured() else None
 
 
-async def _get_track_isrc(source: ParsedMusicUrl) -> tuple[str | None, str | None, str | None]:
-    """Fetch ISRC + metadata from the source platform. Returns (isrc, title, artist)."""
-    client = _get_client(source.platform)
-    if not client:
-        return None, None, None
-
-    try:
-        if source.platform == "appleMusic":
-            track = await client.get_song(source.id, storefront=source.country or "us")
-        else:
-            track = await client.get_track(source.id)
-
-        isrc = client.extract_isrc(track) if hasattr(client, "extract_isrc") else client.extract_track_isrc(track)
-        title, artist = client.extract_metadata(track)
-        logger.info("Source %s track %s -> ISRC=%s (%s - %s)", source.platform, source.id, isrc, artist, title)
-        return isrc, title, artist
-    except Exception as e:
-        logger.warning("Failed to get ISRC from %s: %s", source.platform, e)
-        return None, None, None
-
-
-async def _search_track_by_isrc(target_platform: str, isrc: str, storefront: str | None = None) -> tuple[str | None, str | None, str | None]:
-    """Search a target platform by ISRC. Returns (url, title, artist)."""
-    client = _get_client(target_platform)
-    if not client:
-        return None, None, None
-
-    try:
-        if target_platform == "appleMusic":
-            match = await client.search_by_isrc(isrc, storefront=storefront or "us")
-        else:
-            match = await client.search_by_isrc(isrc)
-
-        if not match:
-            return None, None, None
-
-        if target_platform == "appleMusic":
-            url = client.extract_song_url(match)
-        else:
-            url = client.extract_track_url(match)
-
-        title, artist = client.extract_metadata(match)
-        return url, title, artist
-    except Exception as e:
-        logger.warning("ISRC search on %s failed: %s", target_platform, e)
-        return None, None, None
-
-
-async def _get_album_upc(source: ParsedMusicUrl) -> tuple[str | None, str | None, str | None]:
-    """Fetch UPC from the source platform album. Returns (upc, album_title, artist)."""
-    client = _get_client(source.platform)
-    if not client:
-        return None, None, None
-
-    try:
-        if source.platform == "appleMusic":
-            album = await client.get_album(source.id, storefront=source.country or "us")
-        else:
-            album = await client.get_album(source.id)
-
-        if source.platform == "appleMusic":
-            upc = client.extract_upc(album)
-        else:
-            upc = client.extract_album_upc(album) if hasattr(client, "extract_album_upc") else client.extract_upc(album)
-
-        attrs = album.get("attributes", {}) if source.platform == "appleMusic" else album
-        title = attrs.get("name") or attrs.get("title")
-        artist = attrs.get("artistName") or attrs.get("artist", {}).get("name")
-        logger.info("Source %s album %s -> UPC=%s", source.platform, source.id, upc)
-        return upc, title, artist
-    except Exception as e:
-        logger.warning("Failed to get UPC from %s: %s", source.platform, e)
-        return None, None, None
-
-
-async def _search_album_by_upc(target_platform: str, upc: str, storefront: str | None = None) -> tuple[str | None, str | None, str | None]:
-    """Search a target platform by UPC. Returns (url, title, artist)."""
-    client = _get_client(target_platform)
-    if not client:
-        return None, None, None
-
-    try:
-        if target_platform == "appleMusic":
-            match = await client.search_by_upc(upc, storefront=storefront or "us")
-        else:
-            match = await client.search_by_upc(upc)
-
-        if not match:
-            return None, None, None
-
-        if target_platform == "appleMusic":
-            url = client.extract_album_url(match)
-        else:
-            url = client.extract_album_url(match)
-
-        attrs = match.get("attributes", {}) if target_platform == "appleMusic" else match
-        title = attrs.get("name") or attrs.get("title")
-        artist = attrs.get("artistName") or attrs.get("artist", {}).get("name")
-        return url, title, artist
-    except Exception as e:
-        logger.warning("UPC search on %s failed: %s", target_platform, e)
-        return None, None, None
+def _ctx(platform: str, country: str | None = None) -> dict:
+    """Platform-specific kwargs for client calls (currently just Apple storefront)."""
+    if platform == "appleMusic":
+        return {"storefront": country or DEFAULT_STOREFRONT}
+    return {}
 
 
 async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
@@ -161,22 +65,24 @@ async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None
 
 async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
     # Try ISRC path first (source creds required).
-    isrc, title, artist = await _get_track_isrc(source)
+    isrc, title, artist = await _lookup_identifier(
+        source, fetch="get_track", extract="extract_isrc", label="ISRC",
+    )
     if isrc:
-        url, match_title, match_artist = await _search_track_by_isrc(target_platform, isrc)
-        if url:
-            return KurlMatch(
-                url=url,
-                title=match_title or title,
-                artist=match_artist or artist,
-                via="isrc",
-            )
+        match = await _search_by_identifier(
+            target_platform, isrc,
+            search="search_by_isrc", url_getter="extract_track_url", via="isrc",
+            hint_title=title, hint_artist=artist,
+        )
+        if match:
+            return match
 
     # Fallback: scrape metadata from source, search target API by title + artist.
     if not title or not artist:
-        parsed_track = ParsedTrack(source.platform, source.id)
-        source_url = _build_source_url(source)
-        scraped_title, scraped_artist = await metadata.fetch_metadata(parsed_track, source_url)
+        scraped_title, scraped_artist = await metadata.fetch_metadata(
+            ParsedTrack(source.platform, source.id),
+            _build_source_url(source),
+        )
         title = title or scraped_title
         artist = artist or scraped_artist
 
@@ -186,27 +92,140 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
     return await _search_track_by_metadata(target_platform, title, artist)
 
 
-async def _search_track_by_metadata(target_platform: str, title: str, artist: str) -> KurlMatch | None:
+async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
+    upc, title, artist = await _lookup_identifier(
+        source, fetch="get_album", extract="extract_upc",
+        metadata_fn="extract_album_metadata", label="UPC",
+    )
+    if not upc:
+        return None
+
+    return await _search_by_identifier(
+        target_platform, upc,
+        search="search_by_upc", url_getter="extract_album_url", via="upc",
+        metadata_fn="extract_album_metadata",
+        hint_title=title, hint_artist=artist,
+    )
+
+
+async def _kurl_artist(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
+    """Artist matching by name -- lower confidence than ISRC/UPC."""
+    source_client = _get_client(source.platform)
+    if not source_client:
+        return None
+
+    try:
+        artist_data = await source_client.get_artist(source.id, **_ctx(source.platform, source.country))
+        name = source_client.extract_artist_name(artist_data)
+    except Exception as e:
+        logger.warning("Failed to get artist name from %s: %s", source.platform, e)
+        return None
+
+    if not name:
+        return None
+
+    target_client = _get_client(target_platform)
+    if not target_client:
+        return None
+
+    try:
+        match = await target_client.search_artist(name, **_ctx(target_platform))
+        if not match:
+            return None
+        url = target_client.extract_artist_url(match)
+        if not url:
+            return None
+        return KurlMatch(url=url, title=name, via="name")
+    except Exception as e:
+        logger.warning("Artist search on %s failed: %s", target_platform, e)
+        return None
+
+
+async def _lookup_identifier(
+    source: ParsedMusicUrl,
+    *,
+    fetch: str,
+    extract: str,
+    label: str,
+    metadata_fn: str = "extract_metadata",
+) -> tuple[str | None, str | None, str | None]:
+    """Fetch an identifier (ISRC/UPC) + metadata from the source platform.
+
+    Returns (identifier, title, artist). Any can be None on failure.
+    """
+    client = _get_client(source.platform)
+    if not client:
+        return None, None, None
+
+    try:
+        entity = await getattr(client, fetch)(source.id, **_ctx(source.platform, source.country))
+        identifier = getattr(client, extract)(entity)
+        title, artist = getattr(client, metadata_fn)(entity)
+        logger.info(
+            "Source %s %s=%s id=%s (%s - %s)",
+            source.platform, label, identifier, source.id, artist, title,
+        )
+        return identifier, title, artist
+    except Exception as e:
+        logger.warning("Failed to get %s from %s: %s", label, source.platform, e)
+        return None, None, None
+
+
+async def _search_by_identifier(
+    target_platform: str,
+    identifier: str,
+    *,
+    search: str,
+    url_getter: str,
+    via: str,
+    metadata_fn: str = "extract_metadata",
+    hint_title: str | None = None,
+    hint_artist: str | None = None,
+) -> KurlMatch | None:
+    """Search the target platform by ISRC or UPC and build a KurlMatch."""
+    client = _get_client(target_platform)
+    if not client:
+        return None
+
+    try:
+        match = await getattr(client, search)(identifier, **_ctx(target_platform))
+        if not match:
+            return None
+        url = getattr(client, url_getter)(match)
+        if not url:
+            return None
+        title, artist = getattr(client, metadata_fn)(match)
+        return KurlMatch(
+            url=url,
+            title=title or hint_title,
+            artist=artist or hint_artist,
+            via=via,
+        )
+    except Exception as e:
+        logger.warning("%s search on %s failed: %s", via.upper(), target_platform, e)
+        return None
+
+
+async def _search_track_by_metadata(
+    target_platform: str, title: str, artist: str,
+) -> KurlMatch | None:
     """Search a target platform by title + artist. Lower confidence than ISRC."""
     client = _get_client(target_platform)
     if not client or not hasattr(client, "search_track"):
         return None
 
     try:
-        match = await client.search_track(title, artist)
+        match = await client.search_track(title, artist, **_ctx(target_platform))
         if not match:
             return None
-
-        if target_platform == "appleMusic":
-            url = client.extract_song_url(match)
-        else:
-            url = client.extract_track_url(match)
-
+        url = client.extract_track_url(match)
         if not url:
             return None
-
         match_title, match_artist = client.extract_metadata(match)
-        logger.info("Metadata search on %s: %s - %s -> %s", target_platform, artist, title, url)
+        logger.info(
+            "Metadata search on %s: %s - %s -> %s",
+            target_platform, artist, title, url,
+        )
         return KurlMatch(
             url=url,
             title=match_title or title,
@@ -220,81 +239,4 @@ async def _search_track_by_metadata(target_platform: str, title: str, artist: st
 
 def _build_source_url(source: ParsedMusicUrl) -> str:
     """Reconstruct a URL from a parsed source for metadata scraping."""
-    if source.platform == "spotify":
-        return f"https://open.spotify.com/track/{source.id}"
-    if source.platform == "appleMusic":
-        country = source.country or "us"
-        if source.album_id:
-            return f"https://music.apple.com/{country}/album/_/{source.album_id}?i={source.id}"
-        return f"https://music.apple.com/{country}/song/_/{source.id}"
-    if source.platform == "deezer":
-        return f"https://www.deezer.com/track/{source.id}"
-    if source.platform == "tidal":
-        return f"https://tidal.com/track/{source.id}"
-    if source.platform == "youtubeMusic":
-        return f"https://music.youtube.com/watch?v={source.id}"
-    if source.platform == "amazonMusic":
-        if source.album_id:
-            return f"https://music.amazon.com/albums/{source.album_id}?trackAsin={source.id}"
-        return f"https://music.amazon.com/albums/{source.id}"
-    return ""
-
-
-async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
-    upc, title, artist = await _get_album_upc(source)
-    if not upc:
-        return None
-
-    url, match_title, match_artist = await _search_album_by_upc(target_platform, upc)
-    if not url:
-        return None
-
-    return KurlMatch(
-        url=url,
-        title=match_title or title,
-        artist=match_artist or artist,
-        via="upc",
-    )
-
-
-async def _kurl_artist(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
-    """Artist matching by name -- lower confidence than ISRC/UPC."""
-    source_client = _get_client(source.platform)
-    if not source_client:
-        return None
-
-    try:
-        if source.platform == "appleMusic":
-            artist_data = await source_client.get_artist(source.id, storefront=source.country or "us")
-            name = artist_data.get("attributes", {}).get("name")
-        else:
-            artist_data = await source_client.get_artist(source.id)
-            name = artist_data.get("name")
-
-        if not name:
-            return None
-    except Exception as e:
-        logger.warning("Failed to get artist name from %s: %s", source.platform, e)
-        return None
-
-    target_client = _get_client(target_platform)
-    if not target_client:
-        return None
-
-    try:
-        match = await target_client.search_artist(name)
-        if not match:
-            return None
-
-        if target_platform == "appleMusic":
-            url = target_client.extract_artist_url(match)
-        else:
-            url = target_client.extract_artist_url(match)
-
-        if not url:
-            return None
-
-        return KurlMatch(url=url, title=name, via="name")
-    except Exception as e:
-        logger.warning("Artist search on %s failed: %s", target_platform, e)
-        return None
+    return build_track_url(source.platform, source.id, source.country, source.album_id)

@@ -38,7 +38,8 @@ _TIDAL_ARTIST = re.compile(r"/(?:browse/)?artist/(\d+)")
 _AMAZON_ALBUM = re.compile(r"/albums/([A-Z0-9]+)")
 _AMAZON_ARTIST = re.compile(r"/artists/([A-Z0-9]+)")
 
-_YOUTUBE_MUSIC = ("music.youtube.com",)
+_YOUTUBE_HOSTS = ("music.youtube.com", "youtube.com", "www.youtube.com", "m.youtube.com")
+_YOUTU_BE_PATH = re.compile(r"^/([A-Za-z0-9_-]{6,})")
 
 _SEARCH_PATTERNS = (
     re.compile(r"spotify\.com/search/"),
@@ -68,7 +69,10 @@ def parse_music_url(url: str) -> ParsedMusicUrl | None:
     if "music.apple.com" in host:
         return _parse_apple_music(path, query)
 
-    if any(h in host for h in _YOUTUBE_MUSIC):
+    if host == "youtu.be":
+        return _parse_youtu_be(path)
+
+    if any(h in host for h in _YOUTUBE_HOSTS):
         return _parse_youtube_music(query)
 
     if "deezer.com" in host:
@@ -143,6 +147,13 @@ def _parse_youtube_music(query: dict) -> ParsedMusicUrl | None:
     if list_id:
         return ParsedMusicUrl("youtubeMusic", "album", list_id)
 
+    return None
+
+
+def _parse_youtu_be(path: str) -> ParsedMusicUrl | None:
+    m = _YOUTU_BE_PATH.match(path)
+    if m:
+        return ParsedMusicUrl("youtubeMusic", "track", m.group(1))
     return None
 
 

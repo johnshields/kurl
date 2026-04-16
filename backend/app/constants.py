@@ -44,9 +44,51 @@ SEARCH_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/search/{query}",
     "appleMusic": "https://music.apple.com/search?term={query}",
     "youtubeMusic": "https://music.youtube.com/search?q={query}",
+    "deezer": "https://www.deezer.com/search/{query}",
+    "tidal": "https://tidal.com/search/{query}",
+    "amazonMusic": "https://music.amazon.com/search/{query}",
+    "pandora": "https://www.pandora.com/search/{query}",
+}
+
+"""
+Canonical URL templates
+Used for rebuilding a platform URL from a parsed entity (track/album/artist id).
+Apple Music and Amazon tracks live inside albums, so use TRACK_WITH_ALBUM when
+album_id is known.
+"""
+TRACK_URL_TEMPLATES = {
+    "spotify": "https://open.spotify.com/track/{id}",
+    "appleMusic": "https://music.apple.com/{country}/song/_/{id}",
+    "deezer": "https://www.deezer.com/track/{id}",
+    "tidal": "https://tidal.com/track/{id}",
+    "youtubeMusic": "https://music.youtube.com/watch?v={id}",
+    "amazonMusic": "https://music.amazon.com/albums/{id}",
+}
+
+TRACK_WITH_ALBUM_URL_TEMPLATES = {
+    "appleMusic": "https://music.apple.com/{country}/album/_/{album_id}?i={id}",
+    "amazonMusic": "https://music.amazon.com/albums/{album_id}?trackAsin={id}",
+}
+
+ALBUM_URL_TEMPLATES = {
+    "spotify": "https://open.spotify.com/album/{id}",
+    "appleMusic": "https://music.apple.com/{country}/album/_/{id}",
+    "deezer": "https://www.deezer.com/album/{id}",
+    "tidal": "https://tidal.com/album/{id}",
+    "amazonMusic": "https://music.amazon.com/albums/{id}",
+}
+
+ARTIST_URL_TEMPLATES = {
+    "spotify": "https://open.spotify.com/artist/{id}",
+    "appleMusic": "https://music.apple.com/{country}/artist/_/{id}",
+    "deezer": "https://www.deezer.com/artist/{id}",
+    "tidal": "https://tidal.com/artist/{id}",
+    "amazonMusic": "https://music.amazon.com/artists/{id}",
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
+
+YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={id}&format=json"
 
 SCRAPER_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -74,3 +116,4 @@ DEFAULT_COUNTRY = "US"
 DEFAULT_STOREFRONT = "us"
 
 CLIENT_TIMEOUT = 10.0
+SCRAPER_TIMEOUT = 5.0

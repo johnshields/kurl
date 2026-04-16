@@ -1,10 +1,10 @@
-import base64
 import time
 
 import httpx
 
 from app.config import settings
 from app.constants import CLIENT_TIMEOUT, SPOTIFY_API_BASE, SPOTIFY_TOKEN_URL
+from clients.platforms._oauth import fetch_client_credentials_token
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -28,24 +28,14 @@ async def _get_token() -> str:
     if _token and time.time() < _token_expires_at - 60:
         return _token
 
-    credentials = base64.b64encode(
-        f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode()
-    ).decode()
-
-    response = await _get_client().post(
+    _token, expires_in = await fetch_client_credentials_token(
+        _get_client(),
         SPOTIFY_TOKEN_URL,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "client_credentials"},
+        settings.SPOTIFY_CLIENT_ID,
+        settings.SPOTIFY_CLIENT_SECRET,
     )
-    response.raise_for_status()
-
-    data = response.json()
-    _token = data["access_token"]
-    _token_expires_at = time.time() + data["expires_in"]
-    logger.info("Spotify token refreshed, expires in %ss", data["expires_in"])
+    _token_expires_at = time.time() + expires_in
+    logger.info("Spotify token refreshed, expires in %ss", expires_in)
     return _token
 
 
@@ -108,11 +98,11 @@ async def search_track(title: str, artist: str) -> dict | None:
     return items[0] if items else None
 
 
-def extract_track_isrc(track: dict) -> str | None:
+def extract_isrc(track: dict) -> str | None:
     return track.get("external_ids", {}).get("isrc")
 
 
-def extract_album_upc(album: dict) -> str | None:
+def extract_upc(album: dict) -> str | None:
     return album.get("external_ids", {}).get("upc")
 
 
@@ -132,3 +122,13 @@ def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     title = track.get("name")
     artists = [a.get("name") for a in track.get("artists", []) if a.get("name")]
     return title, ", ".join(artists) if artists else None
+
+
+def extract_album_metadata(album: dict) -> tuple[str | None, str | None]:
+    title = album.get("name")
+    artists = [a.get("name") for a in album.get("artists", []) if a.get("name")]
+    return title, ", ".join(artists) if artists else None
+
+
+def extract_artist_name(artist: dict) -> str | None:
+    return artist.get("name")

@@ -60,9 +60,9 @@ def is_configured() -> bool:
     return bool(settings.APPLE_TEAM_ID and settings.APPLE_KEY_ID and settings.APPLE_PRIVATE_KEY)
 
 
-async def get_song(song_id: str, storefront: str = DEFAULT_STOREFRONT) -> dict:
+async def get_track(track_id: str, storefront: str = DEFAULT_STOREFRONT) -> dict:
     """GET /v1/catalog/{storefront}/songs/{id}"""
-    data = await _api_get(f"/catalog/{storefront}/songs/{song_id}")
+    data = await _api_get(f"/catalog/{storefront}/songs/{track_id}")
     items = data.get("data", [])
     return items[0] if items else {}
 
@@ -111,6 +111,16 @@ async def search_artist(name: str, storefront: str = DEFAULT_STOREFRONT) -> dict
     return results[0] if results else None
 
 
+async def search_track(title: str, artist: str, storefront: str = DEFAULT_STOREFRONT) -> dict | None:
+    """Search for a track by title and artist. Returns the first match or None."""
+    data = await _api_get(
+        f"/catalog/{storefront}/search",
+        params={"term": f"{artist} {title}", "types": "songs", "limit": 1},
+    )
+    results = data.get("results", {}).get("songs", {}).get("data", [])
+    return results[0] if results else None
+
+
 def extract_isrc(song: dict) -> str | None:
     return song.get("attributes", {}).get("isrc")
 
@@ -119,8 +129,8 @@ def extract_upc(album: dict) -> str | None:
     return album.get("attributes", {}).get("upc")
 
 
-def extract_song_url(song: dict) -> str | None:
-    return song.get("attributes", {}).get("url")
+def extract_track_url(track: dict) -> str | None:
+    return track.get("attributes", {}).get("url")
 
 
 def extract_album_url(album: dict) -> str | None:
@@ -131,6 +141,15 @@ def extract_artist_url(artist: dict) -> str | None:
     return artist.get("attributes", {}).get("url")
 
 
-def extract_metadata(song: dict) -> tuple[str | None, str | None]:
-    attrs = song.get("attributes", {})
+def extract_metadata(track: dict) -> tuple[str | None, str | None]:
+    attrs = track.get("attributes", {})
     return attrs.get("name"), attrs.get("artistName")
+
+
+def extract_album_metadata(album: dict) -> tuple[str | None, str | None]:
+    attrs = album.get("attributes", {})
+    return attrs.get("name"), attrs.get("artistName")
+
+
+def extract_artist_name(artist: dict) -> str | None:
+    return artist.get("attributes", {}).get("name")

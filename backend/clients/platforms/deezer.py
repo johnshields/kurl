@@ -99,3 +99,13 @@ def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     title = track.get("title")
     artist = track.get("artist", {}).get("name")
     return title, artist
+
+
+def extract_album_metadata(album: dict) -> tuple[str | None, str | None]:
+    title = album.get("title")
+    artist = album.get("artist", {}).get("name")
+    return title, artist
+
+
+def extract_artist_name(artist: dict) -> str | None:
+    return artist.get("name")

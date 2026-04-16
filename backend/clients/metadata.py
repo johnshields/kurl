@@ -1,8 +1,9 @@
 import json
+import re
 
 import httpx
 
-from app.constants import SCRAPER_USER_AGENT, SPOTIFY_EMBED_URL
+from app.constants import SCRAPER_TIMEOUT, SCRAPER_USER_AGENT, SPOTIFY_EMBED_URL, YOUTUBE_OEMBED_URL
 from utils.logging import get_logger
 from utils.scraping import (
     extract_next_data,
@@ -22,7 +23,7 @@ def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
         _client = httpx.AsyncClient(
-            timeout=5.0,
+            timeout=SCRAPER_TIMEOUT,
             follow_redirects=True,
             headers={"User-Agent": SCRAPER_USER_AGENT},
         )
@@ -36,6 +37,8 @@ async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str
             return await _fetch_spotify(parsed.track_id)
         if parsed.platform == "appleMusic":
             return await _fetch_og(url)
+        if parsed.platform == "youtubeMusic":
+            return await _fetch_youtube(parsed.track_id)
     except Exception as e:
         logger.warning("Metadata fetch failed for %s: %s", parsed.platform, e)
     return None, None
@@ -57,6 +60,58 @@ async def _fetch_spotify(track_id: str) -> tuple[str | None, str | None]:
     title = entity.get("title")
     artists = [a.get("name") for a in entity.get("artists", []) if a.get("name")]
     return title, ", ".join(artists) if artists else None
+
+
+async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None]:
+    """YouTube oEmbed returns title + channel name -- no API key required."""
+    response = await _get_client().get(YOUTUBE_OEMBED_URL.format(id=video_id))
+    if response.status_code != 200:
+        logger.warning("YouTube oEmbed returned %s", response.status_code)
+        return None, None
+
+    data = response.json()
+    raw_title = data.get("title")
+    author = data.get("author_name")
+    if not raw_title:
+        return None, None
+
+    title, artist = _parse_youtube_title(raw_title, author)
+    return title, artist
+
+
+def _parse_youtube_title(raw: str, author: str | None) -> tuple[str, str | None]:
+    """Parse 'Artist - Title' or fall back to channel name as artist."""
+    cleaned = _strip_youtube_noise(raw)
+
+    # Most music videos: "Artist - Title" or "Artist – Title".
+    for sep in (" - ", " \u2013 ", " \u2014 "):
+        if sep in cleaned:
+            left, right = cleaned.split(sep, 1)
+            return right.strip(), left.strip()
+
+    # Fall back to channel name (often "ArtistVEVO" or "Artist - Topic").
+    artist = None
+    if author:
+        artist = author.removesuffix("VEVO").removesuffix(" - Topic").strip() or None
+
+    return cleaned, artist
+
+
+_YOUTUBE_NOISE_PATTERNS = (
+    re.compile(
+        r"\s*[\(\[][^\)\]]*(?:official|music|video|audio|lyrics?|hd|4k|mv|visualizer)[^\)\]]*[\)\]]",
+        re.I,
+    ),
+    re.compile(r"\s*[\(\[][^\)\]]*(?:feat\.?|ft\.?)[^\)\]]*[\)\]]", re.I),
+)
+
+
+def _strip_youtube_noise(title: str) -> str:
+    """Remove common YouTube suffixes like '(Official Music Video)'."""
+    result = title
+    for p in _YOUTUBE_NOISE_PATTERNS:
+        result = p.sub("", result)
+    return result.strip()
 
 
 async def _fetch_og(url: str) -> tuple[str | None, str | None]:
