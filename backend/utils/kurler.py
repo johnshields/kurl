@@ -66,13 +66,20 @@ async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None
 async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
     # Try ISRC path first (source creds required).
     isrc, title, artist = await _lookup_identifier(
-        source, fetch="get_track", extract="extract_isrc", label="ISRC",
+        source,
+        fetch="get_track",
+        extract="extract_isrc",
+        label="ISRC",
     )
     if isrc:
         match = await _search_by_identifier(
-            target_platform, isrc,
-            search="search_by_isrc", url_getter="extract_track_url", via="isrc",
-            hint_title=title, hint_artist=artist,
+            target_platform,
+            isrc,
+            search="search_by_isrc",
+            url_getter="extract_track_url",
+            via="isrc",
+            hint_title=title,
+            hint_artist=artist,
         )
         if match:
             return match
@@ -94,17 +101,24 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
 
 async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
     upc, title, artist = await _lookup_identifier(
-        source, fetch="get_album", extract="extract_upc",
-        metadata_fn="extract_album_metadata", label="UPC",
+        source,
+        fetch="get_album",
+        extract="extract_upc",
+        metadata_fn="extract_album_metadata",
+        label="UPC",
     )
     if not upc:
         return None
 
     return await _search_by_identifier(
-        target_platform, upc,
-        search="search_by_upc", url_getter="extract_album_url", via="upc",
+        target_platform,
+        upc,
+        search="search_by_upc",
+        url_getter="extract_album_url",
+        via="upc",
         metadata_fn="extract_album_metadata",
-        hint_title=title, hint_artist=artist,
+        hint_title=title,
+        hint_artist=artist,
     )
 
 
@@ -163,7 +177,12 @@ async def _lookup_identifier(
         title, artist = getattr(client, metadata_fn)(entity)
         logger.info(
             "Source %s %s=%s id=%s (%s - %s)",
-            source.platform, label, identifier, source.id, artist, title,
+            source.platform,
+            label,
+            identifier,
+            source.id,
+            artist,
+            title,
         )
         return identifier, title, artist
     except Exception as e:
@@ -207,7 +226,9 @@ async def _search_by_identifier(
 
 
 async def _search_track_by_metadata(
-    target_platform: str, title: str, artist: str,
+    target_platform: str,
+    title: str,
+    artist: str,
 ) -> KurlMatch | None:
     """Search a target platform by title + artist. Lower confidence than ISRC."""
     client = _get_client(target_platform)
@@ -224,7 +245,10 @@ async def _search_track_by_metadata(
         match_title, match_artist = client.extract_metadata(match)
         logger.info(
             "Metadata search on %s: %s - %s -> %s",
-            target_platform, artist, title, url,
+            target_platform,
+            artist,
+            title,
+            url,
         )
         return KurlMatch(
             url=url,

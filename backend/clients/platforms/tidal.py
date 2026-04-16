@@ -105,12 +105,20 @@ async def search_track(title: str, artist: str) -> dict | None:
 async def _search_first(query: str, relation: str) -> dict | None:
     """Tidal search (v2) -- /searchresults/{query}?include={relation}.
 
-    Returns the first resource of the requested type from the `included` array.
+    Tidal returns JSON:API: `data.relationships.{relation}.data[]` is the ordered
+    list of `{type, id}` pointers; `included[]` holds the full resources. Return
+    the first resource in relevance order.
     """
     encoded = quote(query, safe="")
-    data = await _api_get(f"/searchresults/{encoded}", params={"include": relation})
+    data = await _api_get(f"/searchResults/{encoded}", params={"include": relation})
+
+    refs = data.get("data", {}).get("relationships", {}).get(relation, {}).get("data", [])
+    if not refs:
+        return None
+    first_id = refs[0].get("id")
+
     for resource in data.get("included", []):
-        if resource.get("type") == relation:
+        if resource.get("type") == relation and resource.get("id") == first_id:
             return resource
     return None
 

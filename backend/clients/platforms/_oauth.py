@@ -2,6 +2,7 @@
 OAuth client-credentials helper
 Shared between Spotify and Tidal -- both use the same base64 + POST flow.
 """
+
 import base64
 
 import httpx

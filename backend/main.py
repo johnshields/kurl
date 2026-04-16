@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import NAME, VERSION, DESCRIPTION, ENVIRONMENT, HOST, PORT, BASE_URL, CORS_ORIGINS
-from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
 from api.middleware.request_logger import RequestLoggerMiddleware
 from api.routes import docs, system, urls
+from app.config import BASE_URL, CORS_ORIGINS, DESCRIPTION, ENVIRONMENT, HOST, NAME, PORT, VERSION
+from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
 from clients import cache
 from utils.logging import get_logger
 from utils.responses import error

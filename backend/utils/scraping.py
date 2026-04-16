@@ -2,26 +2,14 @@ import re
 
 from app.constants import PLATFORM_NAMES
 
-_OG_TITLE = re.compile(
-    r'<meta\s+property=["\']og:title["\']\s+content="([^"]+)"', re.I
-)
-_OG_TITLE_SQ = re.compile(
-    r"<meta\s+property=[\"']og:title[\"']\s+content='([^']+)'", re.I
-)
-_OG_DESC = re.compile(
-    r'<meta\s+property=["\']og:description["\']\s+content="([^"]+)"', re.I
-)
-_OG_DESC_SQ = re.compile(
-    r"<meta\s+property=[\"']og:description[\"']\s+content='([^']+)'", re.I
-)
-_NEXT_DATA = re.compile(
-    r'<script[^>]*id="__NEXT_DATA__"[^>]*>([^<]+)</script>'
-)
+_OG_TITLE = re.compile(r'<meta\s+property=["\']og:title["\']\s+content="([^"]+)"', re.I)
+_OG_TITLE_SQ = re.compile(r"<meta\s+property=[\"']og:title[\"']\s+content='([^']+)'", re.I)
+_OG_DESC = re.compile(r'<meta\s+property=["\']og:description["\']\s+content="([^"]+)"', re.I)
+_OG_DESC_SQ = re.compile(r"<meta\s+property=[\"']og:description[\"']\s+content='([^']+)'", re.I)
+_NEXT_DATA = re.compile(r'<script[^>]*id="__NEXT_DATA__"[^>]*>([^<]+)</script>')
 _BY_SPLIT = re.compile(r"^(.*?)\s+by\s+(.+)$", re.I)
 _PLATFORM_SUFFIX = re.compile(
-    r"\s+on\s+("
-    + "|".join(re.escape(name).replace(r"\ ", r"\s+") for name in PLATFORM_NAMES.values())
-    + r")\s*$",
+    r"\s+on\s+(" + "|".join(re.escape(name).replace(r"\ ", r"\s+") for name in PLATFORM_NAMES.values()) + r")\s*$",
     re.I,
 )
 
@@ -39,6 +27,7 @@ def extract_og_description(html: str) -> str | None:
 def _decode_entities(text: str) -> str:
     """Decode common HTML entities (&#x27; &#39; &amp; etc.)."""
     import html
+
     return html.unescape(text)
 
 

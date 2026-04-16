@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 @dataclass
 class ParsedTrack:
     """Backwards-compatible track-only result (used by existing code)."""
+
     platform: str
     track_id: str
 
@@ -13,11 +14,12 @@ class ParsedTrack:
 @dataclass
 class ParsedMusicUrl:
     """Expanded parse result supporting tracks, albums, and artists."""
-    platform: str       # spotify, appleMusic, youtubeMusic, deezer, tidal, amazonMusic
-    entity_type: str    # track, album, artist
-    id: str             # platform-specific ID
-    country: str | None = None     # Apple Music / Deezer country code
-    album_id: str | None = None    # parent album for Apple Music / Amazon tracks
+
+    platform: str  # spotify, appleMusic, youtubeMusic, deezer, tidal, amazonMusic
+    entity_type: str  # track, album, artist
+    id: str  # platform-specific ID
+    country: str | None = None  # Apple Music / Deezer country code
+    album_id: str | None = None  # parent album for Apple Music / Amazon tracks
 
 
 _SPOTIFY_TRACK = re.compile(r"/track/([A-Za-z0-9]+)")
@@ -118,7 +120,9 @@ def _parse_apple_music(path: str, query: dict) -> ParsedMusicUrl | None:
     m = _APPLE_ARTIST.search(path)
     if m:
         return ParsedMusicUrl(
-            "appleMusic", "artist", m.group("artist_id"),
+            "appleMusic",
+            "artist",
+            m.group("artist_id"),
             country=m.group("country"),
         )
 
@@ -130,8 +134,11 @@ def _parse_apple_music(path: str, query: dict) -> ParsedMusicUrl | None:
 
         if track_id:
             return ParsedMusicUrl(
-                "appleMusic", "track", track_id,
-                country=country, album_id=album_id,
+                "appleMusic",
+                "track",
+                track_id,
+                country=country,
+                album_id=album_id,
             )
         return ParsedMusicUrl("appleMusic", "album", album_id, country=country)
 
@@ -197,7 +204,10 @@ def _parse_amazon(path: str, query: dict) -> ParsedMusicUrl | None:
 
         if track_asin:
             return ParsedMusicUrl(
-                "amazonMusic", "track", track_asin, album_id=album_id,
+                "amazonMusic",
+                "track",
+                track_asin,
+                album_id=album_id,
             )
         return ParsedMusicUrl("amazonMusic", "album", album_id)
 

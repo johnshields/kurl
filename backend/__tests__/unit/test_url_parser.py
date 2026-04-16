@@ -2,6 +2,7 @@
 Tests for utils.url_parser -- the URL to (platform, entity_type, id) mapper.
 Most critical correctness surface in the codebase.
 """
+
 from utils.url_parser import (
     ParsedMusicUrl,
     ParsedTrack,
@@ -34,8 +35,11 @@ class TestAppleMusic:
     def test_track_url_with_country_and_album(self):
         r = parse_music_url("https://music.apple.com/au/album/day-one/1791161215?i=1791161543")
         assert r == ParsedMusicUrl(
-            "appleMusic", "track", "1791161543",
-            country="au", album_id="1791161215",
+            "appleMusic",
+            "track",
+            "1791161543",
+            country="au",
+            album_id="1791161215",
         )
 
     def test_album_url_without_track_param(self):
@@ -45,7 +49,10 @@ class TestAppleMusic:
     def test_artist_url(self):
         r = parse_music_url("https://music.apple.com/au/artist/adele/262836961")
         assert r == ParsedMusicUrl(
-            "appleMusic", "artist", "262836961", country="au",
+            "appleMusic",
+            "artist",
+            "262836961",
+            country="au",
         )
 
     def test_different_country_storefront(self):
@@ -106,7 +113,10 @@ class TestAmazonMusic:
     def test_track_url(self):
         r = parse_music_url("https://music.amazon.com/albums/B0042GBQS8?trackAsin=B0042GB123")
         assert r == ParsedMusicUrl(
-            "amazonMusic", "track", "B0042GB123", album_id="B0042GBQS8",
+            "amazonMusic",
+            "track",
+            "B0042GB123",
+            album_id="B0042GBQS8",
         )
 
     def test_album_url_without_track(self):

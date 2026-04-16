@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from uvicorn.config import LOGGING_CONFIG
 

@@ -1,6 +1,7 @@
 """
 Shared fixtures and test config.
 """
+
 import os
 import sys
 from pathlib import Path

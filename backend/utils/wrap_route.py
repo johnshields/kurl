@@ -20,5 +20,7 @@ def wrap_route(label: str):
             except Exception as e:
                 logger.error("%s error: %s", label, e, exc_info=True)
                 raise
+
         return wrapper
+
     return decorator

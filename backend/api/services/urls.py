@@ -37,9 +37,7 @@ async def kurl(url: str, target_platform: str):
     if is_search_url(url):
         raise HTTPException(status_code=400, detail=ERROR_MESSAGES["SEARCH_URL"])
 
-    cache_key = hashlib.md5(
-        f"{url}{target_platform}".encode()
-    ).hexdigest()
+    cache_key = hashlib.md5(f"{url}{target_platform}".encode()).hexdigest()
 
     cached = await cache.get(cache_key)
     if cached:
@@ -93,9 +91,7 @@ async def kurl(url: str, target_platform: str):
     else:
         if odesli_data:
             available = sorted(odesli_data.get("linksByPlatform", {}).keys())
-            logger.warning(
-                "No %s URL; Odesli returned platforms: %s", target_platform, available
-            )
+            logger.warning("No %s URL; Odesli returned platforms: %s", target_platform, available)
 
         # If Odesli didn't give us metadata, try scraping the source URL directly.
         if (not title or not artist) and parsed:

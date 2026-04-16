@@ -1,0 +1,28 @@
+line-length = 120
+target-version = "py311"
+
+exclude = [
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+]
+
+[lint]
+# Pragmatic baseline: errors, pyflakes, imports, basic bugbear.
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501", # line-too-long -- handled by formatter
+    "B008", # do not call function-with-default-arg in defaults (FastAPI Depends)
+]
+
+[lint.per-file-ignores]
+"__tests__/**" = ["B011"]  # assert False is fine in tests
+
+[format]
+quote-style = "double"
