@@ -32,5 +32,20 @@ class Settings(BaseSettings):
     ODESLI_API_KEY: str | None = None
     CACHE_TTL_SECONDS: int = 86400
 
+    # Spotify (OAuth client credentials)
+    SPOTIFY_CLIENT_ID: str | None = None
+    SPOTIFY_CLIENT_SECRET: str | None = None
+
+    # Apple Music (JWT via MusicKit)
+    APPLE_TEAM_ID: str | None = None
+    APPLE_KEY_ID: str | None = None
+    APPLE_PRIVATE_KEY: str | None = None
+
+    # Tidal (OAuth client credentials)
+    TIDAL_CLIENT_ID: str | None = None
+    TIDAL_CLIENT_SECRET: str | None = None
+
+    # Deezer requires no credentials
+
 
 settings = Settings()

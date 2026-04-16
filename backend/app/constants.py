@@ -52,3 +52,25 @@ SCRAPER_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
+
+"""
+Platform API endpoints
+Base URLs and auth endpoints for direct ISRC/UPC resolution.
+"""
+
+SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_API_BASE = "https://api.spotify.com/v1"
+
+APPLE_API_BASE = "https://api.music.apple.com/v1"
+APPLE_TOKEN_LIFETIME = 3600 * 12
+
+DEEZER_API_BASE = "https://api.deezer.com"
+
+TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
+TIDAL_API_BASE = "https://openapi.tidal.com"
+TIDAL_ACCEPT_HEADER = "application/vnd.tidal.v1+json"
+
+DEFAULT_COUNTRY = "US"
+DEFAULT_STOREFRONT = "us"
+
+CLIENT_TIMEOUT = 10.0

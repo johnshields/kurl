@@ -5,11 +5,12 @@ from fastapi import HTTPException
 
 from app.constants import ERROR_MESSAGES, PLATFORMS
 from clients import cache, metadata, odesli
+from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
 from utils.responses import success
 from utils.search_url import build_search_url
 from utils.url import normalise_url
-from utils.url_parser import is_search_url, parse_track
+from utils.url_parser import is_search_url, parse_music_url, parse_track
 from utils.wrap_route import wrap_route
 
 logger = get_logger()
@@ -17,7 +18,13 @@ logger = get_logger()
 
 @wrap_route("Kurl")
 async def kurl(url: str, target_platform: str):
-    """Kurl a streaming URL to the target platform via Odesli."""
+    """Kurl a streaming URL to the target platform.
+
+    Resolution order:
+    1. Direct ISRC/UPC/name via platform APIs (fast path)
+    2. Odesli by-id or by-url (fallback)
+    3. Metadata scraping + search URL (last resort)
+    """
     if target_platform not in PLATFORMS:
         raise HTTPException(
             status_code=400,
@@ -41,6 +48,28 @@ async def kurl(url: str, target_platform: str):
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
         return success("Kurled from cache", data)
 
+    # Try direct ISRC/UPC resolution via platform APIs first.
+    parsed_full = parse_music_url(url)
+    if parsed_full:
+        logger.info("Parsed: %s %s id=%s", parsed_full.platform, parsed_full.entity_type, parsed_full.id)
+        try:
+            match = await kurl_direct(parsed_full, target_platform)
+            if match:
+                logger.info("Direct kurl: %s - %s -> %s (via %s)", match.artist, match.title, match.url, match.via)
+                result = {
+                    "title": match.title,
+                    "artist": match.artist,
+                    "resolved_url": match.url,
+                    "platform": target_platform,
+                    "via": match.via,
+                }
+                await cache.set(cache_key, json.dumps(result))
+                result["cached"] = False
+                return success("Kurled", result)
+        except Exception as e:
+            logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
+
+    # Odesli fallback.
     parsed = parse_track(url)
     odesli_data: dict = {}
     odesli_error: HTTPException | None = None
