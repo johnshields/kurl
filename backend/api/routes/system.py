@@ -61,8 +61,7 @@ async def readiness_check():
     """Check that all configured platform clients can reach their APIs.
 
     Returns 200 if all configured clients are reachable, 503 if any fail.
-    Unconfigured clients are skipped (reported as 'skipped'). Redis is
-    optional -- its absence is not a failure.
+    Unconfigured clients are skipped (reported as 'skipped').
     """
     checks = await asyncio.gather(
         _check_redis(),

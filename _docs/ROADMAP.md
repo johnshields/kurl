@@ -50,17 +50,24 @@ flowchart TD
 - Amazon Music
 - Pandora
 
-All matched via ISRC through Odesli - no direct API deals needed. Full list with IDs and colours in [PLATFORMS.md](PLATFORMS.md).
+Matched via direct platform APIs (Spotify, Apple Music, Deezer, Tidal) with Odesli as fallback. Full list with IDs and colours in [PLATFORMS.md](PLATFORMS.md). ISRC resolution detail in [ISRC_KURLER.md](ISRC_KURLER.md).
 
 ## Phase 1 - anonymous MVP
 
-- [ ] Flutter share extension on iOS and Android
-- [ ] Platform picker UI
-- [ ] FastAPI `/api/kurl` endpoint
-- [ ] Odesli integration
-- [ ] Redis caching
-- [ ] System share sheet handoff
+- [x] Flutter share extension on iOS and Android
+- [x] Platform picker UI (all 6 platforms wired)
+- [x] FastAPI `/api/kurl` endpoint
+- [x] Odesli integration
+- [x] Redis caching
+- [x] System share sheet handoff
+- [x] ISRC/UPC resolver with direct platform APIs (Spotify, Deezer, Tidal live; Apple pending Dev Program enrolment)
+- [x] Metadata search fallback (YouTube oEmbed → target API)
+- [x] Search URL fallback for all 7 platforms
+- [x] `/api/readyz` per-client health probe
+- [x] CI pipeline (lint + 3.11/3.12 matrix tests + smoke)
+- [x] Test suite (94 tests)
 - [ ] Preferred platform saved locally (SQLite)
+- [ ] Universal links / deep-link into the kurl app from shared URLs
 - [ ] App Store + Play Store submission
 
 ## Phase 2 - social layer

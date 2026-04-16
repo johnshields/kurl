@@ -6,4 +6,4 @@ kurl intercepts music share links and converts them to whatever streaming servic
 
 ## Status
 
-Prototype.
+MVP backend shipped. Mobile share extension in progress.
