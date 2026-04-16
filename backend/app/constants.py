@@ -109,8 +109,8 @@ APPLE_TOKEN_LIFETIME = 3600 * 12
 DEEZER_API_BASE = "https://api.deezer.com"
 
 TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
-TIDAL_API_BASE = "https://openapi.tidal.com"
-TIDAL_ACCEPT_HEADER = "application/vnd.tidal.v1+json"
+TIDAL_API_BASE = "https://openapi.tidal.com/v2"
+TIDAL_ACCEPT_HEADER = "application/vnd.api+json"
 
 DEFAULT_COUNTRY = "US"
 DEFAULT_STOREFRONT = "us"
