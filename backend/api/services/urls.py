@@ -9,6 +9,7 @@ from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
 from utils.responses import success
 from utils.search_url import build_search_url
+from utils.short_links import is_short_link, resolve_short_link
 from utils.url import normalise_url
 from utils.url_parser import is_search_url, parse_music_url, parse_track
 from utils.wrap_route import wrap_route
@@ -32,6 +33,11 @@ async def kurl(url: str, target_platform: str):
         )
 
     url = normalise_url(url)
+
+    # Follow platform short links (spotify.link, dzr.page.link) to their canonical URL.
+    if is_short_link(url):
+        url = normalise_url(await resolve_short_link(url))
+
     logger.info("Kurling %s -> %s", url, target_platform)
 
     if is_search_url(url):

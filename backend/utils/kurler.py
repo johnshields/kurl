@@ -1,7 +1,8 @@
+import json
 from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT
-from clients import metadata
+from clients import cache, metadata
 from clients.platforms import apple, deezer, spotify, tidal
 from utils.canonical_url import build_track_url
 from utils.logging import get_logger
@@ -166,10 +167,22 @@ async def _lookup_identifier(
     """Fetch an identifier (ISRC/UPC) + metadata from the source platform.
 
     Returns (identifier, title, artist). Any can be None on failure.
+    Results are cached by (platform, entity_type, id) so repeat lookups
+    for the same source track across different targets only hit the API once.
     """
     client = _get_client(source.platform)
     if not client:
         return None, None, None
+
+    cache_key = f"{label.lower()}:{source.platform}:{source.entity_type}:{source.id}"
+    cached = await cache.get(cache_key)
+    if cached:
+        try:
+            data = json.loads(cached)
+            logger.info("Cache hit %s: %s", cache_key, data.get("id"))
+            return data.get("id"), data.get("title"), data.get("artist")
+        except Exception:
+            pass  # fall through to fresh fetch on bad cache value
 
     try:
         entity = await getattr(client, fetch)(source.id, **_ctx(source.platform, source.country))
@@ -184,6 +197,11 @@ async def _lookup_identifier(
             artist,
             title,
         )
+        if identifier:
+            await cache.set(
+                cache_key,
+                json.dumps({"id": identifier, "title": title, "artist": artist}),
+            )
         return identifier, title, artist
     except Exception as e:
         logger.warning("Failed to get %s from %s: %s", label, source.platform, e)

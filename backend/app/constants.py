@@ -42,7 +42,7 @@ ERROR_MESSAGES = {
 
 SEARCH_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/search/{query}",
-    "appleMusic": "https://music.apple.com/search?term={query}",
+    "appleMusic": "https://music.apple.com/us/search?term={query}",
     "youtubeMusic": "https://music.youtube.com/search?q={query}",
     "deezer": "https://www.deezer.com/search/{query}",
     "tidal": "https://tidal.com/search/{query}",

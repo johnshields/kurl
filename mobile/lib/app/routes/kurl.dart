@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/api_service.dart';
+import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -17,6 +18,11 @@ class KurlScreen extends StatefulWidget {
   @override
   State<KurlScreen> createState() => _KurlScreenState();
 }
+
+const _errorRed = Color(0xFFEF4444);
+const _borderIdle = Color(0xFF333333);
+const _borderFocused = Color(0xFF555555);
+const _neutralBg = Color(0xFFE5E5E5);
 
 class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateMixin {
   final _urlController = TextEditingController();
@@ -123,8 +129,12 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final urlText = _urlController.text.trim();
+    final urlError = validateMusicUrl(urlText);
+    final sourcePlatform = detectPlatform(urlText);
+    final sourceInfo = sourcePlatform != null ? findPlatform(sourcePlatform) : null;
     final canKurl =
-        _urlController.text.trim().isNotEmpty && _selectedPlatform != null && !_loading;
+        urlText.isNotEmpty && urlError == null && _selectedPlatform != null && !_loading;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -169,6 +179,17 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                         filled: true,
                         fillColor: const Color(0xFF141414),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        prefixIcon: sourceInfo != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 14, right: 10),
+                                child: Icon(
+                                  sourceInfo.icon,
+                                  size: 16,
+                                  color: sourceInfo.colour,
+                                ),
+                              )
+                            : null,
+                        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
                         suffixIcon: _urlController.text.isEmpty
                             ? IconButton(
                                 onPressed: _loading ? null : _handlePaste,
@@ -184,18 +205,29 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                               ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF333333)),
+                          borderSide: const BorderSide(color: _borderIdle),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF333333)),
+                          borderSide: BorderSide(
+                            color: urlError != null ? _errorRed : _borderIdle,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF555555)),
+                          borderSide: BorderSide(
+                            color: urlError != null ? _errorRed : _borderFocused,
+                          ),
                         ),
                       ),
                     ),
+                    if (urlError != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        urlError,
+                        style: const TextStyle(color: _errorRed, fontSize: 12),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     PlatformPicker(
                       selected: _selectedPlatform,
@@ -208,7 +240,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       Text(
                         _error!,
-                        style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13),
+                        style: const TextStyle(color: _errorRed, fontSize: 13),
                       ),
                     ],
                     if (_result != null) ...[
@@ -226,8 +258,9 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildKurlButton(bool canKurl) {
-    final platformColour = findPlatform(_selectedPlatform ?? '')?.colour;
-    final bg = platformColour ?? const Color(0xFFE5E5E5);
+    final platform = findPlatform(_selectedPlatform ?? '');
+    final platformColour = platform?.colour;
+    final bg = platformColour ?? _neutralBg;
 
     return GestureDetector(
       onTapDown: canKurl ? (_) => setState(() => _pressed = true) : null,
@@ -260,7 +293,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
               style: ElevatedButton.styleFrom(
                 backgroundColor: bg,
                 foregroundColor: const Color(0xFF0A0A0A),
-                disabledBackgroundColor: const Color(0xFFE5E5E5).withValues(alpha: 0.3),
+                disabledBackgroundColor: _neutralBg.withValues(alpha: 0.3),
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -274,13 +307,10 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                   if (_loading)
                     RotationTransition(
                       turns: _spinController,
-                      child: Icon(
-                        findPlatform(_selectedPlatform ?? '')?.icon ?? Icons.music_note,
-                        size: 18,
-                      ),
+                      child: Icon(platform?.icon ?? Icons.music_note, size: 18),
                     )
                   else
-                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                    const Icon(Icons.waves_rounded, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     _loading ? 'kurling...' : 'kurl it',

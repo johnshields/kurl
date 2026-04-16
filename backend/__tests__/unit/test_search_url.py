@@ -12,7 +12,8 @@ class TestBuildSearchUrl:
 
     def test_apple_music_uses_term_query_param(self):
         url = build_search_url("appleMusic", "Hello", "Adele")
-        assert url == "https://music.apple.com/search?term=Hello%20Adele"
+        # /us/ prefix avoids Apple's redirect which converts %20 into literal +
+        assert url == "https://music.apple.com/us/search?term=Hello%20Adele"
 
     def test_youtube_music(self):
         url = build_search_url("youtubeMusic", "Hello", "Adele")
