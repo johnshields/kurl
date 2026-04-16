@@ -310,7 +310,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       child: Icon(platform?.icon ?? Icons.music_note, size: 18),
                     )
                   else
-                    const Icon(Icons.waves_rounded, size: 20),
+                    const Icon(Icons.read_more_rounded, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     _loading ? 'kurling...' : 'kurl it',
