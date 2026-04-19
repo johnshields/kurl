@@ -4,7 +4,7 @@
 
 ## Android (done)
 
-Two `<intent-filter>` blocks inside `<activity>` in `mobile/android/app/src/main/AndroidManifest.xml`:
+Two `<intent-filter>` blocks inside `<activity>` in `app/android/app/src/main/AndroidManifest.xml`:
 
 ```xml
 <intent-filter>
@@ -25,7 +25,7 @@ kurl now appears in the Android share sheet for any text/URL payload.
 
 ### 1. Add Share Extension target
 
-Open `mobile/ios/Runner.xcworkspace` in Xcode, then:
+Open `app/ios/Runner.xcworkspace` in Xcode, then:
 
 - **File → New → Target → Share Extension**
 - Product Name: `ShareExtension`
@@ -91,7 +91,7 @@ In `ios/ShareExtension/ShareViewController.swift`, if you need custom handling l
 ### 7. Rebuild
 
 ```bash
-cd mobile
+cd app
 flutter clean
 flutter pub get
 flutter run -d <ios-device>

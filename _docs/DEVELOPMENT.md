@@ -60,7 +60,7 @@ Ruff config in `backend/ruff.toml`. Rules: `E` (pycodestyle), `F` (pyflakes), `I
 ## Mobile (Flutter)
 
 ```bash
-cd mobile
+cd app
 flutter pub get
 flutter run
 ```

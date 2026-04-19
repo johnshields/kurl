@@ -29,7 +29,7 @@ SQLite sits on-device. It handles prefs, link cache, and friend list sync - ever
 
 ```
 kurl/
-├── mobile/                          # Flutter app
+├── app/                          # Flutter app
 │   ├── lib/
 │   │   ├── main.dart
 │   │   ├── app.dart

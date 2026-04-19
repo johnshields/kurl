@@ -37,7 +37,7 @@ For production you'll want to use the release keystore, not the debug one.
 
 ## Android — already wired
 
-Manifest intent filter in [mobile/android/app/src/main/AndroidManifest.xml](../mobile/android/app/src/main/AndroidManifest.xml):
+Manifest intent filter in [app/android/app/src/main/AndroidManifest.xml](../app/android/app/src/main/AndroidManifest.xml):
 
 ```xml
 <intent-filter android:autoVerify="true">
@@ -57,7 +57,7 @@ Unlike the Share Extension, Universal Links only need a capability toggle on the
 
 ### Steps
 
-1. Open `mobile/ios/Runner.xcworkspace` in Xcode.
+1. Open `app/ios/Runner.xcworkspace` in Xcode.
 2. Select the **Runner** target.
 3. **Signing & Capabilities → + Capability → Associated Domains**.
 4. Add one entry:
@@ -70,7 +70,7 @@ applinks:kurlshare.com
 6. Rebuild:
 
 ```bash
-cd mobile
+cd app
 flutter clean
 flutter run -d <ios-device>
 ```
@@ -88,7 +88,7 @@ iOS will then fetch `https://kurlshare.com/.well-known/apple-app-site-associatio
 
 ## Flutter — handles all three platforms
 
-[mobile/lib/app/routes/kurl.dart](../mobile/lib/app/routes/kurl.dart) pulls the URL from three sources:
+[app/lib/app/routes/kurl.dart](../app/lib/app/routes/kurl.dart) pulls the URL from three sources:
 
 - `_appLinks.getInitialLink()` — iOS/Android: app launched from a link
 - `_appLinks.uriLinkStream` — iOS/Android: link tapped while app is in background
@@ -101,7 +101,7 @@ All three paths extract `?u=<encoded-url>` and populate the input. If no `u` par
 Build the Flutter web app and deploy it to `kurlshare.com` so the browser fallback works:
 
 ```bash
-cd mobile
+cd app
 flutter build web --release --base-href /
 ```
 

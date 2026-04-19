@@ -12,4 +12,4 @@ Supported by backend (`models/schemas.py` PLATFORMS set):
 | `amazonMusic` | Amazon | `#25D1DA` | SimpleIcons.amazonmusic | no |
 | `pandora` | Pandora | `#224099` | SimpleIcons.pandora | no |
 
-The backend accepts any of these as `target_platform` — keys match Odesli's `linksByPlatform`. UI currently only exposes the top three; add the rest to `mobile/lib/models/platform.dart` when ready.
+The backend accepts any of these as `target_platform` — keys match Odesli's `linksByPlatform`. UI currently only exposes the top three; add the rest to `app/lib/models/platform.dart` when ready.
