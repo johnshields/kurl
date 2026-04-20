@@ -1,53 +1,33 @@
 import time
 
-import httpx
 import jwt
 
 from app.config import settings
-from app.constants import APPLE_API_BASE, APPLE_TOKEN_LIFETIME, CLIENT_TIMEOUT, DEFAULT_STOREFRONT
-from utils.logging import get_logger
+from app.constants import APPLE_API_BASE, APPLE_TOKEN_LIFETIME, DEFAULT_STOREFRONT
+from clients.platforms._http import get_client
+from clients.platforms._oauth import TokenCache
 
-logger = get_logger()
-
-_client: httpx.AsyncClient | None = None
-_token: str | None = None
-_token_expires_at: float = 0
-
-
-def _get_client() -> httpx.AsyncClient:
-    global _client
-    if _client is None:
-        _client = httpx.AsyncClient(timeout=CLIENT_TIMEOUT)
-    return _client
+_tokens = TokenCache("Apple Music")
 
 
 def _generate_token() -> str:
-    """Generate an Apple Music developer JWT (ES256)."""
-    global _token, _token_expires_at
-
-    if _token and time.time() < _token_expires_at - 60:
-        return _token
+    """Generate an Apple Music developer JWT (ES256), cached until expiry."""
+    if cached := _tokens.get_cached():
+        return cached
 
     now = int(time.time())
-    payload = {
-        "iss": settings.APPLE_TEAM_ID,
-        "iat": now,
-        "exp": now + APPLE_TOKEN_LIFETIME,
-    }
-    headers = {
-        "alg": "ES256",
-        "kid": settings.APPLE_KEY_ID,
-    }
-
-    _token = jwt.encode(payload, settings.APPLE_PRIVATE_KEY, algorithm="ES256", headers=headers)
-    _token_expires_at = now + APPLE_TOKEN_LIFETIME
-    logger.info("Apple Music token generated, expires in %ss", APPLE_TOKEN_LIFETIME)
-    return _token
+    token = jwt.encode(
+        {"iss": settings.APPLE_TEAM_ID, "iat": now, "exp": now + APPLE_TOKEN_LIFETIME},
+        settings.APPLE_PRIVATE_KEY,
+        algorithm="ES256",
+        headers={"alg": "ES256", "kid": settings.APPLE_KEY_ID},
+    )
+    return _tokens.store(token, APPLE_TOKEN_LIFETIME)
 
 
 async def _api_get(path: str, params: dict | None = None) -> dict:
     token = _generate_token()
-    response = await _get_client().get(
+    response = await get_client("apple").get(
         f"{APPLE_API_BASE}{path}",
         headers={"Authorization": f"Bearer {token}"},
         params=params,

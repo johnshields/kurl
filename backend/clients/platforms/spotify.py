@@ -1,47 +1,23 @@
-import time
-
-import httpx
-
 from app.config import settings
-from app.constants import CLIENT_TIMEOUT, SPOTIFY_API_BASE, SPOTIFY_TOKEN_URL
-from clients.platforms._oauth import fetch_client_credentials_token
-from utils.logging import get_logger
+from app.constants import SPOTIFY_API_BASE, SPOTIFY_TOKEN_URL
+from clients.platforms._http import get_client
+from clients.platforms._oauth import TokenCache
 
-logger = get_logger()
-
-_client: httpx.AsyncClient | None = None
-_token: str | None = None
-_token_expires_at: float = 0
-
-
-def _get_client() -> httpx.AsyncClient:
-    global _client
-    if _client is None:
-        _client = httpx.AsyncClient(timeout=CLIENT_TIMEOUT)
-    return _client
+_tokens = TokenCache("Spotify")
 
 
 async def _get_token() -> str:
-    """Get a valid access token, refreshing if expired."""
-    global _token, _token_expires_at
-
-    if _token and time.time() < _token_expires_at - 60:
-        return _token
-
-    _token, expires_in = await fetch_client_credentials_token(
-        _get_client(),
+    return await _tokens.fetch_via_oauth(
+        get_client("spotify"),
         SPOTIFY_TOKEN_URL,
         settings.SPOTIFY_CLIENT_ID,
         settings.SPOTIFY_CLIENT_SECRET,
     )
-    _token_expires_at = time.time() + expires_in
-    logger.info("Spotify token refreshed, expires in %ss", expires_in)
-    return _token
 
 
 async def _api_get(path: str, params: dict | None = None) -> dict:
     token = await _get_token()
-    response = await _get_client().get(
+    response = await get_client("spotify").get(
         f"{SPOTIFY_API_BASE}{path}",
         headers={"Authorization": f"Bearer {token}"},
         params=params,

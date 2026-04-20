@@ -8,7 +8,11 @@ final _musicHostPattern = RegExp(
   r'|(www\.)?deezer\.com'
   r'|dzr\.page\.link'
   r'|(www\.|listen\.)?tidal\.com'
-  r'|music\.amazon\.(com|co\.uk))$',
+  r'|(www\.)?soundcloud\.com'
+  r'|on\.soundcloud\.com'
+  r'|music\.amazon\.(com|co\.uk)'
+  r'|(www\.)?audiomack\.com'
+  r'|(www\.)?pandora\.com)$',
   caseSensitive: false,
 );
 
@@ -36,7 +40,7 @@ String? validateMusicUrl(String? input) {
 }
 
 /// Detects which platform a URL belongs to. Returns the platform ID matching
-/// the backend's keys (spotify, appleMusic, youtubeMusic, deezer, tidal, amazonMusic),
+/// the backend's keys (spotify, appleMusic, youtubeMusic, deezer, tidal, soundcloud),
 /// or null if the URL isn't recognised.
 String? detectPlatform(String? input) {
   if (input == null) return null;
@@ -50,6 +54,9 @@ String? detectPlatform(String? input) {
   if (host.contains('youtube.com') || host == 'youtu.be') return 'youtubeMusic';
   if (host.contains('deezer.com') || host == 'dzr.page.link') return 'deezer';
   if (host.contains('tidal.com')) return 'tidal';
+  if (host.contains('soundcloud.com')) return 'soundcloud';
   if (host.contains('music.amazon.')) return 'amazonMusic';
+  if (host.contains('audiomack.com')) return 'audiomack';
+  if (host.contains('pandora.com')) return 'pandora';
   return null;
 }

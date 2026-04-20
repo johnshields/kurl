@@ -126,7 +126,7 @@ class TestAmazonMusic:
 
 class TestUnknownAndInvalid:
     def test_unknown_domain_returns_none(self):
-        assert parse_music_url("https://soundcloud.com/track/abc") is None
+        assert parse_music_url("https://bandcamp.com/track/abc") is None
 
     def test_malformed_url_returns_none(self):
         assert parse_music_url("not-a-url") is None

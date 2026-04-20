@@ -47,10 +47,28 @@ const platforms = [
     icon: SimpleIcons.tidal,
   ),
   StreamingPlatform(
+    id: 'soundcloud',
+    name: 'SoundCloud',
+    colour: Color(0xFFFF5500),
+    icon: SimpleIcons.soundcloud,
+  ),
+  StreamingPlatform(
     id: 'amazonMusic',
     name: 'Amazon',
     colour: Color(0xFF25D1DA),
     icon: SimpleIcons.amazonmusic,
+  ),
+  StreamingPlatform(
+    id: 'audiomack',
+    name: 'Audiomack',
+    colour: Color(0xFFFFA200),
+    icon: SimpleIcons.audiomack,
+  ),
+  StreamingPlatform(
+    id: 'pandora',
+    name: 'Pandora',
+    colour: Color(0xFF224099),
+    icon: SimpleIcons.pandora,
   ),
 ];
 

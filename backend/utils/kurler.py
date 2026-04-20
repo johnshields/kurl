@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT
 from clients import cache, metadata
-from clients.platforms import apple, deezer, spotify, tidal
+from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
 from utils.canonical_url import build_track_url
 from utils.logging import get_logger
 from utils.url_parser import ParsedMusicUrl, ParsedTrack
@@ -11,13 +11,15 @@ from utils.url_parser import ParsedMusicUrl, ParsedTrack
 logger = get_logger()
 
 # Platforms that support direct ISRC/UPC lookup.
-ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal"}
+ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal", "soundcloud"}
 
 _CLIENTS = {
     "spotify": spotify,
     "appleMusic": apple,
     "deezer": deezer,
     "tidal": tidal,
+    "youtubeMusic": youtube,
+    "soundcloud": soundcloud,
 }
 
 

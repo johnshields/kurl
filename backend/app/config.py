@@ -45,7 +45,15 @@ class Settings(BaseSettings):
     TIDAL_CLIENT_ID: str | None = None
     TIDAL_CLIENT_SECRET: str | None = None
 
+    # YouTube Data API v3 (API key)
+    YOUTUBE_API_KEY: str | None = None
+
+    # SoundCloud (OAuth 2.1 client credentials)
+    SOUNDCLOUD_CLIENT_ID: str | None = None
+    SOUNDCLOUD_CLIENT_SECRET: str | None = None
+
     # Deezer requires no credentials
+    # Audiomack, Amazon Music, Pandora: URL parsing + Odesli fallback only (no direct API)
 
 
 settings = Settings()

@@ -43,6 +43,12 @@ _AMAZON_ARTIST = re.compile(r"/artists/([A-Z0-9]+)")
 _YOUTUBE_HOSTS = ("music.youtube.com", "youtube.com", "www.youtube.com", "m.youtube.com")
 _YOUTU_BE_PATH = re.compile(r"^/([A-Za-z0-9_-]{6,})")
 
+_SC_RESERVED = frozenset({
+    "search", "you", "login", "upload", "stream", "tags", "people",
+    "stations", "charts", "discover", "likes", "following", "followers",
+    "tracks", "reposts", "sets",
+})
+
 _SEARCH_PATTERNS = (
     re.compile(r"spotify\.com/search/"),
     re.compile(r"music\.apple\.com/.*/?search"),
@@ -50,6 +56,9 @@ _SEARCH_PATTERNS = (
     re.compile(r"deezer\.com/.*/?search"),
     re.compile(r"tidal\.com/.*/?search"),
     re.compile(r"music\.amazon\.com/.*/?search"),
+    re.compile(r"soundcloud\.com/search"),
+    re.compile(r"audiomack\.com/search"),
+    re.compile(r"pandora\.com/search"),
 )
 
 
@@ -85,6 +94,15 @@ def parse_music_url(url: str) -> ParsedMusicUrl | None:
 
     if "music.amazon" in host:
         return _parse_amazon(path, query)
+
+    if "soundcloud.com" in host:
+        return _parse_soundcloud(path)
+
+    if "audiomack.com" in host:
+        return _parse_audiomack(path)
+
+    if "pandora.com" in host:
+        return _parse_pandora(path)
 
     return None
 
@@ -196,6 +214,27 @@ def _parse_tidal(path: str) -> ParsedMusicUrl | None:
     return None
 
 
+def _parse_soundcloud(path: str) -> ParsedMusicUrl | None:
+    parts = [p for p in path.split("/") if p]
+    if not parts:
+        return None
+
+    user = parts[0]
+    if user in _SC_RESERVED:
+        return None
+
+    if len(parts) == 1:
+        return ParsedMusicUrl("soundcloud", "artist", user)
+
+    if len(parts) >= 3 and parts[1] == "sets":
+        return ParsedMusicUrl("soundcloud", "album", f"{user}/sets/{parts[2]}")
+
+    if len(parts) == 2 and parts[1] not in _SC_RESERVED:
+        return ParsedMusicUrl("soundcloud", "track", f"{user}/{parts[1]}")
+
+    return None
+
+
 def _parse_amazon(path: str, query: dict) -> ParsedMusicUrl | None:
     m = _AMAZON_ALBUM.search(path)
     if m:
@@ -214,5 +253,48 @@ def _parse_amazon(path: str, query: dict) -> ParsedMusicUrl | None:
     m = _AMAZON_ARTIST.search(path)
     if m:
         return ParsedMusicUrl("amazonMusic", "artist", m.group(1))
+
+    return None
+
+
+_PANDORA_ARTIST = re.compile(r"/artist/[^/]+/AR(\d+)")
+_PANDORA_ALBUM = re.compile(r"/album/[^/]+/[^/]+/AL(\d+)")
+_PANDORA_TRACK = re.compile(r"/artist/[^/]+/[^/]+/TR(\d+)")
+
+
+def _parse_pandora(path: str) -> ParsedMusicUrl | None:
+    m = _PANDORA_TRACK.search(path)
+    if m:
+        return ParsedMusicUrl("pandora", "track", m.group(1))
+
+    m = _PANDORA_ALBUM.search(path)
+    if m:
+        return ParsedMusicUrl("pandora", "album", m.group(1))
+
+    m = _PANDORA_ARTIST.search(path)
+    if m:
+        return ParsedMusicUrl("pandora", "artist", m.group(1))
+
+    return None
+
+
+def _parse_audiomack(path: str) -> ParsedMusicUrl | None:
+    # URL structure: /{artist}/song/{slug}, /{artist}/album/{slug}, /{artist}
+    parts = [p for p in path.split("/") if p]
+    if not parts:
+        return None
+
+    artist = parts[0]
+
+    if len(parts) == 1:
+        return ParsedMusicUrl("audiomack", "artist", artist)
+
+    if len(parts) >= 3:
+        kind = parts[1]
+        slug = parts[2]
+        if kind == "song":
+            return ParsedMusicUrl("audiomack", "track", f"{artist}/song/{slug}")
+        if kind in ("album", "playlist"):
+            return ParsedMusicUrl("audiomack", "album", f"{artist}/{kind}/{slug}")
 
     return None

@@ -1,18 +1,8 @@
-import httpx
-
-from app.constants import CLIENT_TIMEOUT, DEEZER_API_BASE
+from app.constants import DEEZER_API_BASE
+from clients.platforms._http import get_client
 from utils.logging import get_logger
 
 logger = get_logger()
-
-_client: httpx.AsyncClient | None = None
-
-
-def _get_client() -> httpx.AsyncClient:
-    global _client
-    if _client is None:
-        _client = httpx.AsyncClient(timeout=CLIENT_TIMEOUT)
-    return _client
 
 
 def is_configured() -> bool:
@@ -21,7 +11,7 @@ def is_configured() -> bool:
 
 
 async def _api_get(path: str, params: dict | None = None) -> dict:
-    response = await _get_client().get(f"{DEEZER_API_BASE}{path}", params=params)
+    response = await get_client("deezer").get(f"{DEEZER_API_BASE}{path}", params=params)
     response.raise_for_status()
     data = response.json()
     if "error" in data:

@@ -6,6 +6,8 @@ PLATFORMS = {
     "tidal",
     "amazonMusic",
     "pandora",
+    "soundcloud",
+    "audiomack",
 }
 
 PLATFORM_NAMES = {
@@ -16,6 +18,8 @@ PLATFORM_NAMES = {
     "tidal": "Tidal",
     "amazonMusic": "Amazon Music",
     "pandora": "Pandora",
+    "soundcloud": "SoundCloud",
+    "audiomack": "Audiomack",
 }
 
 ALLOWED_ORIGINS = [
@@ -48,6 +52,8 @@ SEARCH_URL_TEMPLATES = {
     "tidal": "https://tidal.com/search/{query}",
     "amazonMusic": "https://music.amazon.com/search/{query}",
     "pandora": "https://www.pandora.com/search/{query}",
+    "soundcloud": "https://soundcloud.com/search?q={query}",
+    "audiomack": "https://audiomack.com/search?q={query}",
 }
 
 """
@@ -63,6 +69,8 @@ TRACK_URL_TEMPLATES = {
     "tidal": "https://tidal.com/track/{id}",
     "youtubeMusic": "https://music.youtube.com/watch?v={id}",
     "amazonMusic": "https://music.amazon.com/albums/{id}",
+    "soundcloud": "https://soundcloud.com/{id}",
+    "audiomack": "https://audiomack.com/{id}",
 }
 
 TRACK_WITH_ALBUM_URL_TEMPLATES = {
@@ -76,6 +84,8 @@ ALBUM_URL_TEMPLATES = {
     "deezer": "https://www.deezer.com/album/{id}",
     "tidal": "https://tidal.com/album/{id}",
     "amazonMusic": "https://music.amazon.com/albums/{id}",
+    "soundcloud": "https://soundcloud.com/{id}",
+    "audiomack": "https://audiomack.com/{id}",
 }
 
 ARTIST_URL_TEMPLATES = {
@@ -84,6 +94,8 @@ ARTIST_URL_TEMPLATES = {
     "deezer": "https://www.deezer.com/artist/{id}",
     "tidal": "https://tidal.com/artist/{id}",
     "amazonMusic": "https://music.amazon.com/artists/{id}",
+    "soundcloud": "https://soundcloud.com/{id}",
+    "audiomack": "https://audiomack.com/{id}",
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
@@ -110,6 +122,11 @@ DEEZER_API_BASE = "https://api.deezer.com"
 TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
 TIDAL_API_BASE = "https://openapi.tidal.com/v2"
 TIDAL_ACCEPT_HEADER = "application/vnd.api+json"
+
+YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
+
+SOUNDCLOUD_API_BASE = "https://api.soundcloud.com"
+SOUNDCLOUD_TOKEN_URL = "https://api.soundcloud.com/oauth2/token"
 
 DEFAULT_COUNTRY = "US"
 DEFAULT_STOREFRONT = "us"
