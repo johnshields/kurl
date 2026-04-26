@@ -44,7 +44,10 @@ class TokenCache:
         if cached := self.get_cached():
             return cached
         token, expires_in = await fetch_client_credentials_token(
-            http_client, token_url, client_id, client_secret,
+            http_client,
+            token_url,
+            client_id,
+            client_secret,
         )
         return self.store(token, expires_in)
 

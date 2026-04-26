@@ -58,13 +58,16 @@ async def search_by_upc(upc: str) -> dict | None:
 
 async def search_track(title: str, artist: str) -> dict | None:
     """Search for a music video by title + artist. Returns a normalised item or None."""
-    data = await _api_get("/search", params={
-        "part": "snippet",
-        "type": "video",
-        "videoCategoryId": "10",
-        "q": f"{artist} {title}",
-        "maxResults": 1,
-    })
+    data = await _api_get(
+        "/search",
+        params={
+            "part": "snippet",
+            "type": "video",
+            "videoCategoryId": "10",
+            "q": f"{artist} {title}",
+            "maxResults": 1,
+        },
+    )
     items = data.get("items", [])
     if not items:
         return None
@@ -78,12 +81,15 @@ async def search_track(title: str, artist: str) -> dict | None:
 
 async def search_artist(name: str) -> dict | None:
     """Search for a channel by name. Returns a normalised item or None."""
-    data = await _api_get("/search", params={
-        "part": "snippet",
-        "type": "channel",
-        "q": name,
-        "maxResults": 1,
-    })
+    data = await _api_get(
+        "/search",
+        params={
+            "part": "snippet",
+            "type": "channel",
+            "q": name,
+            "maxResults": 1,
+        },
+    )
     items = data.get("items", [])
     if not items:
         return None

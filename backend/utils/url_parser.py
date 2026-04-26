@@ -43,11 +43,26 @@ _AMAZON_ARTIST = re.compile(r"/artists/([A-Z0-9]+)")
 _YOUTUBE_HOSTS = ("music.youtube.com", "youtube.com", "www.youtube.com", "m.youtube.com")
 _YOUTU_BE_PATH = re.compile(r"^/([A-Za-z0-9_-]{6,})")
 
-_SC_RESERVED = frozenset({
-    "search", "you", "login", "upload", "stream", "tags", "people",
-    "stations", "charts", "discover", "likes", "following", "followers",
-    "tracks", "reposts", "sets",
-})
+_SC_RESERVED = frozenset(
+    {
+        "search",
+        "you",
+        "login",
+        "upload",
+        "stream",
+        "tags",
+        "people",
+        "stations",
+        "charts",
+        "discover",
+        "likes",
+        "following",
+        "followers",
+        "tracks",
+        "reposts",
+        "sets",
+    }
+)
 
 _SEARCH_PATTERNS = (
     re.compile(r"spotify\.com/search/"),
