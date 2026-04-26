@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/platform.dart';
+import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
 import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
@@ -43,6 +44,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat();
+    Analytics.trackPageView();
     if (!kIsWeb) {
       _listenForShares();
       _listenForUniversalLinks();
@@ -117,8 +119,11 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _result = null;
     });
 
+    Analytics.trackKurl(url, _selectedPlatform!);
+
     try {
       final data = await ApiService.kurl(url, _selectedPlatform!);
+      Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
       setState(() => _result = data);
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -231,7 +236,10 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                     const SizedBox(height: 16),
                     PlatformPicker(
                       selected: _selectedPlatform,
-                      onSelect: (id) => setState(() => _selectedPlatform = id),
+                      onSelect: (id) {
+                        Analytics.trackPlatformSelect(id);
+                        setState(() => _selectedPlatform = id);
+                      },
                       disabled: _loading,
                     ),
                     const SizedBox(height: 16),

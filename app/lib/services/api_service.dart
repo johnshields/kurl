@@ -11,7 +11,10 @@ class ApiService {
 
     final response = await http.post(
       Uri.parse(endpoint),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
       body: jsonEncode({
         'url': url,
         'target_platform': targetPlatform,

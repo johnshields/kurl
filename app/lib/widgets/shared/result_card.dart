@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/widgets/shared/marquee_text.dart';
 
 class ResultCard extends StatelessWidget {
@@ -135,7 +136,10 @@ class ResultCard extends StatelessWidget {
                 color: const Color(0xFF222222),
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
-                  onTap: () => launchUrl(Uri.parse(result.resolvedUrl)),
+                  onTap: () {
+                    Analytics.trackOpenResult(result.platform);
+                    launchUrl(Uri.parse(result.resolvedUrl));
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: const Padding(
                     padding: EdgeInsets.all(12),

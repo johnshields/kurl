@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 const _prodUrl = 'https://api.kurl.online';
+const apiKey = String.fromEnvironment('KURL_API_KEY', defaultValue: 'RSmgIMU_po3hZNYvjEdkjYYgxPYLgDG_sgxCEJrqI5o');
 
 String _resolveBaseUrl() {
   if (kReleaseMode) return _prodUrl;

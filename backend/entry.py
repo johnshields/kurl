@@ -8,6 +8,8 @@ import time
 
 from workers import WorkerEntrypoint
 
+from api.middleware.auth import authenticate
+from api.middleware.rate_limit import check_rate_limit
 from api.router import resolve
 from clients import cache
 from utils.logging import get_logger
@@ -53,10 +55,20 @@ class Default(WorkerEntrypoint):
         try:
             _inject_env(self.env)
 
+            db = getattr(self.env, "kurl", None)
             kv = getattr(self.env, "CACHE", None)
+            api_key = getattr(self.env, "KURL_API_KEY", None)
             cache.init_kv(kv)
 
-            response = await resolve(method, path, request)
+            auth_error = authenticate(request, path, api_key)
+            if auth_error:
+                return auth_error
+
+            rate_error = check_rate_limit(method, path)
+            if rate_error:
+                return rate_error
+
+            response = await resolve(db, method, path, request)
         except Exception as e:
             logger.error("Unhandled exception on [%s] %s: %s", method, path, e)
             response = json_error("Internal server error", 500)

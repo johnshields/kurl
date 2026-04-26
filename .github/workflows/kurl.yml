@@ -75,6 +75,7 @@ jobs:
         run: |
           set -e
           WORKER_URL="${{ secrets.KURL_WORKER_URL }}"
+          AUTH="X-API-Key: ${{ secrets.KURL_API_KEY }}"
 
           echo "Testing GET /api (public)..."
           curl -sS "$WORKER_URL/api" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='OK', f'Unexpected: {d}'; print('API info passed')"
@@ -82,8 +83,15 @@ jobs:
           echo "Testing GET /api/healthz (public)..."
           curl -sS "$WORKER_URL/api/healthz" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='healthy', f'Unexpected: {d}'; print('Health check passed')"
 
-          echo "Testing GET /api/readyz (public)..."
-          curl -sS "$WORKER_URL/api/readyz" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status'] in ('ready','degraded'), f'Unexpected: {d}'; print('Readiness check passed')"
+          echo "Testing GET /api/readyz (auth)..."
+          curl -sS -H "$AUTH" "$WORKER_URL/api/readyz" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status'] in ('ready','degraded'), f'Unexpected: {d}'; print('Readiness check passed')"
+
+          echo "Testing POST /api/kurl (auth)..."
+          curl -sS -X POST -H "$AUTH" -H "Content-Type: application/json" -d '{"url":"https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT","target_platform":"deezer"}' "$WORKER_URL/api/kurl" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='success', f'Unexpected: {d}'; print('Kurl endpoint passed')"
+
+          echo "Testing auth enforcement (no key should 401)..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$WORKER_URL/api/kurl" -X POST -H "Content-Type: application/json" -d '{"url":"https://example.com","target_platform":"spotify"}')
+          [ "$STATUS" = "401" ] && echo "Auth enforcement passed" || (echo "Expected 401, got $STATUS" && exit 1)
 
           echo "All smoke tests passed"
 

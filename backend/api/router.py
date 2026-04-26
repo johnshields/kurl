@@ -6,6 +6,7 @@ Route table mapping (method, path) to handlers.
 import re
 import time
 
+from api.routes import events
 from api.services import urls as kurl_service
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
@@ -39,7 +40,7 @@ def _uptime() -> float:
 @route("GET", "/")
 @route("GET", "/api")
 @route("GET", "/api/info")
-async def _api_info(request, **kwargs):
+async def _api_info(db, request, **kwargs):
     return json_response(
         {
             "status": "OK",
@@ -53,7 +54,7 @@ async def _api_info(request, **kwargs):
 
 
 @route("GET", "/api/healthz")
-async def _health(request, **kwargs):
+async def _health(db, request, **kwargs):
     return json_response(
         {
             "status": "healthy",
@@ -64,7 +65,7 @@ async def _health(request, **kwargs):
 
 
 @route("GET", "/api/readyz")
-async def _readyz(request, **kwargs):
+async def _readyz(db, request, **kwargs):
     import asyncio
 
     checks = await asyncio.gather(
@@ -94,7 +95,7 @@ async def _readyz(request, **kwargs):
 
 
 @route("POST", "/api/kurl")
-async def _post_kurl(request, **kwargs):
+async def _post_kurl(db, request, **kwargs):
     body = await parse_json_body(request)
     url = body.get("url")
     target_platform = body.get("target_platform")
@@ -105,16 +106,29 @@ async def _post_kurl(request, **kwargs):
     return await kurl_service.kurl(str(url), target_platform)
 
 
+# Event endpoints
+
+
+@route("POST", "/api/events")
+async def _create_event(db, request, **kwargs):
+    return await events.create_event(db, request)
+
+
+@route("GET", "/api/events/summary")
+async def _events_summary(db, request, **kwargs):
+    return await events.get_summary(db, request)
+
+
 # Resolve
 
 
-async def resolve(method: str, path: str, request):
+async def resolve(db, method: str, path: str, request):
     for route_method, regex, handler in _routes:
         if method != route_method:
             continue
         match = regex.match(path)
         if match:
-            return await handler(request, **match.groupdict())
+            return await handler(db, request, **match.groupdict())
 
     return json_error("Not found", 404)
 
