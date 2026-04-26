@@ -3,6 +3,7 @@ kurl API
 Cloudflare Workers entrypoint.
 """
 
+import os
 import time
 
 from workers import WorkerEntrypoint
@@ -16,6 +17,29 @@ logger = get_logger()
 
 _started_at = time.time()
 
+# Secret names to inject from Worker env into os.environ.
+_SECRET_KEYS = [
+    "SPOTIFY_CLIENT_ID",
+    "SPOTIFY_CLIENT_SECRET",
+    "TIDAL_CLIENT_ID",
+    "TIDAL_CLIENT_SECRET",
+    "APPLE_TEAM_ID",
+    "APPLE_KEY_ID",
+    "APPLE_PRIVATE_KEY",
+    "ODESLI_API_KEY",
+    "YOUTUBE_API_KEY",
+    "SOUNDCLOUD_CLIENT_ID",
+    "SOUNDCLOUD_CLIENT_SECRET",
+]
+
+
+def _inject_env(env):
+    """Copy Worker secret bindings into os.environ so Settings/os.getenv works."""
+    for key in _SECRET_KEYS:
+        val = getattr(env, key, None)
+        if val and key not in os.environ:
+            os.environ[key] = str(val)
+
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
@@ -27,6 +51,8 @@ class Default(WorkerEntrypoint):
             return preflight()
 
         try:
+            _inject_env(self.env)
+
             kv = getattr(self.env, "CACHE", None)
             cache.init_kv(kv)
 

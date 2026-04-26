@@ -29,6 +29,11 @@ class ApiService {
       throw Exception(json['message'] ?? json['detail'] ?? 'Request failed');
     }
 
-    return KurlResult.fromJson(json['data']);
+    final data = json['data'] as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception('Invalid response from server');
+    }
+
+    return KurlResult.fromJson(data);
   }
 }
