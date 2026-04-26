@@ -12,6 +12,7 @@ PUBLIC_PATHS = {
     "/api",
     "/api/info",
     "/api/healthz",
+    "/api/kurl",
     "/api/events",
 }
 

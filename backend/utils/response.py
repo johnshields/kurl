@@ -11,7 +11,7 @@ from workers import Response
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
     "Access-Control-Allow-Credentials": "true",
 }
 
