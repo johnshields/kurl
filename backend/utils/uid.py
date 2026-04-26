@@ -7,5 +7,5 @@ import secrets
 
 
 def gen_uid(prefix: str) -> str:
-    hex_part = secrets.token_hex(4).upper()[:6]
+    hex_part = secrets.token_hex(3).upper()
     return f"{prefix}_{hex_part}"

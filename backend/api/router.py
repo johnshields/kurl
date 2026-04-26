@@ -3,6 +3,7 @@ Router
 Route table mapping (method, path) to handlers.
 """
 
+import asyncio
 import re
 import time
 
@@ -11,10 +12,7 @@ from api.services import urls as kurl_service
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
 from clients.platforms import apple, deezer, spotify, tidal
-from utils.logging import get_logger
 from utils.response import json_error, json_response, parse_json_body
-
-logger = get_logger()
 
 _routes = []
 _start_time = time.time()
@@ -66,8 +64,6 @@ async def _health(db, request, **kwargs):
 
 @route("GET", "/api/readyz")
 async def _readyz(db, request, **kwargs):
-    import asyncio
-
     checks = await asyncio.gather(
         _check_cache(),
         _check_client("spotify", spotify, _probe_spotify),
@@ -143,8 +139,6 @@ async def _check_cache() -> tuple:
 
 
 async def _check_client(name, client, probe) -> tuple:
-    import asyncio
-
     if not client.is_configured():
         return name, {"status": "skipped", "reason": "no credentials"}
     try:

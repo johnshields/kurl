@@ -32,14 +32,6 @@ def json_success(message: str, data: dict) -> Response:
     return json_response({"status": "success", "message": message, "data": data})
 
 
-def html_response(body: str, status: int = 200) -> Response:
-    return Response(
-        body,
-        status=status,
-        headers={"Content-Type": "text/html; charset=utf-8", **CORS_HEADERS},
-    )
-
-
 def preflight() -> Response:
     return Response("", status=204, headers=CORS_HEADERS)
 

@@ -17,8 +17,6 @@ from utils.response import json_error, parse_path, preflight
 
 logger = get_logger()
 
-_started_at = time.time()
-
 # Secret names to inject from Worker env into os.environ.
 _SECRET_KEYS = [
     "SPOTIFY_CLIENT_ID",

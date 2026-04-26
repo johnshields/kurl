@@ -3,19 +3,18 @@ Event Routes
 HTTP endpoints for analytics events.
 """
 
-import json
+from urllib.parse import parse_qs, urlparse
 
 from api.controllers import events_controller
 from utils.logging import get_logger
-from utils.response import json_error, json_response
+from utils.response import json_error, json_response, parse_json_body
 
 logger = get_logger()
 
 
 async def create_event(db, request):
     try:
-        body = await request.text()
-        data = json.loads(body) if body else {}
+        data = await parse_json_body(request)
     except Exception as e:
         logger.error("Failed to parse event body: %s", e)
         return json_error("Invalid JSON body.", 400)
@@ -33,10 +32,9 @@ async def create_event(db, request):
 async def get_summary(db, request):
     days = 7
     try:
-        url = str(request.url)
-        if "days=" in url:
-            raw = url.split("days=", 1)[1].split("&")[0]
-            days = max(1, min(365, int(raw)))
+        qs = parse_qs(urlparse(str(request.url)).query)
+        if "days" in qs:
+            days = max(1, min(365, int(qs["days"][0])))
     except (ValueError, IndexError):
         days = 7
 
