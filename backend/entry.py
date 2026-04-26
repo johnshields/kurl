@@ -1,98 +1,41 @@
 """
-Workers entry point
-Wraps the FastAPI app for Cloudflare Workers Python runtime.
-Local dev: uvicorn entry:app --reload
+kurl API
+Cloudflare Workers entrypoint.
 """
 
-from contextlib import asynccontextmanager
+import time
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from workers import WorkerEntrypoint
 
-from api.middleware.request_logger import RequestLoggerMiddleware
-from api.routes import docs, system, urls
-from app.config import BASE_URL, CORS_ORIGINS, DESCRIPTION, NAME, VERSION
-from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
+from api.router import resolve
 from clients import cache
 from utils.logging import get_logger
-from utils.responses import error
+from utils.response import json_error, parse_path, preflight
 
 logger = get_logger()
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await cache.connect()
-    yield
-    await cache.disconnect()
+_started_at = time.time()
 
 
-app = FastAPI(
-    title=NAME,
-    version=VERSION,
-    description=DESCRIPTION,
-    servers=[{"url": BASE_URL, "description": "API Server"}],
-    openapi_tags=OPENAPI_TAGS,
-    lifespan=lifespan,
-    docs_url=None,
-    redoc_url=None,
-)
+class Default(WorkerEntrypoint):
+    async def fetch(self, request):
+        method = request.method
+        path = parse_path(request.url)
+        start = time.time()
 
-app.add_middleware(RequestLoggerMiddleware)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        if method == "OPTIONS":
+            return preflight()
 
-app.include_router(system.root_router)
-app.include_router(system.router)
-app.include_router(urls.router)
-app.include_router(docs.router)
+        try:
+            kv = getattr(self.env, "CACHE", None)
+            cache.init_kv(kv)
 
+            response = await resolve(method, path, request)
+        except Exception as e:
+            logger.error("Unhandled exception on [%s] %s: %s", method, path, e)
+            response = json_error("Internal server error", 500)
 
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return FileResponse("public/static/favicon.ico")
+        duration = round((time.time() - start) * 1000, 1)
+        logger.info("%s %s %s %sms", method, path, response.status, duration)
 
-
-@app.get("/.well-known/apple-app-site-association", include_in_schema=False)
-async def apple_app_site_association():
-    return FileResponse(
-        "public/.well-known/apple-app-site-association",
-        media_type="application/json",
-    )
-
-
-@app.get("/.well-known/assetlinks.json", include_in_schema=False)
-async def assetlinks():
-    return FileResponse(
-        "public/.well-known/assetlinks.json",
-        media_type="application/json",
-    )
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    return error(ERROR_MESSAGES["INTERNAL_ERROR"], status_code=500)
-
-
-try:
-    import asgi
-    from workers import WorkerEntrypoint
-
-    class Default(WorkerEntrypoint):
-        async def fetch(self, request):
-            cache.init_kv(getattr(self.env, "CACHE", None))
-            return await asgi.fetch(app, request.js_object, self.env)
-
-except ImportError:
-    try:
-        from fastapi.staticfiles import StaticFiles
-
-        app.mount("/static", StaticFiles(directory="public/static"), name="static")
-    except Exception:
-        pass
+        return response

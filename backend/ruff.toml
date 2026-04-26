@@ -18,7 +18,7 @@ select = [
 ]
 ignore = [
     "E501", # line-too-long -- handled by formatter
-    "B008", # do not call function-with-default-arg in defaults (FastAPI Depends)
+    "B008", # do not call function-with-default-arg in defaults
 ]
 
 [lint.per-file-ignores]

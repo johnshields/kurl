@@ -31,11 +31,6 @@ ALLOWED_ORIGINS = [
     "https://www.kurlshare.com",
 ]
 
-OPENAPI_TAGS = [
-    {"name": "System", "description": "Health checks, API information, and system status"},
-    {"name": "URLs", "description": "Cross-platform URL resolution"},
-]
-
 ERROR_MESSAGES = {
     "UNKNOWN_PLATFORM": "Unknown platform",
     "PLATFORM_NOT_FOUND": "No URL found for this track",

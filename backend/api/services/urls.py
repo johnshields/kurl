@@ -1,23 +1,20 @@
 import hashlib
 import json
 
-from fastapi import HTTPException
-
 from app.constants import ERROR_MESSAGES, PLATFORMS
 from clients import cache, metadata, odesli
+from utils.errors import ApiError
 from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
-from utils.responses import success
+from utils.response import json_error, json_success
 from utils.search_url import build_search_url
 from utils.short_links import is_short_link, resolve_short_link
 from utils.url import normalise_url
 from utils.url_parser import is_search_url, parse_music_url, parse_track
-from utils.wrap_route import wrap_route
 
 logger = get_logger()
 
 
-@wrap_route("Kurl")
 async def kurl(url: str, target_platform: str):
     """Kurl a streaming URL to the target platform.
 
@@ -27,21 +24,17 @@ async def kurl(url: str, target_platform: str):
     3. Metadata scraping + search URL (last resort)
     """
     if target_platform not in PLATFORMS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{ERROR_MESSAGES['UNKNOWN_PLATFORM']}: {target_platform}",
-        )
+        return json_error(f"{ERROR_MESSAGES['UNKNOWN_PLATFORM']}: {target_platform}", 400)
 
     url = normalise_url(url)
 
-    # Follow platform short links (spotify.link, dzr.page.link) to their canonical URL.
     if is_short_link(url):
         url = normalise_url(await resolve_short_link(url))
 
     logger.info("Kurling %s -> %s", url, target_platform)
 
     if is_search_url(url):
-        raise HTTPException(status_code=400, detail=ERROR_MESSAGES["SEARCH_URL"])
+        return json_error(ERROR_MESSAGES["SEARCH_URL"], 400)
 
     cache_key = hashlib.md5(f"{url}{target_platform}".encode()).hexdigest()
 
@@ -50,7 +43,7 @@ async def kurl(url: str, target_platform: str):
         data = json.loads(cached)
         data["cached"] = True
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
-        return success("Kurled from cache", data)
+        return json_success("Kurled from cache", data)
 
     # Try direct ISRC/UPC resolution via platform APIs first.
     parsed_full = parse_music_url(url)
@@ -69,14 +62,14 @@ async def kurl(url: str, target_platform: str):
                 }
                 await cache.set(cache_key, json.dumps(result))
                 result["cached"] = False
-                return success("Kurled", result)
+                return json_success("Kurled", result)
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
 
     # Odesli fallback.
     parsed = parse_track(url)
     odesli_data: dict = {}
-    odesli_error: HTTPException | None = None
+    odesli_error: ApiError | None = None
 
     try:
         if parsed:
@@ -84,7 +77,7 @@ async def kurl(url: str, target_platform: str):
             odesli_data = await odesli.resolve_by_id(parsed.platform, parsed.track_id)
         else:
             odesli_data = await odesli.resolve(url)
-    except HTTPException as e:
+    except ApiError as e:
         odesli_error = e
         logger.warning("Odesli unavailable (%s): %s", e.status_code, e.detail)
 
@@ -99,7 +92,6 @@ async def kurl(url: str, target_platform: str):
             available = sorted(odesli_data.get("linksByPlatform", {}).keys())
             logger.warning("No %s URL; Odesli returned platforms: %s", target_platform, available)
 
-        # If Odesli didn't give us metadata, try scraping the source URL directly.
         if (not title or not artist) and parsed:
             scraped_title, scraped_artist = await metadata.fetch_metadata(parsed, url)
             title = title or scraped_title
@@ -109,11 +101,8 @@ async def kurl(url: str, target_platform: str):
         resolved_url = build_search_url(target_platform, title, artist)
         if not resolved_url:
             if odesli_error:
-                raise odesli_error
-            raise HTTPException(
-                status_code=404,
-                detail=f"{ERROR_MESSAGES['PLATFORM_NOT_FOUND']} ({target_platform})",
-            )
+                return json_error(odesli_error.detail, odesli_error.status_code)
+            return json_error(f"{ERROR_MESSAGES['PLATFORM_NOT_FOUND']} ({target_platform})", 404)
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
 
@@ -128,4 +117,4 @@ async def kurl(url: str, target_platform: str):
     await cache.set(cache_key, json.dumps(result))
 
     result["cached"] = False
-    return success("Kurled", result)
+    return json_success("Kurled", result)

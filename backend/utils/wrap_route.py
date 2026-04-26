@@ -1,7 +1,6 @@
 from functools import wraps
 
-from fastapi import HTTPException
-
+from utils.errors import ApiError
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -14,7 +13,7 @@ def wrap_route(label: str):
             logger.info("%s request...", label)
             try:
                 return await func(*args, **kwargs)
-            except HTTPException as e:
+            except ApiError as e:
                 logger.warning("%s failed (%s): %s", label, e.status_code, e.detail)
                 raise
             except Exception as e:

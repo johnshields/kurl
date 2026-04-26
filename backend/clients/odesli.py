@@ -1,10 +1,10 @@
 import asyncio
 
 import httpx
-from fastapi import HTTPException
 
 from app.config import settings
 from app.constants import ERROR_MESSAGES
+from utils.errors import ApiError
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -50,9 +50,9 @@ async def _call(params: dict) -> dict:
             if response.status_code == 429
             else f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})"
         )
-        raise HTTPException(status_code=502, detail=detail)
+        raise ApiError(status_code=502, detail=detail)
 
-    raise HTTPException(status_code=502, detail="Rate limited by Odesli, try again shortly")
+    raise ApiError(status_code=502, detail="Rate limited by Odesli, try again shortly")
 
 
 async def resolve_by_id(platform: str, track_id: str) -> dict:
