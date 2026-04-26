@@ -38,8 +38,8 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="kurlshare.com"/>
-                <data android:scheme="https" android:host="www.kurlshare.com"/>
+                <data android:scheme="https" android:host="kurl.online"/>
+                <data android:scheme="https" android:host="www.kurl.online"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

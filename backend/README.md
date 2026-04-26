@@ -1,21 +1,36 @@
 # kurl_api
 
+Cloudflare Workers Python backend. Deployed via `pywrangler`.
+
+## Setup
+
 ```bash
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-fastapi dev main.py
+pip install uv
+uv tool install workers-py
+```
+
+## Deploy
+
+```bash
+pywrangler deploy
 ```
 
 ## .env
 
 ```
-ENVIRONMENT=development
-HOST=0.0.0.0
-PORT=8000
-BASE_URL=http://localhost:8000
-CORS_ORIGINS=http://localhost:3000,https://kurlshare.com
-REDIS_URL=redis://localhost:6379
-ODESLI_BASE_URL=https://api.song.link/v1-alpha.1/links
 ODESLI_API_KEY=
 CACHE_TTL_SECONDS=86400
+
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+APPLE_TEAM_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY=
+TIDAL_CLIENT_ID=
+TIDAL_CLIENT_SECRET=
+YOUTUBE_API_KEY=
+SOUNDCLOUD_CLIENT_ID=
+SOUNDCLOUD_CLIENT_SECRET=
 ```
+
+Production secrets are set via `wrangler secret put`.

@@ -5,86 +5,90 @@
 ```mermaid
 flowchart TD
     Flutter["Flutter
-    iOS + Android, share extension"] --> SQLite["SQLite
-    on-device via sqflite"]
-    Flutter -->|HTTP| FastAPI["FastAPI
-    Python, async, Railway"]
-    FastAPI --> Redis["Redis
+    iOS, Android, Web"] -->|HTTP| Workers["Cloudflare Workers
+    Python (Pyodide)"]
+    Workers --> KV["Cloudflare KV
     link cache"]
-    FastAPI --> PostgreSQL["PostgreSQL
-    users, friends, prefs"]
-    FastAPI --> Odesli["Odesli API
-    song.link, free tier"]
-    PostgreSQL -.->|swap locally| SQLiteLocal["SQLite
-    local dev"]
+    Workers --> D1["Cloudflare D1
+    analytics events"]
+    Workers --> Odesli["Odesli API
+    song.link fallback"]
+    Workers --> PlatformAPIs["Platform APIs
+    Spotify, Tidal, Deezer, etc."]
 ```
-
-### Why SQLite stays
-
-SQLite sits on-device. It handles prefs, link cache, and friend list sync - everything that doesn't need a server. Postgres only comes in at phase 2 for the user/friend graph. `sqflite` works, it's free, no reason to overcomplicate it.
-
----
 
 ## Project structure
 
 ```
 kurl/
-├── app/                          # Flutter app
+├── app/                             # Flutter app
 │   ├── lib/
 │   │   ├── main.dart
-│   │   ├── app.dart
-│   │   ├── core/
-│   │   │   ├── constants.dart       # platform names, colours, config
-│   │   │   ├── router.dart          # Go Router config
-│   │   │   └── theme.dart
-│   │   ├── data/
-│   │   │   ├── db/
-│   │   │   │   ├── database.dart    # SQLite init + migrations
-│   │   │   │   └── prefs_dao.dart   # user pref queries
-│   │   │   ├── models/
-│   │   │   │   ├── platform.dart    # streaming platform enum
-│   │   │   │   ├── resolve_result.dart
-│   │   │   │   └── friend.dart      # phase 2
-│   │   │   └── repositories/
-│   │   │       ├── url_repository.dart    # calls backend, caches locally
-│   │   │       └── friend_repository.dart # phase 2
+│   │   ├── app/
+│   │   │   ├── app.dart
+│   │   │   ├── config.dart          # API base URL, API key
+│   │   │   └── routes/
+│   │   │       └── kurl.dart        # main kurl screen
+│   │   ├── models/
+│   │   │   ├── kurl_result.dart
+│   │   │   └── platform.dart        # platform enum, icons, colours
 │   │   ├── services/
-│   │   │   ├── share_service.dart   # incoming share intent
-│   │   │   └── clipboard_service.dart
-│   │   └── ui/
-│   │       ├── share/
-│   │       │   ├── share_screen.dart       # main share flow
-│   │       │   └── platform_picker.dart    # platform selection sheet
-│   │       ├── settings/
-│   │       │   └── settings_screen.dart    # preferred platform, account
-│   │       └── friends/                    # phase 2
-│   │           ├── friends_screen.dart
-│   │           └── add_friend_screen.dart
-│   ├── android/
-│   │   └── app/src/main/
-│   │       └── AndroidManifest.xml  # share intent filter
-│   ├── ios/
-│   │   └── Runner/
-│   │       └── Info.plist           # share extension config
+│   │   │   ├── api_service.dart     # POST /api/kurl
+│   │   │   └── analytics_service.dart # fire-and-forget event tracking
+│   │   ├── utils/
+│   │   │   └── url_validator.dart
+│   │   └── widgets/
+│   │       └── shared/
+│   │           ├── platform_picker.dart
+│   │           ├── result_card.dart
+│   │           └── marquee_text.dart
 │   └── pubspec.yaml
 │
-├── backend/                         # FastAPI
+├── backend/                         # Cloudflare Workers Python
+│   ├── entry.py                     # WorkerEntrypoint (fetch handler)
+│   ├── wrangler.toml                # Worker config, D1 + KV bindings
+│   ├── pyproject.toml               # Python deps (httpx, PyJWT)
+│   ├── api/
+│   │   ├── router.py                # route decorator + resolve()
+│   │   ├── middleware/
+│   │   │   ├── auth.py              # API key validation
+│   │   │   └── rate_limit.py        # write endpoint throttling
+│   │   ├── controllers/
+│   │   │   └── events_controller.py # analytics business logic
+│   │   ├── routes/
+│   │   │   └── events.py            # event HTTP handlers
+│   │   └── services/
+│   │       └── urls.py              # kurl resolution logic
+│   ├── clients/
+│   │   ├── cache.py                 # KV wrapper
+│   │   ├── odesli.py                # Odesli API client
+│   │   ├── metadata.py              # HTML scraping fallback
+│   │   └── platforms/               # per-platform API clients
+│   │       ├── spotify.py
+│   │       ├── apple.py
+│   │       ├── deezer.py
+│   │       ├── tidal.py
+│   │       ├── youtube.py
+│   │       └── soundcloud.py
+│   ├── db/
+│   │   ├── db.py                    # D1 query helpers
+│   │   ├── schemas/
+│   │   │   └── events.sql           # events table DDL
+│   │   └── queries/
+│   │       └── events.py            # event SQL statements
+│   ├── models/
+│   │   └── event.py                 # event field mapping
 │   ├── app/
-│   │   ├── main.py
 │   │   ├── config.py                # env vars, settings
-│   │   ├── routers/
-│   │   │   ├── urls.py              # POST /api/kurl
-│   │   │   └── users.py             # phase 2 - auth, profile
-│   │   ├── services/
-│   │   │   ├── odesli.py            # Odesli API client
-│   │   │   └── cache.py             # Redis helpers
-│   │   ├── models/
-│   │   │   └── schemas.py           # Pydantic models
-│   │   └── db/
-│   │       └── postgres.py          # phase 2 - SQLAlchemy async
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── railway.toml
+│   │   └── constants.py             # platform sets, URL templates
+│   └── utils/
+│       ├── response.py              # JSON response builders
+│       ├── errors.py                # ApiError exception
+│       ├── uid.py                   # prefixed UID generator
+│       ├── url_parser.py            # music URL parsing
+│       ├── kurler.py                # ISRC/UPC resolution
+│       └── logging.py
 │
-└── README.md
+├── _docs/                           # documentation
+└── .github/workflows/kurl.yml      # CI/CD pipeline
 ```

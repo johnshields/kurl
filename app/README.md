@@ -1,10 +1,20 @@
-# kurl_mobile
+# kurl app
+
+Flutter app (iOS, Android, Web).
+
+## Setup
 
 ```bash
 flutter pub get
-flutter run -d chrome --web-port 3000
+flutter run
+```
+
+## Web
+
+```bash
+flutter build web --release --dart-define=KURL_API_KEY=<key>
 ```
 
 ## Config
 
-API base URL is set in `lib/config.dart`.
+API base URL and API key are set in `lib/app/config.dart`. Release builds hit `https://api.kurl.online`, debug builds hit `localhost:8000`. The API key is injected at build time via `--dart-define`.

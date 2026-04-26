@@ -1,5 +1,22 @@
 # API
 
+Base URL: `https://api.kurl.online`
+
+## Authentication
+
+Protected endpoints require an API key via header:
+```
+X-API-Key: <key>
+```
+
+| Endpoint | Auth |
+|---|---|
+| `GET /`, `/api`, `/api/info`, `/api/healthz` | Public |
+| `POST /api/events` | Public |
+| `POST /api/kurl` | API key |
+| `GET /api/readyz` | API key |
+| `GET /api/events/summary` | API key |
+
 ## `POST /api/kurl`
 
 The main endpoint — kurls a streaming URL to another platform.
@@ -43,16 +60,49 @@ Indicates which resolution path produced the link. Ordered from highest to lowes
 
 ### Resolution order
 
-1. **Cache** — Redis `md5(normalised_url + target_platform)`, 24h TTL
-2. **Kurler (fast path)** — parse source URL, call source platform's API for ISRC/UPC, search target platform by the same identifier. Requires API creds on the target (and ideally source) platform
-3. **Metadata search** — if source has no API, scrape metadata (oEmbed for YouTube, `__NEXT_DATA__` for Spotify, OG tags for Apple) and search target via its search API
-4. **Odesli by-id or by-URL** — 3× retry with 1s/2s/4s backoff on 429
-5. **Search URL fallback** — build a deep-link into the target platform's search page from scraped metadata
-6. **404** — only when we have no metadata from any source
+1. **Cache** — KV lookup by `md5(normalised_url + target_platform)`, 24h TTL
+2. **Kurler (fast path)** — parse source URL, call source platform's API for ISRC/UPC, search target platform by the same identifier
+3. **Odesli by-id or by-URL** — fallback link resolution
+4. **Metadata scraping** — oEmbed for YouTube, OG tags for Apple, etc.
+5. **Search URL fallback** — deep-link into the target platform's search page
+6. **404** — only when no metadata from any source
+
+## `POST /api/events`
+
+Fire-and-forget analytics event. No auth required.
+
+**Request**
+```json
+{
+  "type": "kurl",
+  "sourceUrl": "https://open.spotify.com/track/...",
+  "platform": "deezer"
+}
+```
+
+**Event types**: `page_view`, `kurl`, `kurl_success`, `platform_select`, `open_result`
+
+## `GET /api/events/summary`
+
+Analytics summary. Requires API key. Accepts `?days=7` (1-365).
+
+**Response**
+```json
+{
+  "status": "success",
+  "data": {
+    "days": 7,
+    "totals": {"kurl": 42, "page_view": 100},
+    "topPlatforms": [{"platform": "spotify", "count": 20}],
+    "countries": [{"country": "IE", "count": 15}],
+    "recent": [...]
+  }
+}
+```
 
 ## `GET /api/readyz`
 
-Per-client readiness probe. Pings each configured platform client with a 5s timeout.
+Per-client readiness probe. Pings each configured platform client with a 5s timeout. Requires API key.
 
 **Response (200)**
 ```json
@@ -61,7 +111,7 @@ Per-client readiness probe. Pings each configured platform client with a 5s time
   "service": "kurl_api",
   "uptime_seconds": 12.34,
   "checks": {
-    "redis":      {"status": "healthy"},
+    "cache":      {"status": "healthy"},
     "spotify":    {"status": "healthy"},
     "appleMusic": {"status": "skipped", "reason": "no credentials"},
     "deezer":     {"status": "healthy"},
@@ -70,19 +120,15 @@ Per-client readiness probe. Pings each configured platform client with a 5s time
 }
 ```
 
-**Status codes**
-- `200 ready` — all configured clients reachable
-- `503 degraded` — one or more `unhealthy`; response body lists which and why
-- Unconfigured clients (no creds set) return `skipped` — does not trigger 503
-
-Use this in CI smoke tests and deployment health probes.
-
 ## System endpoints
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /` | HTML landing page |
 | `GET /api` | Service info (name, version, description, uptime) |
-| `GET /api/healthz` | Liveness check — is the process up |
-| `GET /api/readyz` | Readiness check — are all dependencies reachable |
-| `GET /docs` | Dark-themed Swagger UI |
+| `GET /api/healthz` | Liveness check |
+| `GET /api/readyz` | Readiness check (requires API key) |
+
+## Rate limiting
+
+Write endpoints (POST, PATCH, DELETE) are limited to 10 requests per 60 seconds. `/api/events` is exempt.
