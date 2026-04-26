@@ -2,8 +2,13 @@
 __pycache__/
 *.py[codz]
 venv/
+.venv*/
 .env
 *.egg-info/
+
+# Cloudflare Workers (pywrangler generated)
+python_modules/
+.wrangler/
 
 # Flutter / Dart
 .dart_tool/

@@ -1,6 +1,10 @@
-import os
+"""
+App configuration
+Reads from environment variables. Works on both Cloudflare Workers
+(env bindings) and local dev (os.environ / .env file).
+"""
 
-from pydantic_settings import BaseSettings
+import os
 
 from app.constants import ALLOWED_ORIGINS
 
@@ -24,36 +28,75 @@ def is_production() -> bool:
     return ENVIRONMENT == "production"
 
 
-class Settings(BaseSettings):
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+class Settings:
+    """Lazy settings that read from os.environ on access."""
 
-    REDIS_URL: str | None = None
-    ODESLI_BASE_URL: str = "https://api.song.link/v1-alpha.1/links"
-    ODESLI_API_KEY: str | None = None
-    CACHE_TTL_SECONDS: int = 86400
+    def _get(self, key: str, default: str | None = None) -> str | None:
+        return os.getenv(key, default)
+
+    def _get_int(self, key: str, default: int) -> int:
+        return int(os.getenv(key, str(default)))
+
+    @property
+    def REDIS_URL(self) -> str | None:
+        return self._get("REDIS_URL")
+
+    @property
+    def ODESLI_BASE_URL(self) -> str:
+        return self._get("ODESLI_BASE_URL", "https://api.song.link/v1-alpha.1/links")
+
+    @property
+    def ODESLI_API_KEY(self) -> str | None:
+        return self._get("ODESLI_API_KEY")
+
+    @property
+    def CACHE_TTL_SECONDS(self) -> int:
+        return self._get_int("CACHE_TTL_SECONDS", 86400)
 
     # Spotify (OAuth client credentials)
-    SPOTIFY_CLIENT_ID: str | None = None
-    SPOTIFY_CLIENT_SECRET: str | None = None
+    @property
+    def SPOTIFY_CLIENT_ID(self) -> str | None:
+        return self._get("SPOTIFY_CLIENT_ID")
+
+    @property
+    def SPOTIFY_CLIENT_SECRET(self) -> str | None:
+        return self._get("SPOTIFY_CLIENT_SECRET")
 
     # Apple Music (JWT via MusicKit)
-    APPLE_TEAM_ID: str | None = None
-    APPLE_KEY_ID: str | None = None
-    APPLE_PRIVATE_KEY: str | None = None
+    @property
+    def APPLE_TEAM_ID(self) -> str | None:
+        return self._get("APPLE_TEAM_ID")
+
+    @property
+    def APPLE_KEY_ID(self) -> str | None:
+        return self._get("APPLE_KEY_ID")
+
+    @property
+    def APPLE_PRIVATE_KEY(self) -> str | None:
+        return self._get("APPLE_PRIVATE_KEY")
 
     # Tidal (OAuth client credentials)
-    TIDAL_CLIENT_ID: str | None = None
-    TIDAL_CLIENT_SECRET: str | None = None
+    @property
+    def TIDAL_CLIENT_ID(self) -> str | None:
+        return self._get("TIDAL_CLIENT_ID")
+
+    @property
+    def TIDAL_CLIENT_SECRET(self) -> str | None:
+        return self._get("TIDAL_CLIENT_SECRET")
 
     # YouTube Data API v3 (API key)
-    YOUTUBE_API_KEY: str | None = None
+    @property
+    def YOUTUBE_API_KEY(self) -> str | None:
+        return self._get("YOUTUBE_API_KEY")
 
     # SoundCloud (OAuth 2.1 client credentials)
-    SOUNDCLOUD_CLIENT_ID: str | None = None
-    SOUNDCLOUD_CLIENT_SECRET: str | None = None
+    @property
+    def SOUNDCLOUD_CLIENT_ID(self) -> str | None:
+        return self._get("SOUNDCLOUD_CLIENT_ID")
 
-    # Deezer requires no credentials
-    # Audiomack, Amazon Music, Pandora: URL parsing + Odesli fallback only (no direct API)
+    @property
+    def SOUNDCLOUD_CLIENT_SECRET(self) -> str | None:
+        return self._get("SOUNDCLOUD_CLIENT_SECRET")
 
 
 settings = Settings()

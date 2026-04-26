@@ -1,0 +1,33 @@
+name = "kurl-api"
+main = "entry.py"
+compatibility_date = "2026-04-26"
+compatibility_flags = ["python_workers"]
+find_additional_modules = false
+
+[assets]
+directory = "public"
+
+# KV binding — add via dashboard if CLI auth lacks perms
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "6992aaa34a2b4899a4f43305bb5c63d5"
+
+[[rules]]
+type = "Text"
+globs = ["public/**/*.html", "public/**/*.css", "public/**/*.js", "public/**/*.json", "public/**/*.ico"]
+fallthrough = true
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

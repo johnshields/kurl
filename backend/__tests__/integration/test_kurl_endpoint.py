@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 def client():
     """Build a TestClient with cache disabled (no lifespan context)."""
     # Import inside fixture so env-var stubs in conftest apply first.
-    from main import app
+    from entry import app
 
     # Disable cache side effects.
     with (

@@ -1,10 +1,10 @@
 import asyncio
 import time
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from api import templates
+from api import render
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
 from clients.platforms import apple, deezer, spotify, tidal
@@ -34,9 +34,9 @@ def _info() -> dict:
 
 
 @root_router.get("/", include_in_schema=False)
-def root(request: Request):
+def root():
     """Landing page — service info fetched client-side from /api."""
-    return templates.TemplateResponse(request, "index.html", {"name": NAME})
+    return render("index.html", {"name": NAME})
 
 
 @router.get("/", tags=["System"])
@@ -64,7 +64,7 @@ async def readiness_check():
     Unconfigured clients are skipped (reported as 'skipped').
     """
     checks = await asyncio.gather(
-        _check_redis(),
+        _check_cache(),
         _check_client("spotify", spotify, _probe_spotify),
         _check_client("appleMusic", apple, _probe_apple),
         _check_client("deezer", deezer, _probe_deezer),
@@ -87,15 +87,11 @@ async def readiness_check():
     )
 
 
-async def _check_redis() -> tuple[str, dict]:
-    """Redis is optional -- unreachable is 'skipped', not a failure."""
-    if not cache._client:
-        return "redis", {"status": "skipped", "reason": "not configured"}
-    try:
-        await cache._client.ping()
-        return "redis", {"status": "healthy"}
-    except Exception as e:
-        return "redis", {"status": "skipped", "reason": str(e)[:100]}
+async def _check_cache() -> tuple[str, dict]:
+    """Cache is optional -- unavailable is 'skipped', not a failure."""
+    if cache._kv:
+        return "cache", {"status": "healthy"}
+    return "cache", {"status": "skipped", "reason": "no KV binding"}
 
 
 async def _check_client(name: str, client, probe) -> tuple[str, dict]:

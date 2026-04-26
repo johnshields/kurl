@@ -1,14 +1,18 @@
+"""
+Workers entry point
+Wraps the FastAPI app for Cloudflare Workers Python runtime.
+Local dev: uvicorn entry:app --reload
+"""
+
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from api.middleware.request_logger import RequestLoggerMiddleware
 from api.routes import docs, system, urls
-from app.config import BASE_URL, CORS_ORIGINS, DESCRIPTION, ENVIRONMENT, HOST, NAME, PORT, VERSION
+from app.config import BASE_URL, CORS_ORIGINS, DESCRIPTION, NAME, VERSION
 from app.constants import ERROR_MESSAGES, OPENAPI_TAGS
 from clients import cache
 from utils.logging import get_logger
@@ -44,8 +48,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="public/static"), name="static")
-
 app.include_router(system.root_router)
 app.include_router(system.router)
 app.include_router(urls.router)
@@ -78,7 +80,19 @@ async def global_exception_handler(request: Request, exc: Exception):
     return error(ERROR_MESSAGES["INTERNAL_ERROR"], status_code=500)
 
 
-if __name__ == "__main__":
-    logger.info("%s booting up (%s)...", NAME, ENVIRONMENT)
-    logger.info("%s running at %s", NAME, BASE_URL)
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=not ENVIRONMENT == "production")
+try:
+    import asgi
+    from workers import WorkerEntrypoint
+
+    class Default(WorkerEntrypoint):
+        async def fetch(self, request):
+            cache.init_kv(getattr(self.env, "CACHE", None))
+            return await asgi.fetch(app, request.js_object, self.env)
+
+except ImportError:
+    try:
+        from fastapi.staticfiles import StaticFiles
+
+        app.mount("/static", StaticFiles(directory="public/static"), name="static")
+    except Exception:
+        pass

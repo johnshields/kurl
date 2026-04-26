@@ -1,0 +1,10 @@
+venv/
+.venv/
+__tests__/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.env
+requirements.txt
+pytest.ini
