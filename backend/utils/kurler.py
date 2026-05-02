@@ -255,8 +255,12 @@ async def _search_track_by_metadata(
     if not client or not hasattr(client, "search_track"):
         return None
 
+    # Trim multi-artist CSVs ("A, B, C, D") to primary -- search APIs match
+    # poorly when given full classical/featured-artist credits.
+    primary_artist = artist.split(",")[0].strip() or artist
+
     try:
-        match = await client.search_track(title, artist, **_ctx(target_platform))
+        match = await client.search_track(title, primary_artist, **_ctx(target_platform))
         if not match:
             return None
         url = client.extract_track_url(match)

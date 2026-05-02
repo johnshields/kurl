@@ -67,8 +67,13 @@ async def search_artist(name: str) -> dict | None:
 
 
 async def search_track(title: str, artist: str) -> dict | None:
-    """Search for a track by title and artist. Returns the first match or None."""
-    query = f"track:{title} artist:{artist}"
+    """Search for a track by title and artist. Returns the first match or None.
+
+    Plain query (no field qualifiers) -- Spotify field syntax breaks on colons
+    in classical titles ("Richter: On the Nature of Daylight") and commas in
+    multi-artist credits.
+    """
+    query = f"{title} {artist}"
     data = await _api_get("/search", params={"q": query, "type": "track", "limit": 1})
     items = data.get("tracks", {}).get("items", [])
     return items[0] if items else None
