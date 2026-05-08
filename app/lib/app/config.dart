@@ -3,11 +3,20 @@ import 'package:flutter/foundation.dart';
 const _prodUrl = 'https://api.kurl.online';
 const apiKey = String.fromEnvironment('KURL_API_KEY');
 
-// AdSense -- pass via --dart-define on build.
-// Empty string disables ads (dev / non-prod).
-const adsenseClient = String.fromEnvironment('ADSENSE_CLIENT');
-const adsenseSlotInline = String.fromEnvironment('ADSENSE_SLOT_INLINE');
-const adsenseSlotFooter = String.fromEnvironment('ADSENSE_SLOT_FOOTER');
+// AdSense slot IDs are public (visible in rendered HTML), so safe to
+// commit. Override via --dart-define for staging / different sites.
+const adsenseClient = String.fromEnvironment(
+  'ADSENSE_CLIENT',
+  defaultValue: 'ca-pub-3145356206216831',
+);
+const adsenseSlotInline = String.fromEnvironment(
+  'ADSENSE_SLOT_INLINE',
+  defaultValue: '9162167583',
+);
+const adsenseSlotFooter = String.fromEnvironment(
+  'ADSENSE_SLOT_FOOTER',
+  defaultValue: '2004136400',
+);
 
 String _resolveBaseUrl() {
   if (kReleaseMode) return _prodUrl;
