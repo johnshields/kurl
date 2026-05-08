@@ -114,15 +114,24 @@ class ResultCard extends StatelessWidget {
                             const SizedBox(width: 8),
                           ],
                           Flexible(
-                            child: Text(
-                              'Share ${platform?.name ?? result.platform} link',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: onColour,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Narrow viewports drop platform name -- icon
+                                // already shows which service is being shared.
+                                final label = constraints.maxWidth < 140
+                                    ? 'Share'
+                                    : 'Share ${platform?.name ?? result.platform}';
+                                return Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: onColour,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],

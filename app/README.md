@@ -12,7 +12,7 @@ flutter run
 ## Web
 
 ```bash
-flutter build web --release --dart-define=KURL_API_KEY=<key>
+flutter run -d chrome --web-port 5173
 ```
 
 ## Config

@@ -33,7 +33,8 @@ def json_success(message: str, data: dict) -> Response:
 
 
 def preflight() -> Response:
-    return Response("", status=204, headers=CORS_HEADERS)
+    # 204 must have null body, not empty string -- Workers warns on the latter.
+    return Response(None, status=204, headers=CORS_HEADERS)
 
 
 def parse_path(url: str) -> str:

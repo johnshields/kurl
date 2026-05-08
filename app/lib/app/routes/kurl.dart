@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
+import 'package:kurl/utils/clipboard_paste.dart';
 import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
@@ -95,8 +95,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _handlePaste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = data?.text?.trim();
+    final text = (await readClipboardText())?.trim();
     if (text == null || text.isEmpty) return;
     _populateUrl(text);
   }
