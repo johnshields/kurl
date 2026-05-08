@@ -10,6 +10,8 @@ import 'package:kurl/services/api_service.dart';
 import 'package:kurl/utils/clipboard_paste.dart';
 import 'package:kurl/utils/friendly_error.dart';
 import 'package:kurl/utils/url_validator.dart';
+import 'package:kurl/app/config.dart' as cfg;
+import 'package:kurl/widgets/shared/ad_banner.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -254,6 +256,18 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                     if (_result != null) ...[
                       const SizedBox(height: 16),
                       ResultCard(result: _result!),
+                      // In-content ad after a successful kurl -- contextual,
+                      // visible only when there's already a result so the
+                      // user has finished the primary task.
+                      if (cfg.adsenseSlotInline.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        AdBanner(slot: cfg.adsenseSlotInline),
+                      ],
+                    ],
+                    // Footer ad -- bottom of page, never blocks the form.
+                    if (cfg.adsenseSlotFooter.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      AdBanner(slot: cfg.adsenseSlotFooter),
                     ],
                   ],
                 ),
