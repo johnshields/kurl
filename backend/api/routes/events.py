@@ -17,7 +17,7 @@ async def create_event(db, request):
         data = await parse_json_body(request)
     except Exception as e:
         logger.error("Failed to parse event body: %s", e)
-        return json_error("Invalid JSON body.", 400)
+        return json_error("Invalid JSON body.", 400, code="INVALID_REQUEST")
 
     meta = {
         "referrer": request.headers.get("Referer"),

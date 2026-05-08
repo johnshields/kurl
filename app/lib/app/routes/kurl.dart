@@ -8,6 +8,7 @@ import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
 import 'package:kurl/utils/clipboard_paste.dart';
+import 'package:kurl/utils/friendly_error.dart';
 import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
@@ -125,7 +126,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
       setState(() => _result = data);
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = friendlyError(e));
     } finally {
       setState(() => _loading = false);
     }

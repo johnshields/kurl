@@ -1,7 +1,9 @@
 import hashlib
 import json
+import re
+from urllib.parse import urlparse
 
-from app.constants import ERROR_MESSAGES, PLATFORMS
+from app.constants import PLATFORMS
 from clients import cache, metadata, odesli
 from utils.errors import ApiError
 from utils.kurler import kurl as kurl_direct
@@ -24,7 +26,7 @@ async def kurl(url: str, target_platform: str):
     3. Metadata scraping + search URL (last resort)
     """
     if target_platform not in PLATFORMS:
-        return json_error(f"{ERROR_MESSAGES['UNKNOWN_PLATFORM']}: {target_platform}", 400)
+        return json_error(f"Unknown platform: {target_platform}", 400, code="UNKNOWN_PLATFORM")
 
     url = normalise_url(url)
 
@@ -34,7 +36,7 @@ async def kurl(url: str, target_platform: str):
     logger.info("Kurling %s -> %s", url, target_platform)
 
     if is_search_url(url):
-        return json_error(ERROR_MESSAGES["SEARCH_URL"], 400)
+        return json_error("Search URL provided, not a track link", 400, code="SEARCH_URL")
 
     cache_key = hashlib.md5(f"{url}{target_platform}".encode()).hexdigest()
 
@@ -100,9 +102,13 @@ async def kurl(url: str, target_platform: str):
 
         resolved_url = build_search_url(target_platform, title, artist)
         if not resolved_url:
-            if odesli_error:
-                return json_error(odesli_error.detail, odesli_error.status_code)
-            return json_error(f"{ERROR_MESSAGES['PLATFORM_NOT_FOUND']} ({target_platform})", 404)
+            # Last resort: open the target platform's search with the URL slug.
+            # Beats surfacing a raw Odesli 400 to the user.
+            slug = _slug_query(url)
+            if slug:
+                resolved_url = build_search_url(target_platform, slug, None)
+        if not resolved_url:
+            return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
 
@@ -118,3 +124,25 @@ async def kurl(url: str, target_platform: str):
 
     result["cached"] = False
     return json_success("Kurled", result)
+
+
+def _slug_query(url: str) -> str | None:
+    """Pull a human-readable query from a URL slug when scraping yields nothing.
+
+    SoundCloud paths like /user-674621149/hans-zimmer-time-deka-techno hold
+    the title in the trailing segment -- replace dashes/underscores with spaces.
+    """
+    try:
+        path = urlparse(url).path
+    except Exception:
+        return None
+    segs = [s for s in path.split("/") if s]
+    if not segs:
+        return None
+    # Trailing slug usually carries the track name.
+    raw = segs[-1]
+    cleaned = re.sub(r"[-_]+", " ", raw).strip()
+    # Drop pure-numeric IDs.
+    if cleaned.isdigit() or len(cleaned) < 3:
+        return None
+    return cleaned

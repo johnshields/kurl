@@ -29,14 +29,37 @@ class ApiService {
     final json = jsonDecode(response.body);
 
     if (response.statusCode != 200 || json['status'] == 'error') {
-      throw Exception(json['message'] ?? json['detail'] ?? 'Request failed');
+      throw ApiException(
+        code: json['code'] as String? ?? 'INTERNAL_ERROR',
+        message: json['message'] as String? ?? json['detail'] as String? ?? 'Request failed',
+        status: response.statusCode,
+      );
     }
 
     final data = json['data'] as Map<String, dynamic>?;
     if (data == null) {
-      throw Exception('Invalid response from server');
+      throw ApiException(
+        code: 'INVALID_RESPONSE',
+        message: 'Invalid response from server',
+        status: response.statusCode,
+      );
     }
 
     return KurlResult.fromJson(data);
   }
+}
+
+class ApiException implements Exception {
+  final String code;
+  final String message;
+  final int status;
+
+  ApiException({
+    required this.code,
+    required this.message,
+    required this.status,
+  });
+
+  @override
+  String toString() => message;
 }

@@ -24,8 +24,11 @@ def json_response(data: dict, status: int = 200) -> Response:
     )
 
 
-def json_error(message: str, status: int) -> Response:
-    return json_response({"status": "error", "message": message}, status)
+def json_error(message: str, status: int, code: str = "INTERNAL_ERROR") -> Response:
+    return json_response(
+        {"status": "error", "code": code, "message": message},
+        status,
+    )
 
 
 def json_success(message: str, data: dict) -> Response:

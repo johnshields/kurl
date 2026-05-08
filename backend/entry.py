@@ -12,6 +12,7 @@ from api.middleware.auth import authenticate
 from api.middleware.rate_limit import check_rate_limit
 from api.router import resolve
 from clients import cache
+from utils.errors import ApiError
 from utils.logging import get_logger
 from utils.response import json_error, parse_path, preflight
 
@@ -67,9 +68,12 @@ class Default(WorkerEntrypoint):
                 return rate_error
 
             response = await resolve(db, method, path, request)
+        except ApiError as e:
+            logger.warning("ApiError on [%s] %s: %s", method, path, e.detail)
+            response = json_error(e.detail, e.status_code, code=e.code)
         except Exception as e:
             logger.error("Unhandled exception on [%s] %s: %s", method, path, e)
-            response = json_error("Internal server error", 500)
+            response = json_error("Internal server error", 500, code="INTERNAL_ERROR")
 
         duration = round((time.time() - start) * 1000, 1)
         logger.info("%s %s %s %sms", method, path, response.status, duration)

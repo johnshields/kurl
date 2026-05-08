@@ -3,7 +3,6 @@ import asyncio
 import httpx
 
 from app.config import settings
-from app.constants import ERROR_MESSAGES
 from utils.errors import ApiError
 from utils.logging import get_logger
 
@@ -45,14 +44,23 @@ async def _call(params: dict) -> dict:
             params,
             response.text[:500],
         )
+        is_rate = response.status_code == 429
         detail = (
             "Rate limited by Odesli, try again shortly"
-            if response.status_code == 429
-            else f"{ERROR_MESSAGES['ODESLI_ERROR']} ({response.status_code})"
+            if is_rate
+            else f"Odesli API error ({response.status_code})"
         )
-        raise ApiError(status_code=502, detail=detail)
+        raise ApiError(
+            status_code=502,
+            detail=detail,
+            code="RATE_LIMITED" if is_rate else "ODESLI_ERROR",
+        )
 
-    raise ApiError(status_code=502, detail="Rate limited by Odesli, try again shortly")
+    raise ApiError(
+        status_code=502,
+        detail="Rate limited by Odesli, try again shortly",
+        code="RATE_LIMITED",
+    )
 
 
 async def resolve_by_id(platform: str, track_id: str) -> dict:

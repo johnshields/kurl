@@ -35,10 +35,11 @@ async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str
     try:
         if parsed.platform == "spotify":
             return await _fetch_spotify(parsed.track_id)
-        if parsed.platform == "appleMusic":
-            return await _fetch_og(url)
         if parsed.platform == "youtubeMusic":
             return await _fetch_youtube(parsed.track_id)
+        # Default: og scrape -- works for Apple Music, SoundCloud, Tidal,
+        # Deezer track pages and gives at least a search-quality title.
+        return await _fetch_og(url)
     except Exception as e:
         logger.warning("Metadata fetch failed for %s: %s", parsed.platform, e)
     return None, None

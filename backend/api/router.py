@@ -97,7 +97,9 @@ async def _post_kurl(db, request, **kwargs):
     target_platform = body.get("target_platform")
 
     if not url or not target_platform:
-        return json_error("url and target_platform are required", 400)
+        return json_error(
+            "url and target_platform are required", 400, code="INVALID_REQUEST"
+        )
 
     return await kurl_service.kurl(str(url), target_platform)
 
@@ -126,7 +128,7 @@ async def resolve(db, method: str, path: str, request):
         if match:
             return await handler(db, request, **match.groupdict())
 
-    return json_error("Not found", 404)
+    return json_error("Not found", 404, code="NOT_FOUND")
 
 
 # Readiness probes
