@@ -15,7 +15,3 @@ kurl intercepts music share links and converts them to whatever streaming servic
 ## Supported platforms
 
 Spotify, Apple Music, YouTube Music, Deezer, Tidal, SoundCloud, Amazon Music, Audiomack, Pandora.
-
-## Docs
-
-See [`_docs/`](_docs/) for architecture, API reference, CI, and development setup.
