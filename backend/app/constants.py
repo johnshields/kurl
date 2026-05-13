@@ -5,9 +5,9 @@ PLATFORMS = {
     "deezer",
     "tidal",
     "amazonMusic",
-    "pandora",
     "soundcloud",
-    "audiomack",
+    "beatport",
+    "bandcamp",
 }
 
 PLATFORM_NAMES = {
@@ -17,9 +17,9 @@ PLATFORM_NAMES = {
     "deezer": "Deezer",
     "tidal": "Tidal",
     "amazonMusic": "Amazon Music",
-    "pandora": "Pandora",
     "soundcloud": "SoundCloud",
-    "audiomack": "Audiomack",
+    "beatport": "Beatport",
+    "bandcamp": "Bandcamp",
 }
 
 ALLOWED_ORIGINS = [
@@ -38,9 +38,9 @@ SEARCH_URL_TEMPLATES = {
     "deezer": "https://www.deezer.com/search/{query}",
     "tidal": "https://tidal.com/search/{query}",
     "amazonMusic": "https://music.amazon.com/search/{query}",
-    "pandora": "https://www.pandora.com/search/{query}",
     "soundcloud": "https://soundcloud.com/search?q={query}",
-    "audiomack": "https://audiomack.com/search?q={query}",
+    "beatport": "https://www.beatport.com/search?q={query}",
+    "bandcamp": "https://bandcamp.com/search?q={query}",
 }
 
 """
@@ -57,7 +57,8 @@ TRACK_URL_TEMPLATES = {
     "youtubeMusic": "https://music.youtube.com/watch?v={id}",
     "amazonMusic": "https://music.amazon.com/albums/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
-    "audiomack": "https://audiomack.com/{id}",
+    "beatport": "https://www.beatport.com/track/_/{id}",
+    "bandcamp": "https://{id}",
 }
 
 TRACK_WITH_ALBUM_URL_TEMPLATES = {
@@ -72,7 +73,8 @@ ALBUM_URL_TEMPLATES = {
     "tidal": "https://tidal.com/album/{id}",
     "amazonMusic": "https://music.amazon.com/albums/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
-    "audiomack": "https://audiomack.com/{id}",
+    "beatport": "https://www.beatport.com/release/_/{id}",
+    "bandcamp": "https://{id}",
 }
 
 ARTIST_URL_TEMPLATES = {
@@ -82,7 +84,8 @@ ARTIST_URL_TEMPLATES = {
     "tidal": "https://tidal.com/artist/{id}",
     "amazonMusic": "https://music.amazon.com/artists/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
-    "audiomack": "https://audiomack.com/{id}",
+    "beatport": "https://www.beatport.com/artist/_/{id}",
+    "bandcamp": "https://{id}.bandcamp.com",
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"

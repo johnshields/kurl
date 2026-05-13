@@ -59,16 +59,16 @@ const platforms = [
     icon: SimpleIcons.amazonmusic,
   ),
   StreamingPlatform(
-    id: 'audiomack',
-    name: 'Audiomack',
-    colour: Color(0xFFFFA200),
-    icon: SimpleIcons.audiomack,
+    id: 'beatport',
+    name: 'Beatport',
+    colour: Color(0xFFA8E00F),
+    icon: SimpleIcons.beatport,
   ),
   StreamingPlatform(
-    id: 'pandora',
-    name: 'Pandora',
-    colour: Color(0xFF224099),
-    icon: SimpleIcons.pandora,
+    id: 'bandcamp',
+    name: 'Bandcamp',
+    colour: Color(0xFF629AA9),
+    icon: SimpleIcons.bandcamp,
   ),
 ];
 

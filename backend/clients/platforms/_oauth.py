@@ -1,7 +1,7 @@
 """
 OAuth helpers
 TokenCache holds a token + expiry with a 60s safety window. Works for both
-client-credentials OAuth (Spotify/Tidal/Audiomack) and locally-signed JWTs
+client-credentials OAuth (Spotify, Tidal) and locally-signed JWTs
 (Apple Music) via get_cached/store.
 """
 

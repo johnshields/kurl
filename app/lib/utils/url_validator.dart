@@ -11,8 +11,8 @@ final _musicHostPattern = RegExp(
   r'|(www\.)?soundcloud\.com'
   r'|on\.soundcloud\.com'
   r'|music\.amazon\.(com|co\.uk)'
-  r'|(www\.)?audiomack\.com'
-  r'|(www\.)?pandora\.com)$',
+  r'|(www\.)?beatport\.com'
+  r'|([a-z0-9-]+\.)?bandcamp\.com)$',
   caseSensitive: false,
 );
 
@@ -56,7 +56,7 @@ String? detectPlatform(String? input) {
   if (host.contains('tidal.com')) return 'tidal';
   if (host.contains('soundcloud.com')) return 'soundcloud';
   if (host.contains('music.amazon.')) return 'amazonMusic';
-  if (host.contains('audiomack.com')) return 'audiomack';
-  if (host.contains('pandora.com')) return 'pandora';
+  if (host.contains('beatport.com')) return 'beatport';
+  if (host.endsWith('bandcamp.com')) return 'bandcamp';
   return null;
 }

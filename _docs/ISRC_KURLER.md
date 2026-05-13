@@ -14,7 +14,8 @@ Per-platform clients live in `backend/clients/platforms/`.
 | Tidal (v2) | OAuth client creds | `attributes.isrc` | `attributes.barcodeId` | `/searchResults/{q}` (JSON:API) |
 | Amazon Music | - | no public API | no public API | - |
 | YouTube Music | - | no public API | - | - |
-| Pandora | - | no public API | - | - |
+| Beatport | - | partner-only API | - | - |
+| Bandcamp | - | API deprecated 2014 | - | - |
 
 ## Flow
 

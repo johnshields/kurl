@@ -132,9 +132,10 @@ Every properly distributed track gets the same ISRC across all platforms. Used b
 | Tidal | Yes (track metadata) | Yes | Developer portal |
 | YouTube Music | No | No public ISRC search | No official music API |
 | Amazon Music | No | No | Closed |
-| Pandora | No | No | Closed |
+| Beatport | No (partner-only API) | No public API | Partner approval required |
+| Bandcamp | No (deprecated 2014) | No | Closed |
 
-For YouTube/Amazon/Pandora, fallback to fuzzy matching on artist + track name.
+For YouTube/Amazon/Beatport/Bandcamp, fallback to og scrape + fuzzy match on artist and track name.
 
 Useful reference: https://medium.com/@leemartin/how-to-match-tracks-between-spotify-and-apple-music-2d6b6159957e
 

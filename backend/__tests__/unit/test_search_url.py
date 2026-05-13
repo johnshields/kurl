@@ -31,9 +31,13 @@ class TestBuildSearchUrl:
         url = build_search_url("amazonMusic", "Hello", "Adele")
         assert url == "https://music.amazon.com/search/Hello%20Adele"
 
-    def test_pandora(self):
-        url = build_search_url("pandora", "Hello", "Adele")
-        assert url == "https://www.pandora.com/search/Hello%20Adele"
+    def test_beatport(self):
+        url = build_search_url("beatport", "Hello", "Adele")
+        assert url == "https://www.beatport.com/search?q=Hello%20Adele"
+
+    def test_bandcamp(self):
+        url = build_search_url("bandcamp", "Hello", "Adele")
+        assert url == "https://bandcamp.com/search?q=Hello%20Adele"
 
     def test_unknown_platform_returns_none(self):
         assert build_search_url("foobar", "Hello", "Adele") is None

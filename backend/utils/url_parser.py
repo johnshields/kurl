@@ -15,7 +15,7 @@ class ParsedTrack:
 class ParsedMusicUrl:
     """Expanded parse result supporting tracks, albums, and artists."""
 
-    platform: str  # spotify, appleMusic, youtubeMusic, deezer, tidal, amazonMusic
+    platform: str  # spotify, appleMusic, youtubeMusic, deezer, tidal, amazonMusic, soundcloud, beatport, bandcamp
     entity_type: str  # track, album, artist
     id: str  # platform-specific ID
     country: str | None = None  # Apple Music / Deezer country code
@@ -72,8 +72,8 @@ _SEARCH_PATTERNS = (
     re.compile(r"tidal\.com/.*/?search"),
     re.compile(r"music\.amazon\.com/.*/?search"),
     re.compile(r"soundcloud\.com/search"),
-    re.compile(r"audiomack\.com/search"),
-    re.compile(r"pandora\.com/search"),
+    re.compile(r"beatport\.com/search"),
+    re.compile(r"bandcamp\.com/search"),
 )
 
 
@@ -113,11 +113,11 @@ def parse_music_url(url: str) -> ParsedMusicUrl | None:
     if "soundcloud.com" in host:
         return _parse_soundcloud(path)
 
-    if "audiomack.com" in host:
-        return _parse_audiomack(path)
+    if "beatport.com" in host:
+        return _parse_beatport(path)
 
-    if "pandora.com" in host:
-        return _parse_pandora(path)
+    if host.endswith("bandcamp.com"):
+        return _parse_bandcamp(host, path)
 
     return None
 
@@ -272,44 +272,43 @@ def _parse_amazon(path: str, query: dict) -> ParsedMusicUrl | None:
     return None
 
 
-_PANDORA_ARTIST = re.compile(r"/artist/[^/]+/AR(\d+)")
-_PANDORA_ALBUM = re.compile(r"/album/[^/]+/[^/]+/AL(\d+)")
-_PANDORA_TRACK = re.compile(r"/artist/[^/]+/[^/]+/TR(\d+)")
+_BEATPORT_TRACK = re.compile(r"/track/[^/]+/(\d+)")
+_BEATPORT_ALBUM = re.compile(r"/release/[^/]+/(\d+)")
+_BEATPORT_ARTIST = re.compile(r"/artist/[^/]+/(\d+)")
 
 
-def _parse_pandora(path: str) -> ParsedMusicUrl | None:
-    m = _PANDORA_TRACK.search(path)
+def _parse_beatport(path: str) -> ParsedMusicUrl | None:
+    # URL structure: /track/{slug}/{numeric_id}, /release/{slug}/{id}, /artist/{slug}/{id}
+    m = _BEATPORT_TRACK.search(path)
     if m:
-        return ParsedMusicUrl("pandora", "track", m.group(1))
+        return ParsedMusicUrl("beatport", "track", m.group(1))
 
-    m = _PANDORA_ALBUM.search(path)
+    m = _BEATPORT_ALBUM.search(path)
     if m:
-        return ParsedMusicUrl("pandora", "album", m.group(1))
+        return ParsedMusicUrl("beatport", "album", m.group(1))
 
-    m = _PANDORA_ARTIST.search(path)
+    m = _BEATPORT_ARTIST.search(path)
     if m:
-        return ParsedMusicUrl("pandora", "artist", m.group(1))
+        return ParsedMusicUrl("beatport", "artist", m.group(1))
 
     return None
 
 
-def _parse_audiomack(path: str) -> ParsedMusicUrl | None:
-    # URL structure: /{artist}/song/{slug}, /{artist}/album/{slug}, /{artist}
+def _parse_bandcamp(host: str, path: str) -> ParsedMusicUrl | None:
+    # URL structure: {artist}.bandcamp.com/track/{slug} or /album/{slug}.
+    # Bare {artist}.bandcamp.com is the artist page. ID stored as full
+    # host+path so canonical reconstruction needs no extra lookup.
     parts = [p for p in path.split("/") if p]
+
     if not parts:
+        # Artist page: id = subdomain (without .bandcamp.com)
+        artist = host.removesuffix(".bandcamp.com")
+        if artist and artist != "bandcamp" and artist != "www":
+            return ParsedMusicUrl("bandcamp", "artist", artist)
         return None
 
-    artist = parts[0]
-
-    if len(parts) == 1:
-        return ParsedMusicUrl("audiomack", "artist", artist)
-
-    if len(parts) >= 3:
-        kind = parts[1]
-        slug = parts[2]
-        if kind == "song":
-            return ParsedMusicUrl("audiomack", "track", f"{artist}/song/{slug}")
-        if kind in ("album", "playlist"):
-            return ParsedMusicUrl("audiomack", "album", f"{artist}/{kind}/{slug}")
+    if len(parts) >= 2 and parts[0] in ("track", "album"):
+        kind = "track" if parts[0] == "track" else "album"
+        return ParsedMusicUrl("bandcamp", kind, f"{host}/{parts[0]}/{parts[1]}")
 
     return None

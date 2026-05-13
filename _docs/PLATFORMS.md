@@ -11,8 +11,8 @@ Supported by backend (`app/constants.py::PLATFORMS`):
 | `tidal` | Tidal | `#FFFFFF` | SimpleIcons.tidal | OAuth client creds (v2 JSON:API) |
 | `soundcloud` | SoundCloud | `#FF5500` | SimpleIcons.soundcloud | og scrape only |
 | `amazonMusic` | Amazon | `#25D1DA` | SimpleIcons.amazonmusic | search URL only |
-| `audiomack` | Audiomack | `#FFA200` | SimpleIcons.audiomack | search URL only |
-| `pandora` | Pandora | `#224099` | SimpleIcons.pandora | search URL only |
+| `beatport` | Beatport | `#A8E00F` | SimpleIcons.beatport | search URL only |
+| `bandcamp` | Bandcamp | `#629AA9` | SimpleIcons.bandcamp | og scrape only |
 
 All 9 platforms exposed in the UI (`app/lib/models/platform.dart`). IDs match Odesli's `linksByPlatform` keys.
 
