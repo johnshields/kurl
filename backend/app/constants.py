@@ -31,61 +31,74 @@ ALLOWED_ORIGINS = [
     "https://www.kurl.online",
 ]
 
-SEARCH_URL_TEMPLATES = {
-    "spotify": "https://open.spotify.com/search/{query}",
-    "appleMusic": "https://music.apple.com/us/search?term={query}",
-    "youtubeMusic": "https://music.youtube.com/search?q={query}",
-    "soundcloud": "https://soundcloud.com/search?q={query}",
-    "beatport": "https://www.beatport.com/search?q={query}",
-    "bandcamp": "https://bandcamp.com/search?q={query}",
-    "amazonMusic": "https://music.amazon.com/search/{query}",
-    "tidal": "https://tidal.com/search/{query}",
-    "deezer": "https://www.deezer.com/search/{query}",
-}
-
 """
-Canonical URL templates
-Used for rebuilding a platform URL from a parsed entity (track/album/artist id).
-Apple Music and Amazon tracks live inside albums, so use TRACK_WITH_ALBUM when
-album_id is known.
+URL templates per platform.
+
+Lookup: URL_TEMPLATES[platform][kind] where kind in
+{track, album, artist, search, track_in_album}.
+
+track_in_album is for Apple Music / Amazon where a track URL embeds its
+parent album ID. Falls back to the plain track template when no album_id
+is known.
+
+Placeholders supported: {id}, {album_id}, {country}, {query}. Unused
+placeholders in a given template are ignored by str.format.
 """
-TRACK_URL_TEMPLATES = {
-    "spotify": "https://open.spotify.com/track/{id}",
-    "appleMusic": "https://music.apple.com/{country}/song/_/{id}",
-    "youtubeMusic": "https://music.youtube.com/watch?v={id}",
-    "soundcloud": "https://soundcloud.com/{id}",
-    "beatport": "https://www.beatport.com/track/_/{id}",
-    "bandcamp": "https://{id}",
-    "amazonMusic": "https://music.amazon.com/albums/{id}",
-    "tidal": "https://tidal.com/track/{id}",
-    "deezer": "https://www.deezer.com/track/{id}",
-}
-
-TRACK_WITH_ALBUM_URL_TEMPLATES = {
-    "appleMusic": "https://music.apple.com/{country}/album/_/{album_id}?i={id}",
-    "amazonMusic": "https://music.amazon.com/albums/{album_id}?trackAsin={id}",
-}
-
-ALBUM_URL_TEMPLATES = {
-    "spotify": "https://open.spotify.com/album/{id}",
-    "appleMusic": "https://music.apple.com/{country}/album/_/{id}",
-    "soundcloud": "https://soundcloud.com/{id}",
-    "beatport": "https://www.beatport.com/release/_/{id}",
-    "bandcamp": "https://{id}",
-    "amazonMusic": "https://music.amazon.com/albums/{id}",
-    "tidal": "https://tidal.com/album/{id}",
-    "deezer": "https://www.deezer.com/album/{id}",
-}
-
-ARTIST_URL_TEMPLATES = {
-    "spotify": "https://open.spotify.com/artist/{id}",
-    "appleMusic": "https://music.apple.com/{country}/artist/_/{id}",
-    "soundcloud": "https://soundcloud.com/{id}",
-    "beatport": "https://www.beatport.com/artist/_/{id}",
-    "bandcamp": "https://{id}.bandcamp.com",
-    "amazonMusic": "https://music.amazon.com/artists/{id}",
-    "tidal": "https://tidal.com/artist/{id}",
-    "deezer": "https://www.deezer.com/artist/{id}",
+URL_TEMPLATES = {
+    "spotify": {
+        "track": "https://open.spotify.com/track/{id}",
+        "album": "https://open.spotify.com/album/{id}",
+        "artist": "https://open.spotify.com/artist/{id}",
+        "search": "https://open.spotify.com/search/{query}",
+    },
+    "appleMusic": {
+        "track": "https://music.apple.com/{country}/song/_/{id}",
+        "track_in_album": "https://music.apple.com/{country}/album/_/{album_id}?i={id}",
+        "album": "https://music.apple.com/{country}/album/_/{id}",
+        "artist": "https://music.apple.com/{country}/artist/_/{id}",
+        "search": "https://music.apple.com/us/search?term={query}",
+    },
+    "youtubeMusic": {
+        "track": "https://music.youtube.com/watch?v={id}",
+        "search": "https://music.youtube.com/search?q={query}",
+    },
+    "soundcloud": {
+        "track": "https://soundcloud.com/{id}",
+        "album": "https://soundcloud.com/{id}",
+        "artist": "https://soundcloud.com/{id}",
+        "search": "https://soundcloud.com/search?q={query}",
+    },
+    "beatport": {
+        "track": "https://www.beatport.com/track/_/{id}",
+        "album": "https://www.beatport.com/release/_/{id}",
+        "artist": "https://www.beatport.com/artist/_/{id}",
+        "search": "https://www.beatport.com/search?q={query}",
+    },
+    "bandcamp": {
+        "track": "https://{id}",
+        "album": "https://{id}",
+        "artist": "https://{id}.bandcamp.com",
+        "search": "https://bandcamp.com/search?q={query}",
+    },
+    "amazonMusic": {
+        "track": "https://music.amazon.com/albums/{id}",
+        "track_in_album": "https://music.amazon.com/albums/{album_id}?trackAsin={id}",
+        "album": "https://music.amazon.com/albums/{id}",
+        "artist": "https://music.amazon.com/artists/{id}",
+        "search": "https://music.amazon.com/search/{query}",
+    },
+    "tidal": {
+        "track": "https://tidal.com/track/{id}",
+        "album": "https://tidal.com/album/{id}",
+        "artist": "https://tidal.com/artist/{id}",
+        "search": "https://tidal.com/search/{query}",
+    },
+    "deezer": {
+        "track": "https://www.deezer.com/track/{id}",
+        "album": "https://www.deezer.com/album/{id}",
+        "artist": "https://www.deezer.com/artist/{id}",
+        "search": "https://www.deezer.com/search/{query}",
+    },
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
