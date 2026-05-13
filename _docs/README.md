@@ -128,12 +128,13 @@ Every properly distributed track gets the same ISRC across all platforms. Used b
 |---|---|---|---|
 | Spotify | Yes (`external_ids.isrc`) | Yes (`isrc:` filter) | Free, OAuth client credentials |
 | Apple Music | Yes (track metadata) | Yes (batch up to 25) | Free, Apple Developer account |
-| Deezer | Yes (track object) | Yes (undocumented `/track/isrc:{code}`) | Free, no auth |
-| Tidal | Yes (track metadata) | Yes | Developer portal |
 | YouTube Music | No | No public ISRC search | No official music API |
-| Amazon Music | No | No | Closed |
+| SoundCloud | No | No public ISRC search | Partner approval required |
 | Beatport | No (partner-only API) | No public API | Partner approval required |
 | Bandcamp | No (deprecated 2014) | No | Closed |
+| Amazon Music | No | No | Closed |
+| Tidal | Yes (track metadata) | Yes | Developer portal |
+| Deezer | Yes (track object) | Yes (undocumented `/track/isrc:{code}`) | Free, no auth |
 
 For YouTube/Amazon/Beatport/Bandcamp, fallback to og scrape + fuzzy match on artist and track name.
 

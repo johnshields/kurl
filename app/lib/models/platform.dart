@@ -16,6 +16,7 @@ class StreamingPlatform {
 }
 
 const platforms = [
+  // Row 1: mainstream
   StreamingPlatform(
     id: 'spotify',
     name: 'Spotify',
@@ -34,29 +35,12 @@ const platforms = [
     colour: Color(0xFFFF0000),
     icon: SimpleIcons.youtubemusic,
   ),
-  StreamingPlatform(
-    id: 'deezer',
-    name: 'Deezer',
-    colour: Color(0xFFA238FF),
-    icon: Icons.music_note,
-  ),
-  StreamingPlatform(
-    id: 'tidal',
-    name: 'Tidal',
-    colour: Color(0xFFFFFFFF),
-    icon: SimpleIcons.tidal,
-  ),
+  // Row 2: indie / UGC / DJ
   StreamingPlatform(
     id: 'soundcloud',
     name: 'SoundCloud',
     colour: Color(0xFFFF5500),
     icon: SimpleIcons.soundcloud,
-  ),
-  StreamingPlatform(
-    id: 'amazonMusic',
-    name: 'Amazon',
-    colour: Color(0xFF25D1DA),
-    icon: SimpleIcons.amazonmusic,
   ),
   StreamingPlatform(
     id: 'beatport',
@@ -69,6 +53,25 @@ const platforms = [
     name: 'Bandcamp',
     colour: Color(0xFF629AA9),
     icon: SimpleIcons.bandcamp,
+  ),
+  // Row 3: long tail
+  StreamingPlatform(
+    id: 'amazonMusic',
+    name: 'Amazon',
+    colour: Color(0xFF25D1DA),
+    icon: SimpleIcons.amazonmusic,
+  ),
+  StreamingPlatform(
+    id: 'tidal',
+    name: 'Tidal',
+    colour: Color(0xFFFFFFFF),
+    icon: SimpleIcons.tidal,
+  ),
+  StreamingPlatform(
+    id: 'deezer',
+    name: 'Deezer',
+    colour: Color(0xFFA238FF),
+    icon: Icons.music_note,
   ),
 ];
 

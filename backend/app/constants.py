@@ -2,24 +2,24 @@ PLATFORMS = {
     "spotify",
     "appleMusic",
     "youtubeMusic",
-    "deezer",
-    "tidal",
-    "amazonMusic",
     "soundcloud",
     "beatport",
     "bandcamp",
+    "amazonMusic",
+    "tidal",
+    "deezer",
 }
 
 PLATFORM_NAMES = {
     "spotify": "Spotify",
     "appleMusic": "Apple Music",
     "youtubeMusic": "YouTube Music",
-    "deezer": "Deezer",
-    "tidal": "Tidal",
-    "amazonMusic": "Amazon Music",
     "soundcloud": "SoundCloud",
     "beatport": "Beatport",
     "bandcamp": "Bandcamp",
+    "amazonMusic": "Amazon Music",
+    "tidal": "Tidal",
+    "deezer": "Deezer",
 }
 
 ALLOWED_ORIGINS = [
@@ -35,12 +35,12 @@ SEARCH_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/search/{query}",
     "appleMusic": "https://music.apple.com/us/search?term={query}",
     "youtubeMusic": "https://music.youtube.com/search?q={query}",
-    "deezer": "https://www.deezer.com/search/{query}",
-    "tidal": "https://tidal.com/search/{query}",
-    "amazonMusic": "https://music.amazon.com/search/{query}",
     "soundcloud": "https://soundcloud.com/search?q={query}",
     "beatport": "https://www.beatport.com/search?q={query}",
     "bandcamp": "https://bandcamp.com/search?q={query}",
+    "amazonMusic": "https://music.amazon.com/search/{query}",
+    "tidal": "https://tidal.com/search/{query}",
+    "deezer": "https://www.deezer.com/search/{query}",
 }
 
 """
@@ -52,13 +52,13 @@ album_id is known.
 TRACK_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/track/{id}",
     "appleMusic": "https://music.apple.com/{country}/song/_/{id}",
-    "deezer": "https://www.deezer.com/track/{id}",
-    "tidal": "https://tidal.com/track/{id}",
     "youtubeMusic": "https://music.youtube.com/watch?v={id}",
-    "amazonMusic": "https://music.amazon.com/albums/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
     "beatport": "https://www.beatport.com/track/_/{id}",
     "bandcamp": "https://{id}",
+    "amazonMusic": "https://music.amazon.com/albums/{id}",
+    "tidal": "https://tidal.com/track/{id}",
+    "deezer": "https://www.deezer.com/track/{id}",
 }
 
 TRACK_WITH_ALBUM_URL_TEMPLATES = {
@@ -69,23 +69,23 @@ TRACK_WITH_ALBUM_URL_TEMPLATES = {
 ALBUM_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/album/{id}",
     "appleMusic": "https://music.apple.com/{country}/album/_/{id}",
-    "deezer": "https://www.deezer.com/album/{id}",
-    "tidal": "https://tidal.com/album/{id}",
-    "amazonMusic": "https://music.amazon.com/albums/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
     "beatport": "https://www.beatport.com/release/_/{id}",
     "bandcamp": "https://{id}",
+    "amazonMusic": "https://music.amazon.com/albums/{id}",
+    "tidal": "https://tidal.com/album/{id}",
+    "deezer": "https://www.deezer.com/album/{id}",
 }
 
 ARTIST_URL_TEMPLATES = {
     "spotify": "https://open.spotify.com/artist/{id}",
     "appleMusic": "https://music.apple.com/{country}/artist/_/{id}",
-    "deezer": "https://www.deezer.com/artist/{id}",
-    "tidal": "https://tidal.com/artist/{id}",
-    "amazonMusic": "https://music.amazon.com/artists/{id}",
     "soundcloud": "https://soundcloud.com/{id}",
     "beatport": "https://www.beatport.com/artist/_/{id}",
     "bandcamp": "https://{id}.bandcamp.com",
+    "amazonMusic": "https://music.amazon.com/artists/{id}",
+    "tidal": "https://tidal.com/artist/{id}",
+    "deezer": "https://www.deezer.com/artist/{id}",
 }
 
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
@@ -107,16 +107,16 @@ SPOTIFY_API_BASE = "https://api.spotify.com/v1"
 APPLE_API_BASE = "https://api.music.apple.com/v1"
 APPLE_TOKEN_LIFETIME = 3600 * 12
 
-DEEZER_API_BASE = "https://api.deezer.com"
+YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
+
+SOUNDCLOUD_API_BASE = "https://api.soundcloud.com"
+SOUNDCLOUD_TOKEN_URL = "https://api.soundcloud.com/oauth2/token"
 
 TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
 TIDAL_API_BASE = "https://openapi.tidal.com/v2"
 TIDAL_ACCEPT_HEADER = "application/vnd.api+json"
 
-YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
-
-SOUNDCLOUD_API_BASE = "https://api.soundcloud.com"
-SOUNDCLOUD_TOKEN_URL = "https://api.soundcloud.com/oauth2/token"
+DEEZER_API_BASE = "https://api.deezer.com"
 
 DEFAULT_COUNTRY = "US"
 DEFAULT_STOREFRONT = "us"

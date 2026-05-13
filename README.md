@@ -14,4 +14,4 @@ kurl intercepts music share links and converts them to whatever streaming servic
 
 ## Supported platforms
 
-Spotify, Apple Music, YouTube Music, Deezer, Tidal, SoundCloud, Amazon Music, Beatport, Bandcamp.
+Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal, Deezer.

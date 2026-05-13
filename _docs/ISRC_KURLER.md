@@ -10,12 +10,13 @@ Per-platform clients live in `backend/clients/platforms/`.
 |---|---|---|---|---|
 | Spotify | OAuth client creds | `external_ids.isrc` | `external_ids.upc` | `search?q=track:X artist:Y` |
 | Apple Music | JWT (ES256) | `attributes.isrc` | `attributes.upc` | `search?term=` |
-| Deezer | none (public) | `isrc` | `upc` | `/search/track?q=` |
-| Tidal (v2) | OAuth client creds | `attributes.isrc` | `attributes.barcodeId` | `/searchResults/{q}` (JSON:API) |
-| Amazon Music | - | no public API | no public API | - |
 | YouTube Music | - | no public API | - | - |
+| SoundCloud | - | no public API | - | - |
 | Beatport | - | partner-only API | - | - |
 | Bandcamp | - | API deprecated 2014 | - | - |
+| Amazon Music | - | no public API | no public API | - |
+| Tidal (v2) | OAuth client creds | `attributes.isrc` | `attributes.barcodeId` | `/searchResults/{q}` (JSON:API) |
+| Deezer | none (public) | `isrc` | `upc` | `/search/track?q=` |
 
 ## Flow
 
