@@ -1,8 +1,8 @@
 # Share Extension Setup
 
-`receive_sharing_intent` handles the Flutter side. Android is fully wired via `AndroidManifest.xml`. iOS needs a Share Extension target in Xcode — a one-time manual setup.
+`receive_sharing_intent` handles the Flutter side. Android wires up via `AndroidManifest.xml`. iOS needs a Share Extension target in Xcode, a one-time manual setup.
 
-## Android (done)
+## Android
 
 Two `<intent-filter>` blocks inside `<activity>` in `app/android/app/src/main/AndroidManifest.xml`:
 
@@ -21,7 +21,7 @@ Two `<intent-filter>` blocks inside `<activity>` in `app/android/app/src/main/An
 
 kurl now appears in the Android share sheet for any text/URL payload.
 
-## iOS (manual)
+## iOS
 
 ### 1. Add Share Extension target
 
@@ -97,7 +97,7 @@ flutter pub get
 flutter run -d <ios-device>
 ```
 
-Now share a link from Safari, Spotify, etc. — kurl appears in the iOS share sheet.
+Now share a link from Safari, Spotify, etc. - kurl appears in the iOS share sheet.
 
 ## Testing
 

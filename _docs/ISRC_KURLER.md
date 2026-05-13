@@ -2,23 +2,19 @@
 
 Direct-to-platform URL resolution via universal identifiers. Skips Odesli entirely for the common cases, fast and rate-limit-free.
 
-## Shipped state
+## Platform clients
 
-All four major platforms have API clients in `backend/clients/platforms/`:
+Per-platform clients live in `backend/clients/platforms/`.
 
-| Platform | Auth | ISRC | UPC | Name search | Status |
-|---|---|---|---|---|---|
-| Spotify | OAuth client creds | `external_ids.isrc` | `external_ids.upc` | `search?q=track:X artist:Y` | ✅ live |
-| Apple Music | JWT (ES256) | `attributes.isrc` | `attributes.upc` | `search?term=` | ⚠️ needs Dev Program enrolment |
-| Deezer | none (public) | `isrc` | `upc` | `/search/track?q=` | ✅ live |
-| Tidal (v2) | OAuth client creds | `attributes.isrc` | `attributes.barcodeId` | `/searchResults/{q}` (JSON:API) | ✅ live |
-| Amazon Music | — | no public API | no public API | — | search URL only |
-| YouTube Music | — | no public API | — | — | oEmbed scrape + target search |
-| Pandora | — | no public API | — | — | search URL only |
-
-### What's missing
-- Apple Music creds (requires paid Apple Developer Program: 79 GBP/year)
-- Proper ISRC caching layer (currently piggy-backs on the URL→result cache)
+| Platform | Auth | ISRC | UPC | Name search |
+|---|---|---|---|---|
+| Spotify | OAuth client creds | `external_ids.isrc` | `external_ids.upc` | `search?q=track:X artist:Y` |
+| Apple Music | JWT (ES256) | `attributes.isrc` | `attributes.upc` | `search?term=` |
+| Deezer | none (public) | `isrc` | `upc` | `/search/track?q=` |
+| Tidal (v2) | OAuth client creds | `attributes.isrc` | `attributes.barcodeId` | `/searchResults/{q}` (JSON:API) |
+| Amazon Music | - | no public API | no public API | - |
+| YouTube Music | - | no public API | - | - |
+| Pandora | - | no public API | - | - |
 
 ## Flow
 
@@ -86,28 +82,28 @@ Canonical URL reconstruction in `utils/canonical_url.py` + templates in `app/con
 |---|---|---|
 | Spotify | OAuth client_credentials | 1h, cached in-process |
 | Apple Music | ES256 JWT signed with `.p8` private key | 12h (max 6mo per Apple) |
-| Deezer | none | — |
+| Deezer | none | - |
 | Tidal | OAuth client_credentials | 24h, cached |
 
 Shared OAuth helper: `clients/platforms/_oauth.py::fetch_client_credentials_token()`.
 
 ## Tidal v2 gotchas
 
-Tidal migrated from v1 → v2 (JSON:API) — v1 paths return 404. Things to know:
+Tidal migrated from v1 → v2 (JSON:API) - v1 paths return 404. Things to know:
 
 - Base URL: `https://openapi.tidal.com/v2` (not `/`)
 - Accept header: `application/vnd.api+json` (not `vnd.tidal.v1+json`)
-- Search endpoint: `/searchResults/{query}` — **camelCase**, not `/searchresults`
+- Search endpoint: `/searchResults/{query}` - **camelCase**, not `/searchresults`
 - Responses are JSON:API: `data.attributes.X`, relationships live in a sibling `included[]` array
 - `relationships.tracks.data[]` is the ordered ID list; iterate `included[]` to find matching resources
 
 ## Risks
 
-- **Spotify rate limits** — rolling 30s window, undocumented numbers. Cache aggressively.
-- **Apple JWT private key** — leak = revoke + regenerate immediately.
+- **Spotify rate limits** - rolling 30s window, undocumented numbers. Cache aggressively.
+- **Apple JWT private key** - leak = revoke + regenerate immediately.
 - **Deezer ISRC endpoint is undocumented** (`/track/isrc:{code}`). Could disappear.
-- **Tidal Dev Mode** — new apps start rate-limited; submit "Application Review" for production quotas.
-- **Regional ISRC mismatches** — re-releases sometimes get new ISRCs; negative cache short (15 min).
+- **Tidal Dev Mode** - new apps start rate-limited; submit "Application Review" for production quotas.
+- **Regional ISRC mismatches** - re-releases sometimes get new ISRCs; negative cache short (15 min).
 
 ## References
 

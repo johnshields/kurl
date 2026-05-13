@@ -1,15 +1,19 @@
 # Platforms
 
-Supported by backend (`models/schemas.py` PLATFORMS set):
+Supported by backend (`app/constants.py::PLATFORMS`):
 
-| ID | Name | Brand colour | Icon | In UI |
+| ID | Name | Brand colour | Icon | API client |
 |---|---|---|---|---|
-| `spotify` | Spotify | `#1DB954` | SimpleIcons.spotify | yes |
-| `appleMusic` | Apple | `#FA2D48` | SimpleIcons.applemusic | yes |
-| `youtubeMusic` | YouTube | `#FF0000` | SimpleIcons.youtubemusic | yes |
-| `deezer` | Deezer | `#A238FF` | (missing from simple_icons, use Icons.music_note) | no |
-| `tidal` | Tidal | `#FFFFFF` | SimpleIcons.tidal | no |
-| `amazonMusic` | Amazon | `#25D1DA` | SimpleIcons.amazonmusic | no |
-| `pandora` | Pandora | `#224099` | SimpleIcons.pandora | no |
+| `spotify` | Spotify | `#1DB954` | SimpleIcons.spotify | OAuth client creds |
+| `appleMusic` | Apple | `#FA2D48` | SimpleIcons.applemusic | JWT (ES256, requires Apple Developer Program) |
+| `youtubeMusic` | YouTube | `#FF0000` | SimpleIcons.youtubemusic | oEmbed scrape only |
+| `deezer` | Deezer | `#A238FF` | Icons.music_note | public, no auth |
+| `tidal` | Tidal | `#FFFFFF` | SimpleIcons.tidal | OAuth client creds (v2 JSON:API) |
+| `soundcloud` | SoundCloud | `#FF5500` | SimpleIcons.soundcloud | og scrape only |
+| `amazonMusic` | Amazon | `#25D1DA` | SimpleIcons.amazonmusic | search URL only |
+| `audiomack` | Audiomack | `#FFA200` | SimpleIcons.audiomack | search URL only |
+| `pandora` | Pandora | `#224099` | SimpleIcons.pandora | search URL only |
 
-The backend accepts any of these as `target_platform` — keys match Odesli's `linksByPlatform`. UI currently only exposes the top three; add the rest to `app/lib/models/platform.dart` when ready.
+All 9 platforms exposed in the UI (`app/lib/models/platform.dart`). IDs match Odesli's `linksByPlatform` keys.
+
+For platforms without an API client, kurler falls back to metadata scraping plus a search-page deep-link on the target.

@@ -19,7 +19,7 @@ X-API-Key: <key>
 
 ## `POST /api/kurl`
 
-The main endpoint — kurls a streaming URL to another platform.
+The main endpoint - kurls a streaming URL to another platform.
 
 **Request**
 ```json
@@ -56,16 +56,16 @@ Indicates which resolution path produced the link. Ordered from highest to lowes
 | `name` | Artist name match (only for artist URLs) |
 | `search_api` | Metadata scraped from source, found on target via its search API |
 | `direct` | Odesli returned a direct target URL |
-| `search` | No direct match anywhere — `resolved_url` is a deep-link into the target's search page |
+| `search` | No direct match anywhere - `resolved_url` is a deep-link into the target's search page |
 
 ### Resolution order
 
-1. **Cache** — KV lookup by `md5(normalised_url + target_platform)`, 24h TTL
-2. **Kurler (fast path)** — parse source URL, call source platform's API for ISRC/UPC, search target platform by the same identifier
-3. **Odesli by-id or by-URL** — fallback link resolution
-4. **Metadata scraping** — oEmbed for YouTube, OG tags for Apple, etc.
-5. **Search URL fallback** — deep-link into the target platform's search page
-6. **404** — only when no metadata from any source
+1. **Cache** - KV lookup by `md5(normalised_url + target_platform)`, 24h TTL
+2. **Kurler (fast path)** - parse source URL, call source platform's API for ISRC/UPC, search target platform by the same identifier
+3. **Odesli by-id or by-URL** - fallback link resolution
+4. **Metadata scraping** - oEmbed for YouTube, OG tags for Apple, etc.
+5. **Search URL fallback** - deep-link into the target platform's search page
+6. **404** - only when no metadata from any source
 
 ## `POST /api/events`
 

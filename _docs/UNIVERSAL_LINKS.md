@@ -1,6 +1,6 @@
 # Universal Links & App Links
 
-Tap a `https://kurl.online/?u=<encoded-url>` link and kurl opens directly with the URL pre-filled — no share sheet needed.
+Tap a `https://kurl.online/?u=<encoded-url>` link and kurl opens directly with the URL pre-filled, no share sheet needed.
 
 ## URL format
 
@@ -17,7 +17,7 @@ Any music URL can be wrapped this way for sharing. When tapped:
 - **On a device with kurl installed** → opens the app, populates the input, ready to tap a platform
 - **Without the app** → opens kurl.online in the browser (future: web version handles it)
 
-## Backend — already served
+## Backend
 
 - `GET /.well-known/apple-app-site-association` → [backend/public/.well-known/apple-app-site-association](../backend/public/.well-known/apple-app-site-association)
 - `GET /.well-known/assetlinks.json` → [backend/public/.well-known/assetlinks.json](../backend/public/.well-known/assetlinks.json)
@@ -35,7 +35,7 @@ keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -sto
 
 For production you'll want to use the release keystore, not the debug one.
 
-## Android — already wired
+## Android
 
 Manifest intent filter in [app/android/app/src/main/AndroidManifest.xml](../app/android/app/src/main/AndroidManifest.xml):
 
@@ -51,7 +51,7 @@ Manifest intent filter in [app/android/app/src/main/AndroidManifest.xml](../app/
 
 `autoVerify="true"` means Android will automatically hit `https://kurl.online/.well-known/assetlinks.json` on first install to verify the app owns the domain. Once verified, kurl becomes the default handler for those URLs.
 
-## iOS — manual (but light)
+## iOS
 
 Unlike the Share Extension, Universal Links only need a capability toggle on the existing Runner target. No new target.
 
@@ -84,15 +84,15 @@ iOS will then fetch `https://kurl.online/.well-known/apple-app-site-association`
   curl -v https://kurl.online/.well-known/apple-app-site-association
   ```
   Must return `200 OK` with `Content-Type: application/json` and valid JSON.
-- Apple caches AASA aggressively — delete the app and reinstall to re-verify.
+- Apple caches AASA aggressively - delete the app and reinstall to re-verify.
 
-## Flutter — handles all three platforms
+## Flutter - handles all three platforms
 
 [app/lib/app/routes/kurl.dart](../app/lib/app/routes/kurl.dart) pulls the URL from three sources:
 
-- `_appLinks.getInitialLink()` — iOS/Android: app launched from a link
-- `_appLinks.uriLinkStream` — iOS/Android: link tapped while app is in background
-- `Uri.base` at init — web: the current browser URL (for Flutter web builds served at kurl.online)
+- `_appLinks.getInitialLink()` - iOS/Android: app launched from a link
+- `_appLinks.uriLinkStream` - iOS/Android: link tapped while app is in background
+- `Uri.base` at init - web: the current browser URL (for Flutter web builds served at kurl.online)
 
 All three paths extract `?u=<encoded-url>` and populate the input. If no `u` param is present, the URI is ignored.
 
@@ -112,11 +112,11 @@ Serve the `build/web/` directory behind kurl.online. Tapping `https://kurl.onlin
 Once deployed and verified:
 
 ```bash
-# Android — adb
+# Android - adb
 adb shell am start -a android.intent.action.VIEW \
   -d "https://kurl.online/?u=https%3A%2F%2Fopen.spotify.com%2Ftrack%2F6QJVQSuMC77psM4vgPo31D"
 
-# iOS — xcrun
+# iOS - xcrun
 xcrun simctl openurl booted "https://kurl.online/?u=https%3A%2F%2Fopen.spotify.com%2Ftrack%2F6QJVQSuMC77psM4vgPo31D"
 ```
 
