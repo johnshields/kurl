@@ -21,7 +21,7 @@ logger = get_logger()
 
 _client: httpx.AsyncClient | None = None
 
-SHORT_LINK_HOSTS = {"spotify.link", "dzr.page.link"}
+SHORT_LINK_HOSTS = {"spotify.link", "dzr.page.link", "on.soundcloud.com"}
 
 _META_REFRESH = re.compile(
     r'<meta[^>]+http-equiv=["\']refresh["\'][^>]+url=([^"\'>\s]+)',

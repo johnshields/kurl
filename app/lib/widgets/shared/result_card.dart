@@ -172,11 +172,11 @@ class ResultCard extends StatelessWidget {
             ],
           ),
           if (result.isSearch)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
               child: Text(
-                "No exact match — this is a search on the target platform",
-                style: TextStyle(color: Color(0xFF888888), fontSize: 11),
+                "No exact match - this is a search on ${platform?.name ?? result.platform}",
+                style: const TextStyle(color: Color(0xFF888888), fontSize: 11),
               ),
             ),
           if (result.cached)
