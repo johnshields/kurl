@@ -6,11 +6,11 @@ kurl intercepts music share links and converts them to whatever streaming servic
 
 ## Stack
 
-- **Backend** — Python on Cloudflare Workers (Pyodide runtime)
-- **Frontend** — Flutter (iOS, Android, Web)
-- **Cache** — Cloudflare KV
-- **Analytics** — Cloudflare D1 (SQLite)
-- **CI/CD** — GitHub Actions (lint, deploy, smoke test)
+- **API** - Python on Cloudflare Workers (Pyodide runtime)
+- **App** - Flutter (iOS, Android, Web)
+- **Cache** - Cloudflare KV
+- **Analytics** - Cloudflare D1 (SQLite)
+- **CI/CD** - GitHub Actions (lint, deploy, smoke test)
 
 ## Supported platforms
 
