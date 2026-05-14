@@ -129,7 +129,7 @@ def extract_artist_url(artist: dict) -> str | None:
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     attrs = track.get("attributes", {})
     # v2 JSON:API: artists live in relationships/included, not inline on the resource.
-    # For free-text search, include=tracks doesn't hydrate artists -- we only get the title.
+    # For free-text search, include=tracks doesn't hydrate artists -- only the title is returned.
     return attrs.get("title"), None
 
 

@@ -78,7 +78,7 @@ _SEARCH_PATTERNS = (
 
 
 def is_search_url(url: str) -> bool:
-    """Detect search result pages so we can fail fast with a friendly error."""
+    """Detect search result pages to fail fast with a friendly error."""
     return any(p.search(url) for p in _SEARCH_PATTERNS)
 
 

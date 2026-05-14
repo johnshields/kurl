@@ -1,5 +1,6 @@
 import json
 import re
+from urllib.parse import urlparse
 
 import httpx
 
@@ -37,8 +38,10 @@ async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str
             return await _fetch_spotify(parsed.track_id)
         if parsed.platform == "youtubeMusic":
             return await _fetch_youtube(parsed.track_id)
-        # Default: og scrape -- works for Apple Music, SoundCloud, Tidal,
-        # Deezer track pages and gives at least a search-quality title.
+        if parsed.platform == "soundcloud":
+            return await _fetch_soundcloud(url)
+        # Default: og scrape -- works for Apple Music, Tidal, Deezer, Bandcamp
+        # track pages and gives at least a search-quality title.
         return await _fetch_og(url)
     except Exception as e:
         logger.warning("Metadata fetch failed for %s: %s", parsed.platform, e)
@@ -63,6 +66,45 @@ async def _fetch_spotify(track_id: str) -> tuple[str | None, str | None]:
     return title, ", ".join(artists) if artists else None
 
 
+# SoundCloud track pages embed hydration JSON with publisher_metadata
+# (artist, ISRC, UPC). og:title alone misses the artist on many tracks
+# because it's only the song title.
+_SC_ARTIST = re.compile(r'"publisher_metadata":\s*\{[^}]*?"artist":"([^"]+)"')
+_SC_RELEASE_TITLE = re.compile(r'"publisher_metadata":\s*\{[^}]*?"release_title":"([^"]+)"')
+
+
+async def _fetch_soundcloud(url: str) -> tuple[str | None, str | None]:
+    """SoundCloud track page hydration JSON > og tags for artist + title."""
+    response = await _get_client().get(url)
+    if response.status_code != 200:
+        logger.warning("SoundCloud page returned %s", response.status_code)
+        return None, None
+
+    html = response.text
+    title = None
+    artist = None
+
+    m = _SC_RELEASE_TITLE.search(html)
+    if m:
+        title = m.group(1)
+    if not title:
+        og_title = extract_og_title(html)
+        if og_title:
+            title = og_title
+
+    m = _SC_ARTIST.search(html)
+    if m:
+        artist = m.group(1)
+
+    # Fallback: first URL segment is artist handle (e.g. /deadmau5/strobe).
+    if not artist:
+        parts = [p for p in urlparse(url).path.split("/") if p]
+        if parts:
+            artist = parts[0]
+
+    return title, artist
+
+
 async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None]:
     """YouTube oEmbed returns title + channel name -- no API key required."""
     response = await _get_client().get(YOUTUBE_OEMBED_URL.format(id=video_id))
@@ -84,7 +126,7 @@ def _parse_youtube_title(raw: str, author: str | None) -> tuple[str, str | None]
     """Parse 'Artist - Title' or fall back to channel name as artist."""
     cleaned = _strip_youtube_noise(raw)
 
-    # Most music videos: "Artist - Title" or "Artist – Title".
+    # Music video titles use "Artist <sep> Title" with sep = hyphen, en dash or em dash.
     for sep in (" - ", " \u2013 ", " \u2014 "):
         if sep in cleaned:
             left, right = cleaned.split(sep, 1)

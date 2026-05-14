@@ -83,9 +83,9 @@ async def search_by_upc(upc: str) -> dict | None:
 
 async def search_track(title: str, artist: str) -> dict | None:
     """Free-text track search. Only returns a result if the uploading account
-    matches the target artist — otherwise falls through to the search URL.
-    SoundCloud is mostly user uploads, so without an artist-account match we
-    can't trust the result to be the original.
+    matches the target artist -- otherwise falls through to the search URL.
+    SoundCloud is mostly user uploads, so without an artist-account match the
+    result cannot be trusted to be the original.
     """
     data = await _api_get("/tracks", params={"q": f"{artist} {title}", "limit": 10})
     items = data if isinstance(data, list) else data.get("collection", [])
