@@ -42,7 +42,10 @@ async def get(key: str) -> str | None:
 async def set(key: str, value: str, ttl: int | None = None) -> None:
     if not _kv:
         return
+    # Workers KV: expirationTtl is seconds-from-now (min 60). Use this rather
+    # than expiration (absolute epoch) so the TTL semantics actually apply.
+    seconds = max(60, ttl or settings.CACHE_TTL_SECONDS)
     try:
-        await _kv.put(key, value, expiration=ttl or settings.CACHE_TTL_SECONDS)
+        await _kv.put(key, value, expirationTtl=seconds)
     except Exception:
         pass

@@ -14,10 +14,28 @@ MAX_RETRIES = 3
 BACKOFF_SECONDS = (1, 2, 4)
 
 
+# Platforms Odesli does not return URLs for -- skip the call entirely when
+# the target is one of these.
+UNSUPPORTED_TARGETS = frozenset({"beatport", "bandcamp"})
+
+# Source platforms Odesli routinely 400s on (UGC tracks not in its index).
+# Skipping these avoids a 700-1500ms wasted round-trip on every miss.
+UNRELIABLE_SOURCES = frozenset({"soundcloud"})
+
+
+def should_skip(source_platform: str | None, target_platform: str) -> bool:
+    """True if Odesli will reliably fail or has no useful data for this pair."""
+    if target_platform in UNSUPPORTED_TARGETS:
+        return True
+    if source_platform and source_platform in UNRELIABLE_SOURCES:
+        return True
+    return False
+
+
 def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
-        _client = httpx.AsyncClient(timeout=10.0)
+        _client = httpx.AsyncClient(timeout=5.0)
     return _client
 
 

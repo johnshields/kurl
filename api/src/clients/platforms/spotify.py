@@ -27,7 +27,14 @@ async def _api_get(path: str, params: dict | None = None) -> dict:
 
 
 def is_configured() -> bool:
-    return bool(settings.SPOTIFY_CLIENT_ID and settings.SPOTIFY_CLIENT_SECRET)
+    # Spotify Web API now gated behind Premium on the dev account. Skip
+    # entirely until SPOTIFY_API_ENABLED=true is set. Functionality intact
+    # for when access is restored.
+    return bool(
+        settings.SPOTIFY_API_ENABLED
+        and settings.SPOTIFY_CLIENT_ID
+        and settings.SPOTIFY_CLIENT_SECRET
+    )
 
 
 async def get_track(track_id: str) -> dict:

@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import json
 import re
@@ -15,6 +16,10 @@ from utils.url import normalise_url
 from utils.url_parser import is_search_url, parse_music_url, parse_track
 
 logger = get_logger()
+
+# Short TTL for negative cache entries -- repeat failures within this window
+# return 404 immediately instead of re-running the full pipeline.
+NEGATIVE_TTL_SECONDS = 600
 
 
 async def kurl(url: str, target_platform: str):
@@ -43,6 +48,9 @@ async def kurl(url: str, target_platform: str):
     cached = await cache.get(cache_key)
     if cached:
         data = json.loads(cached)
+        if data.get("not_found"):
+            logger.info("Negative cache hit: %s -> %s", url, target_platform)
+            return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         data["cached"] = True
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
         return json_success("Kurled from cache", data)
@@ -68,20 +76,33 @@ async def kurl(url: str, target_platform: str):
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
 
-    # Odesli fallback.
+    # Odesli + scrape fallback. Fire both in parallel where Odesli is useful,
+    # so even when Odesli wins the scrape was nearly free in wall time.
     parsed = parse_track(url)
-    odesli_data: dict = {}
-    odesli_error: ApiError | None = None
+    source_platform = parsed.platform if parsed else (parsed_full.platform if parsed_full else None)
+    skip_odesli = odesli.should_skip(source_platform, target_platform)
 
-    try:
+    odesli_task = None
+    scrape_task = None
+
+    if not skip_odesli:
         if parsed:
             logger.info("Parsed track: %s id=%s", parsed.platform, parsed.track_id)
-            odesli_data = await odesli.resolve_by_id(parsed.platform, parsed.track_id)
+            odesli_task = asyncio.create_task(odesli.resolve_by_id(parsed.platform, parsed.track_id))
         else:
-            odesli_data = await odesli.resolve(url)
-    except ApiError as e:
-        odesli_error = e
-        logger.warning("Odesli unavailable (%s): %s", e.status_code, e.detail)
+            odesli_task = asyncio.create_task(odesli.resolve(url))
+    else:
+        logger.info("Skipping Odesli for %s -> %s", source_platform, target_platform)
+
+    if parsed:
+        scrape_task = asyncio.create_task(metadata.fetch_metadata(parsed, url))
+
+    odesli_data: dict = {}
+    if odesli_task is not None:
+        try:
+            odesli_data = await odesli_task
+        except ApiError as e:
+            logger.warning("Odesli unavailable (%s): %s", e.status_code, e.detail)
 
     resolved_url = odesli.extract_url(odesli_data, target_platform) if odesli_data else None
     title, artist = odesli.extract_metadata(odesli_data) if odesli_data else (None, None)
@@ -89,13 +110,20 @@ async def kurl(url: str, target_platform: str):
 
     if resolved_url:
         logger.info("Kurled: %s - %s -> %s", artist, title, resolved_url)
+        # Cancel scrape -- no longer needed.
+        if scrape_task is not None:
+            scrape_task.cancel()
     else:
         if odesli_data:
             available = sorted(odesli_data.get("linksByPlatform", {}).keys())
             logger.warning("No %s URL; Odesli returned platforms: %s", target_platform, available)
 
-        if (not title or not artist) and parsed:
-            scraped_title, scraped_artist = await metadata.fetch_metadata(parsed, url)
+        if (not title or not artist) and scrape_task is not None:
+            try:
+                scraped_title, scraped_artist = await scrape_task
+            except Exception as e:
+                logger.warning("Metadata scrape failed: %s", e)
+                scraped_title, scraped_artist = None, None
             title = title or scraped_title
             artist = artist or scraped_artist
             logger.info("Scraped metadata: %s - %s", artist, title)
@@ -108,6 +136,8 @@ async def kurl(url: str, target_platform: str):
             if slug:
                 resolved_url = build_search_url(target_platform, slug, None)
         if not resolved_url:
+            # Negative cache so repeat hits don't burn another full pipeline.
+            await cache.set(cache_key, json.dumps({"not_found": True}), ttl=NEGATIVE_TTL_SECONDS)
             return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)

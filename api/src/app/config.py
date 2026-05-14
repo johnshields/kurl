@@ -55,6 +55,10 @@ class Settings:
 
     # Spotify (OAuth client credentials)
     @property
+    def SPOTIFY_API_ENABLED(self) -> bool:
+        return self._get("SPOTIFY_API_ENABLED", "false") == "true"
+
+    @property
     def SPOTIFY_CLIENT_ID(self) -> str | None:
         return self._get("SPOTIFY_CLIENT_ID")
 
