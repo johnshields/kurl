@@ -4,7 +4,7 @@ Direct-to-platform URL resolution via universal identifiers. Skips Odesli entire
 
 ## Platform clients
 
-Per-platform clients live in `backend/clients/platforms/`.
+Per-platform clients live in `api/src/clients/platforms/`.
 
 | Platform | Auth | ISRC | UPC | Name search |
 |---|---|---|---|---|

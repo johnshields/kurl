@@ -8,5 +8,6 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["__tests__"]
+testpaths = ["src/__tests__"]
+pythonpath = ["src"]
 asyncio_mode = "auto"

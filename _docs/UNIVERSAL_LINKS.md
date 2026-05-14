@@ -19,8 +19,8 @@ Any music URL can be wrapped this way for sharing. When tapped:
 
 ## Backend
 
-- `GET /.well-known/apple-app-site-association` → [backend/public/.well-known/apple-app-site-association](../backend/public/.well-known/apple-app-site-association)
-- `GET /.well-known/assetlinks.json` → [backend/public/.well-known/assetlinks.json](../backend/public/.well-known/assetlinks.json)
+- `GET /.well-known/apple-app-site-association` → [api/src/public/.well-known/apple-app-site-association](../api/src/public/.well-known/apple-app-site-association)
+- `GET /.well-known/assetlinks.json` → [api/src/public/.well-known/assetlinks.json](../api/src/public/.well-known/assetlinks.json)
 
 Both are served as `application/json` (Apple's file has no extension but must have the correct MIME type).
 

@@ -1,6 +1,6 @@
-# kurl_api
+# kurl api
 
-Cloudflare Workers Python backend. Deployed via `pywrangler`.
+Cloudflare Workers Python service. Source under `src/`. Deployed via `pywrangler`.
 
 ## Setup
 

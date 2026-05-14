@@ -1,11 +1,11 @@
 name = "kurl-api"
-main = "entry.py"
+main = "src/entry.py"
 compatibility_date = "2026-04-26"
 compatibility_flags = ["python_workers"]
 find_additional_modules = false
 
 [assets]
-directory = "public"
+directory = "src/public"
 
 # KV binding — add via dashboard if CLI auth lacks perms
 # [[kv_namespaces]]
@@ -19,7 +19,7 @@ database_id = "32af40a9-051b-4e7b-9a11-eca5e1ce7440"
 
 [[rules]]
 type = "Text"
-globs = ["public/**/*.html", "public/**/*.css", "public/**/*.js", "public/**/*.json", "public/**/*.ico"]
+globs = ["src/public/**/*.html", "src/public/**/*.css", "src/public/**/*.js", "src/public/**/*.json", "src/public/**/*.ico"]
 fallthrough = true
 
 [observability]

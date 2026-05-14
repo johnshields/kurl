@@ -1,6 +1,6 @@
 # Platforms
 
-Supported by backend (`app/constants.py::PLATFORMS`).
+Supported by the API (`api/src/app/constants.py::PLATFORMS`).
 
 | ID | Name | Brand colour | Icon | API client |
 |---|---|---|---|---|

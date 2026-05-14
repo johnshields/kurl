@@ -58,50 +58,40 @@ kurl/
 │   │           └── marquee_text.dart
 │   └── pubspec.yaml
 │
-├── backend/                         # Cloudflare Workers Python
-│   ├── entry.py                     # WorkerEntrypoint (fetch handler)
+├── api/                             # Cloudflare Workers Python
 │   ├── wrangler.toml                # Worker config, D1 + KV bindings
 │   ├── pyproject.toml               # Python deps (httpx, PyJWT)
-│   ├── api/
-│   │   ├── router.py                # route decorator + resolve()
-│   │   ├── middleware/
-│   │   │   ├── auth.py              # API key validation
-│   │   │   └── rate_limit.py        # write endpoint throttling
-│   │   ├── controllers/
-│   │   │   └── events_controller.py # analytics business logic
-│   │   ├── routes/
-│   │   │   └── events.py            # event HTTP handlers
-│   │   └── services/
-│   │       └── urls.py              # kurl resolution logic
-│   ├── clients/
-│   │   ├── cache.py                 # KV wrapper
-│   │   ├── odesli.py                # Odesli API client
-│   │   ├── metadata.py              # HTML scraping fallback
-│   │   └── platforms/               # per-platform API clients
-│   │       ├── spotify.py
-│   │       ├── apple.py
-│   │       ├── deezer.py
-│   │       ├── tidal.py
-│   │       ├── youtube.py
-│   │       └── soundcloud.py
-│   ├── db/
-│   │   ├── db.py                    # D1 query helpers
-│   │   ├── schemas/
-│   │   │   └── events.sql           # events table DDL
-│   │   └── queries/
-│   │       └── events.py            # event SQL statements
-│   ├── models/
-│   │   └── event.py                 # event field mapping
-│   ├── app/
-│   │   ├── config.py                # env vars, settings
-│   │   └── constants.py             # platform sets, URL templates
-│   └── utils/
-│       ├── response.py              # JSON response builders
-│       ├── errors.py                # ApiError exception
-│       ├── uid.py                   # prefixed UID generator
-│       ├── url_parser.py            # music URL parsing
-│       ├── kurler.py                # ISRC/UPC resolution
-│       └── logging.py
+│   └── src/
+│       ├── entry.py                 # WorkerEntrypoint (fetch handler)
+│       ├── api/
+│       │   ├── router.py            # route decorator + resolve()
+│       │   ├── middleware/
+│       │   │   ├── auth.py          # API key validation
+│       │   │   └── rate_limit.py    # write endpoint throttling
+│       │   ├── routes/
+│       │   │   └── events.py        # event HTTP handlers
+│       │   └── services/
+│       │       └── urls.py          # kurl resolution logic
+│       ├── clients/
+│       │   ├── cache.py             # KV wrapper
+│       │   ├── odesli.py            # Odesli API client
+│       │   ├── metadata.py          # HTML scraping fallback
+│       │   └── platforms/           # per-platform API clients
+│       ├── db/
+│       │   ├── db.py                # D1 query helpers
+│       │   ├── schemas/events.sql
+│       │   └── queries/events.py
+│       ├── models/
+│       │   └── event.py
+│       ├── app/
+│       │   ├── config.py            # env vars, settings
+│       │   └── constants.py         # platform sets, URL templates
+│       └── utils/
+│           ├── response.py
+│           ├── errors.py
+│           ├── url_parser.py
+│           ├── kurler.py
+│           └── logging.py
 │
 ├── _docs/                           # documentation
 └── .github/workflows/kurl.yml      # CI/CD pipeline
