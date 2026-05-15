@@ -18,13 +18,18 @@ const adsenseSlotFooter = String.fromEnvironment(
   defaultValue: '2004136400',
 );
 
+// Default debug API = pywrangler dev (port 8787)
+const _apiUrlOverride = String.fromEnvironment('KURL_API_URL');
+const _localPort = 8787;
+
 String _resolveBaseUrl() {
+  if (_apiUrlOverride.isNotEmpty) return _apiUrlOverride;
   if (kReleaseMode) return _prodUrl;
-  if (kIsWeb) return 'http://localhost:8000';
+  if (kIsWeb) return 'http://localhost:$_localPort';
   if (defaultTargetPlatform == TargetPlatform.android) {
-    return 'http://10.0.2.2:8000';
+    return 'http://10.0.2.2:$_localPort';
   }
-  return 'http://localhost:8000';
+  return 'http://localhost:$_localPort';
 }
 
 final apiBaseUrl = _resolveBaseUrl();

@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlparse
 
 from app.constants import PLATFORMS
-from clients import cache, metadata, odesli
+from clients import cache, itunes, metadata, odesli
 from utils.errors import ApiError
 from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
@@ -63,12 +63,14 @@ async def kurl(url: str, target_platform: str):
             match = await kurl_direct(parsed_full, target_platform)
             if match:
                 logger.info("Direct kurl: %s - %s -> %s (via %s)", match.artist, match.title, match.url, match.via)
+                artwork = await itunes.fetch_artwork(match.title, match.artist)
                 result = {
                     "title": match.title,
                     "artist": match.artist,
                     "resolved_url": match.url,
                     "platform": target_platform,
                     "via": match.via,
+                    "artwork_url": artwork,
                 }
                 await cache.set(cache_key, json.dumps(result))
                 result["cached"] = False
@@ -142,12 +144,14 @@ async def kurl(url: str, target_platform: str):
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
 
+    artwork = await itunes.fetch_artwork(title, artist)
     result = {
         "title": title,
         "artist": artist,
         "resolved_url": resolved_url,
         "platform": target_platform,
         "via": via,
+        "artwork_url": artwork,
     }
 
     await cache.set(cache_key, json.dumps(result))

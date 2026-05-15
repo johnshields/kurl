@@ -5,6 +5,7 @@ class KurlResult {
   final String platform;
   final bool cached;
   final String via;
+  final String? artworkUrl;
 
   const KurlResult({
     this.title,
@@ -13,6 +14,7 @@ class KurlResult {
     required this.platform,
     required this.cached,
     required this.via,
+    this.artworkUrl,
   });
 
   bool get isSearch => via == 'search';
@@ -25,6 +27,7 @@ class KurlResult {
       platform: json['platform'],
       cached: json['cached'] ?? false,
       via: json['via'] ?? 'direct',
+      artworkUrl: json['artwork_url'],
     );
   }
 }

@@ -9,6 +9,14 @@ pip install uv
 uv tool install workers-py
 ```
 
+## Run locally
+
+```bash
+pywrangler dev
+```
+
+Serves on `http://localhost:8787`. Live reload on file change.
+
 ## Deploy
 
 ```bash

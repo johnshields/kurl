@@ -62,6 +62,22 @@ class ResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (result.artworkUrl != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    result.artworkUrl!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (a, b, c) => const SizedBox(width: 120, height: 120),
+                  ),
+                ),
+              ),
+            ),
           if (result.artist != null || result.title != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -76,7 +92,7 @@ class ResultCard extends StatelessWidget {
                       ),
                     if (result.artist != null && result.title != null)
                       const TextSpan(
-                        text: ' — ',
+                        text: ' - ',
                         style: TextStyle(color: Color(0xFF888888), fontSize: 14),
                       ),
                     if (result.title != null)
@@ -141,31 +157,63 @@ class ResultCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Material(
-                color: const Color(0xFF222222),
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  onTap: () {
-                    Analytics.trackOpenResult(result.platform);
-                    launchUrl(Uri.parse(result.resolvedUrl));
-                  },
+              Expanded(
+                child: Material(
+                  color: const Color(0xFF222222),
                   borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(Icons.visibility_outlined, size: 18, color: Color(0xFFE5E5E5)),
+                  child: InkWell(
+                    onTap: () {
+                      Analytics.trackOpenResult(result.platform);
+                      launchUrl(Uri.parse(result.resolvedUrl));
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.headphones, size: 18, color: Color(0xFFE5E5E5)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Listen',
+                            style: TextStyle(
+                              color: Color(0xFFE5E5E5),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Material(
-                color: const Color(0xFF222222),
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  onTap: () => _copy(context),
+              Expanded(
+                child: Material(
+                  color: const Color(0xFF222222),
                   borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(Icons.copy, size: 18, color: Color(0xFFE5E5E5)),
+                  child: InkWell(
+                    onTap: () => _copy(context),
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.copy, size: 18, color: Color(0xFFE5E5E5)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Copy',
+                            style: TextStyle(
+                              color: Color(0xFFE5E5E5),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
