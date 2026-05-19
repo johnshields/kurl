@@ -108,7 +108,7 @@ jobs:
           channel: stable
           # Pin until simple_icons publishes a Flutter 3.44+ compatible release.
           # 3.44 made IconData final, breaking simple_icons 14.6.1.
-          flutter-version: "3.43.x"
+          flutter-version: "3.41.9"
 
       - name: Build Flutter web
         working-directory: app
