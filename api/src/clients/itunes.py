@@ -5,7 +5,7 @@ Free, no auth. https://developer.apple.com/library/archive/documentation/AudioVi
 
 import httpx
 
-from app.constants import CLIENT_TIMEOUT, SCRAPER_USER_AGENT
+from app.constants import SCRAPER_USER_AGENT
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -18,7 +18,7 @@ def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
         _client = httpx.AsyncClient(
-            timeout=CLIENT_TIMEOUT,
+            timeout=3.0,
             headers={"User-Agent": SCRAPER_USER_AGENT},
         )
     return _client

@@ -172,10 +172,6 @@ async def _lookup_identifier(
     Results are cached by (platform, entity_type, id) so repeat lookups
     for the same source track across different targets only hit the API once.
     """
-    client = _get_client(source.platform)
-    if not client:
-        return None, None, None
-
     cache_key = f"{label.lower()}:{source.platform}:{source.entity_type}:{source.id}"
     cached = await cache.get(cache_key)
     if cached:
@@ -186,28 +182,63 @@ async def _lookup_identifier(
         except Exception:
             pass  # fall through to fresh fetch on bad cache value
 
-    try:
-        entity = await getattr(client, fetch)(source.id, **_ctx(source.platform, source.country))
-        identifier = getattr(client, extract)(entity)
-        title, artist = getattr(client, metadata_fn)(entity)
-        logger.info(
-            "Source %s %s=%s id=%s (%s - %s)",
-            source.platform,
-            label,
-            identifier,
-            source.id,
-            artist,
-            title,
-        )
-        if identifier:
-            await cache.set(
-                cache_key,
-                json.dumps({"id": identifier, "title": title, "artist": artist}),
+    client = _get_client(source.platform)
+    identifier: str | None = None
+    title: str | None = None
+    artist: str | None = None
+
+    if client:
+        try:
+            entity = await getattr(client, fetch)(source.id, **_ctx(source.platform, source.country))
+            identifier = getattr(client, extract)(entity)
+            title, artist = getattr(client, metadata_fn)(entity)
+            logger.info(
+                "Source %s %s=%s id=%s (%s - %s)",
+                source.platform,
+                label,
+                identifier,
+                source.id,
+                artist,
+                title,
             )
-        return identifier, title, artist
-    except Exception as e:
-        logger.warning("Failed to get %s from %s: %s", label, source.platform, e)
-        return None, None, None
+        except Exception as e:
+            logger.warning("Failed to get %s from %s API: %s", label, source.platform, e)
+
+    # Fallback chain: one scrape gives title + artist + (sometimes) ISRC.
+    # Then Deezer oracle backfills ISRC when source page doesn't expose it.
+    if not identifier and label == "ISRC" and source.entity_type == "track":
+        scraped_title, scraped_artist, scraped_isrc = await metadata.fetch_metadata(
+            ParsedTrack(source.platform, source.id),
+            _build_source_url(source),
+        )
+        title = title or scraped_title
+        artist = artist or scraped_artist
+
+        if scraped_isrc:
+            identifier = scraped_isrc
+            logger.info("Source %s ISRC=%s (via scrape)", source.platform, identifier)
+        elif title and artist:
+            # Deezer free API returns ISRC inline on search results.
+            try:
+                dz = await deezer.search_track(title, artist)
+                if dz:
+                    identifier = deezer.extract_isrc(dz)
+                    if identifier:
+                        logger.info(
+                            "Source %s ISRC=%s (via Deezer oracle)",
+                            source.platform,
+                            identifier,
+                        )
+            except Exception as e:
+                logger.warning("Deezer ISRC oracle failed: %s", e)
+
+    if identifier:
+        await cache.set(
+            cache_key,
+            json.dumps({"id": identifier, "title": title, "artist": artist}),
+        )
+
+    return identifier, title, artist
 
 
 async def _search_by_identifier(

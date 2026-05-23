@@ -18,6 +18,10 @@ from utils.url_parser import ParsedTrack
 
 logger = get_logger()
 
+# ISRC format: 2-letter country + 3-char registrant + 2-digit year + 5-digit
+# designation. Matches "isrc":"GBTDG0900141" anywhere in page JSON.
+_ISRC_PATTERN = re.compile(r'"isrc"\s*:\s*"([A-Z]{2}[A-Z0-9]{3}\d{7})"', re.I)
+
 _client: httpx.AsyncClient | None = None
 
 
@@ -32,8 +36,18 @@ def _get_client() -> httpx.AsyncClient:
     return _client
 
 
-async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str | None]:
-    """Fetch (title, artist) for a track via platform-specific scraping."""
+def _isrc(html: str) -> str | None:
+    m = _ISRC_PATTERN.search(html)
+    return m.group(1).upper() if m else None
+
+
+async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str | None, str | None]:
+    """Fetch (title, artist, isrc) for a track via platform-specific scraping.
+
+    One HTTP request per call -- ISRC, title, and artist all come from the same
+    page where exposed. ISRC is None unless the platform embeds it in its
+    server-rendered JSON (e.g. SoundCloud publisher_metadata).
+    """
     try:
         if parsed.platform == "spotify":
             return await _fetch_spotify(parsed.track_id)
@@ -41,61 +55,51 @@ async def fetch_metadata(parsed: ParsedTrack, url: str) -> tuple[str | None, str
             return await _fetch_youtube(parsed.track_id)
         if parsed.platform == "soundcloud":
             return await _fetch_soundcloud(url)
-        # Default: og scrape -- works for Apple Music, Tidal, Deezer, Bandcamp
-        # track pages and gives at least a search-quality title.
+        # Default: og scrape -- Apple Music, Tidal, Deezer, Bandcamp, Beatport.
         return await _fetch_og(url)
     except Exception as e:
         logger.warning("Metadata fetch failed for %s: %s", parsed.platform, e)
-    return None, None
+    return None, None, None
 
 
-async def _fetch_spotify(track_id: str) -> tuple[str | None, str | None]:
-    """Spotify embed pages include full track data in __NEXT_DATA__."""
+async def _fetch_spotify(track_id: str) -> tuple[str | None, str | None, str | None]:
+    """Spotify embed page contains full track data in __NEXT_DATA__."""
     response = await _get_client().get(SPOTIFY_EMBED_URL.format(id=track_id))
     if response.status_code != 200:
         logger.warning("Spotify embed returned %s", response.status_code)
-        return None, None
+        return None, None, None
 
     raw = extract_next_data(response.text)
     if not raw:
-        return None, None
+        return None, None, _isrc(response.text)
 
     data = json.loads(raw)
     entity = data.get("props", {}).get("pageProps", {}).get("state", {}).get("data", {}).get("entity", {})
     title = entity.get("title")
     artists = [a.get("name") for a in entity.get("artists", []) if a.get("name")]
-    return title, ", ".join(artists) if artists else None
+    artist = ", ".join(artists) if artists else None
+    return title, artist, _isrc(response.text)
 
 
 # SoundCloud track pages embed hydration JSON with publisher_metadata
-# (artist, ISRC, UPC). og:title alone misses the artist on many tracks
-# because it's only the song title.
+# (artist, ISRC, UPC). og:title alone misses the artist on many tracks.
 _SC_ARTIST = re.compile(r'"publisher_metadata":\s*\{[^}]*?"artist":"([^"]+)"')
 _SC_RELEASE_TITLE = re.compile(r'"publisher_metadata":\s*\{[^}]*?"release_title":"([^"]+)"')
 
 
-async def _fetch_soundcloud(url: str) -> tuple[str | None, str | None]:
-    """SoundCloud track page hydration JSON > og tags for artist + title."""
+async def _fetch_soundcloud(url: str) -> tuple[str | None, str | None, str | None]:
+    """SoundCloud hydration JSON yields artist + release_title + ISRC."""
     response = await _get_client().get(url)
     if response.status_code != 200:
         logger.warning("SoundCloud page returned %s", response.status_code)
-        return None, None
+        return None, None, None
 
     html = response.text
-    title = None
-    artist = None
-
     m = _SC_RELEASE_TITLE.search(html)
-    if m:
-        title = m.group(1)
-    if not title:
-        og_title = extract_og_title(html)
-        if og_title:
-            title = og_title
+    title = m.group(1) if m else extract_og_title(html)
 
     m = _SC_ARTIST.search(html)
-    if m:
-        artist = m.group(1)
+    artist = m.group(1) if m else None
 
     # Fallback: first URL segment is artist handle (e.g. /deadmau5/strobe).
     if not artist:
@@ -103,24 +107,24 @@ async def _fetch_soundcloud(url: str) -> tuple[str | None, str | None]:
         if parts:
             artist = parts[0]
 
-    return title, artist
+    return title, artist, _isrc(html)
 
 
-async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None]:
-    """YouTube oEmbed returns title + channel name -- no API key required."""
+async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None, str | None]:
+    """YouTube oEmbed returns title + channel name. No ISRC available."""
     response = await _get_client().get(YOUTUBE_OEMBED_URL.format(id=video_id))
     if response.status_code != 200:
         logger.warning("YouTube oEmbed returned %s", response.status_code)
-        return None, None
+        return None, None, None
 
     data = response.json()
     raw_title = data.get("title")
     author = data.get("author_name")
     if not raw_title:
-        return None, None
+        return None, None, None
 
     title, artist = _parse_youtube_title(raw_title, author)
-    return title, artist
+    return title, artist, None
 
 
 def _parse_youtube_title(raw: str, author: str | None) -> tuple[str, str | None]:
@@ -128,7 +132,7 @@ def _parse_youtube_title(raw: str, author: str | None) -> tuple[str, str | None]
     cleaned = _strip_youtube_noise(raw)
 
     # Music video titles use "Artist <sep> Title" with sep = hyphen, en dash or em dash.
-    for sep in (" - ", " \u2013 ", " \u2014 "):
+    for sep in (" - ", " – ", " — "):
         if sep in cleaned:
             left, right = cleaned.split(sep, 1)
             return right.strip(), left.strip()
@@ -158,17 +162,17 @@ def _strip_youtube_noise(title: str) -> str:
     return result.strip()
 
 
-async def _fetch_og(url: str) -> tuple[str | None, str | None]:
-    """Scrape og:title and og:description from a track page."""
+async def _fetch_og(url: str) -> tuple[str | None, str | None, str | None]:
+    """Scrape og:title and og:description from a track page. Picks up ISRC if exposed."""
     response = await _get_client().get(url)
     if response.status_code != 200:
         logger.warning("og fetch returned %s", response.status_code)
-        return None, None
+        return None, None, None
 
     og_title = extract_og_title(response.text)
     og_desc = extract_og_description(response.text)
     if not og_title:
-        return None, None
+        return None, None, _isrc(response.text)
 
     title, artist = split_title_by_artist(og_title)
 
@@ -184,4 +188,4 @@ async def _fetch_og(url: str) -> tuple[str | None, str | None]:
     if artist:
         artist = strip_platform_suffix(artist)
 
-    return title, artist
+    return title, artist, _isrc(response.text)

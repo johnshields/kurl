@@ -126,7 +126,7 @@ async def kurl(url: str, target_platform: str):
 
         if (not title or not artist) and scrape_task is not None:
             try:
-                scraped_title, scraped_artist = await scrape_task
+                scraped_title, scraped_artist, _ = await scrape_task
             except Exception as e:
                 logger.warning("Metadata scrape failed: %s", e)
                 scraped_title, scraped_artist = None, None
