@@ -223,7 +223,8 @@ class ResultCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                "No exact match - this is a search on ${platform?.name ?? result.platform}",
+                "Approx match on ${platform?.name ?? result.platform}",
+                textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF888888), fontSize: 11),
               ),
             ),

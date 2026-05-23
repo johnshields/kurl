@@ -105,6 +105,10 @@ async def kurl(url: str, target_platform: str):
             odesli_data = await odesli_task
         except ApiError as e:
             logger.warning("Odesli unavailable (%s): %s", e.status_code, e.detail)
+        except Exception as e:
+            # httpx timeouts / network errors are not ApiError -- catch broadly
+            # so the request still falls through to scrape + search-page URL.
+            logger.warning("Odesli call failed: %s: %s", type(e).__name__, e)
 
     resolved_url = odesli.extract_url(odesli_data, target_platform) if odesli_data else None
     title, artist = odesli.extract_metadata(odesli_data) if odesli_data else (None, None)
