@@ -27,7 +27,8 @@ def check_rate_limit(method: str, path: str = ""):
         _requests.popleft()
 
     if len(_requests) >= MAX_REQUESTS:
-        return json_error("Rate limit exceeded. Try again later.", 429, code="RATE_LIMITED")
+        retry_after = max(1, int(_requests[0] + WINDOW_SECONDS - now) + 1)
+        return json_error(f"Too many requests. Wait {retry_after}s and try again.", 429, code="RATE_LIMITED")
 
     _requests.append(now)
     return None

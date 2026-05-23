@@ -22,6 +22,9 @@ const _genericFallback = "Something went wrong. Try again in a moment.";
 
 String friendlyError(Object error) {
   if (error is ApiException) {
+    // Rate-limit copy carries a dynamic retry-after seconds value from the
+    // backend, so pass the message through verbatim instead of remapping.
+    if (error.code == 'RATE_LIMITED') return error.message;
     return _codeMessages[error.code] ?? _genericFallback;
   }
 
