@@ -13,6 +13,14 @@ _PLATFORM_SUFFIX = re.compile(
     re.I,
 )
 
+# Strip Apple Music style release-type suffix (e.g. "Song Title - Single",
+# "Album Name - EP"). Only matches when preceded by " - " so song titles that
+# contain the word naturally (e.g. "Single Ladies") are untouched.
+_RELEASE_SUFFIX = re.compile(
+    r"\s+-\s+(Single|EP|Album|Deluxe(\s+Edition)?|Remastered(\s+\d{4})?|Live|Acoustic|Demo)\s*$",
+    re.I,
+)
+
 
 def extract_og_title(html: str) -> str | None:
     m = _OG_TITLE.search(html) or _OG_TITLE_SQ.search(html)
@@ -47,3 +55,8 @@ def split_title_by_artist(text: str) -> tuple[str, str | None]:
 def strip_platform_suffix(text: str) -> str:
     """Remove trailing 'on Apple Music', 'on Spotify' etc."""
     return _PLATFORM_SUFFIX.sub("", text).strip()
+
+
+def strip_release_suffix(text: str) -> str:
+    """Remove trailing ' - Single' / ' - EP' / ' - Album' release-type tags."""
+    return _RELEASE_SUFFIX.sub("", text).strip()

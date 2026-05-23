@@ -12,6 +12,7 @@ from utils.scraping import (
     extract_og_title,
     split_title_by_artist,
     strip_platform_suffix,
+    strip_release_suffix,
 )
 from utils.url_parser import ParsedTrack
 
@@ -179,7 +180,7 @@ async def _fetch_og(url: str) -> tuple[str | None, str | None]:
                     artist = first
                     break
 
-    title = strip_platform_suffix(title)
+    title = strip_release_suffix(strip_platform_suffix(title))
     if artist:
         artist = strip_platform_suffix(artist)
 
