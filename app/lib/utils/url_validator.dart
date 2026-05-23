@@ -2,7 +2,7 @@
 final _musicHostPattern = RegExp(
   r'^(open\.spotify\.com'
   r'|spotify\.link'
-  r'|music\.apple\.com'
+  r'|(geo\.)?music\.apple\.com'
   r'|(music\.|www\.|m\.)?youtube\.com'
   r'|youtu\.be'
   r'|(www\.)?deezer\.com'

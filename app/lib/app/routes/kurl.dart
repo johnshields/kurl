@@ -269,6 +269,13 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 32),
                       AdBanner(slot: cfg.adsenseSlotFooter),
                     ],
+                    const SizedBox(height: 32),
+                    Center(
+                      child: Text(
+                        '© ${DateTime.now().year} kurl.online',
+                        style: const TextStyle(color: Color(0xFF555555), fontSize: 11),
+                      ),
+                    ),
                   ],
                 ),
               ),

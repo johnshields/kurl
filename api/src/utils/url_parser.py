@@ -26,8 +26,9 @@ _SPOTIFY_TRACK = re.compile(r"/track/([A-Za-z0-9]+)")
 _SPOTIFY_ALBUM = re.compile(r"/album/([A-Za-z0-9]+)")
 _SPOTIFY_ARTIST = re.compile(r"/artist/([A-Za-z0-9]+)")
 
-_APPLE_ALBUM_PATH = re.compile(r"/(?P<country>[a-z]{2})/album/[^/]+/(?P<album_id>\d+)")
-_APPLE_ARTIST = re.compile(r"/(?P<country>[a-z]{2})/artist/[^/]+/(?P<artist_id>\d+)")
+# Country segment is optional -- geo.music.apple.com paths omit it.
+_APPLE_ALBUM_PATH = re.compile(r"(?:/(?P<country>[a-z]{2}))?/album/[^/]+/(?P<album_id>\d+)")
+_APPLE_ARTIST = re.compile(r"(?:/(?P<country>[a-z]{2}))?/artist/[^/]+/(?P<artist_id>\d+)")
 
 _DEEZER_TRACK = re.compile(r"/(?:[a-z]{2}/)?track/(\d+)")
 _DEEZER_ALBUM = re.compile(r"/(?:[a-z]{2}/)?album/(\d+)")
