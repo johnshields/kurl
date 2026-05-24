@@ -15,6 +15,7 @@ class PlatformPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontSize = MediaQuery.of(context).size.width < 420 ? 11.0 : 13.0;
     return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -56,10 +57,11 @@ class PlatformPicker extends StatelessWidget {
                     Flexible(
                       child: Text(
                         p.name,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         softWrap: false,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: fontSize,
                           fontWeight: FontWeight.w500,
                           color: isSelected ? onColour : const Color(0xFFE5E5E5),
                         ),
