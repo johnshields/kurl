@@ -107,34 +107,24 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
     return await _search_track_by_metadata(target_platform, title, artist)
 
 
+# (module, attr, label) per target; attr lookup at call time keeps test patches working.
+_RESCUE_CHAIN = {
+    "appleMusic": [(itunes, "fetch_apple_music_url", "iTunes Search")],
+    "spotify": [
+        (lastfm, "spotify_url", "Last.fm"),
+        (spotify_search, "search_track_url", "DDG search"),
+    ],
+    "beatport": [(beatport_search, "search_track_url", "DDG search")],
+    "bandcamp": [(bandcamp_search, "search_track_url", "search API")],
+}
+
+
 async def _rescue_url(target_platform: str, title: str, artist: str) -> str | None:
-    """Last-ditch URL resolution: iTunes, Last.fm, DDG SERP."""
-    if target_platform == "appleMusic":
-        url = await itunes.fetch_apple_music_url(title, artist)
+    """Last-ditch URL resolution; tries each resolver in order until one hits."""
+    for mod, attr, label in _RESCUE_CHAIN.get(target_platform, []):
+        url = await getattr(mod, attr)(title, artist)
         if url:
-            logger.info("Rescued Apple Music URL via iTunes Search: %s", url)
-            return url
-
-    if target_platform == "spotify":
-        url = await lastfm.spotify_url(title, artist)
-        if url:
-            logger.info("Rescued Spotify URL via Last.fm: %s", url)
-            return url
-        url = await spotify_search.search_track_url(title, artist)
-        if url:
-            logger.info("Rescued Spotify URL via DDG search: %s", url)
-            return url
-
-    if target_platform == "beatport":
-        url = await beatport_search.search_track_url(title, artist)
-        if url:
-            logger.info("Rescued Beatport URL via DDG search: %s", url)
-            return url
-
-    if target_platform == "bandcamp":
-        url = await bandcamp_search.search_track_url(title, artist)
-        if url:
-            logger.info("Rescued Bandcamp URL via search API: %s", url)
+            logger.info("Rescued %s URL via %s: %s", target_platform, label, url)
             return url
     return None
 
