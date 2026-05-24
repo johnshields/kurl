@@ -42,8 +42,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [changes]
-    if: needs.changes.outputs.api == 'true'
     defaults:
       run:
         working-directory: api
@@ -61,8 +59,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [changes, lint]
-    if: needs.changes.outputs.api == 'true'
+    needs: [lint]
     defaults:
       run:
         working-directory: api
