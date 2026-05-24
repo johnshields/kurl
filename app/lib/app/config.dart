@@ -18,13 +18,11 @@ const adsenseSlotFooter = String.fromEnvironment(
   defaultValue: '2004136400',
 );
 
-// Default debug API = pywrangler dev (port 8787)
+// Default debug API = pywrangler dev (port 8787).
 const _apiUrlOverride = String.fromEnvironment('KURL_API_URL');
 const _localPort = 8787;
 
-String _resolveBaseUrl() {
-  if (_apiUrlOverride.isNotEmpty) return _apiUrlOverride;
-  if (kReleaseMode) return _prodUrl;
+String _localUrl() {
   if (kIsWeb) return 'http://localhost:$_localPort';
   if (defaultTargetPlatform == TargetPlatform.android) {
     return 'http://10.0.2.2:$_localPort';
@@ -32,4 +30,21 @@ String _resolveBaseUrl() {
   return 'http://localhost:$_localPort';
 }
 
-final apiBaseUrl = _resolveBaseUrl();
+// Candidate base URLs in priority order. Release builds use prod only.
+// Debug builds try local first, fall back to prod when worker is offline,
+// so the app keeps working without `pywrangler dev` running. A web build
+// served from kurl.online (or any non-local host) is treated as live
+// regardless of build mode -- never probes localhost.
+List<String> _candidates() {
+  if (_apiUrlOverride.isNotEmpty) return [_apiUrlOverride];
+  if (kReleaseMode || _isLiveWebHost()) return [_prodUrl];
+  return [_localUrl(), _prodUrl];
+}
+
+bool _isLiveWebHost() {
+  if (!kIsWeb) return false;
+  final host = Uri.base.host.toLowerCase();
+  return host.isNotEmpty && host != 'localhost' && host != '127.0.0.1';
+}
+
+final List<String> apiCandidateUrls = _candidates();

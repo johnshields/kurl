@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
-import 'package:kurl/app/config.dart';
+import 'package:kurl/services/api_base.dart';
 
 // Fire-and-forget analytics events to the first-party backend.
 class Analytics {
   static Future<void> _send(String type, Map<String, dynamic> payload) async {
     try {
+      final base = await resolveApiBase();
       await http.post(
-        Uri.parse('$apiBaseUrl/api/events'),
+        Uri.parse('$base/api/events'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'type': type, ...payload}),
       );

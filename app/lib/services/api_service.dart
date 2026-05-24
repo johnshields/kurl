@@ -3,10 +3,12 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:kurl/app/config.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/services/api_base.dart';
 
 class ApiService {
   static Future<KurlResult> kurl(String url, String targetPlatform) async {
-    final endpoint = '$apiBaseUrl/api/kurl';
+    final base = await resolveApiBase();
+    final endpoint = '$base/api/kurl';
     developer.log('POST $endpoint [$targetPlatform] $url', name: 'kurl.api');
 
     final response = await http.post(

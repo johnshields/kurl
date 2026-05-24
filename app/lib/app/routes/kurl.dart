@@ -9,6 +9,8 @@ import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
 import 'package:kurl/utils/clipboard_paste.dart';
 import 'package:kurl/utils/friendly_error.dart';
+import 'package:kurl/utils/url_short.dart';
+import 'package:kurl/utils/url_state.dart';
 import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/app/config.dart' as cfg;
 import 'package:kurl/widgets/shared/ad_banner.dart';
@@ -84,9 +86,19 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   }
 
   void _handleUri(Uri uri) {
-    final encoded = uri.queryParameters['u'];
-    if (encoded == null || encoded.isEmpty) return;
-    _populateUrl(Uri.decodeComponent(encoded));
+    final encoded = uri.queryParameters['url'];
+    final target = uri.queryParameters['target'];
+    final hasUrl = encoded != null && encoded.isNotEmpty;
+    final hasTarget = target != null && target.isNotEmpty;
+    if (!hasUrl && !hasTarget) return;
+
+    if (hasUrl) _populateUrl(compactDecode(encoded));
+    if (hasTarget) setState(() => _selectedPlatform = target);
+
+    // Both params present -> auto-fire conversion (deep-link / share open).
+    if (hasUrl && hasTarget) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleKurl());
+    }
   }
 
   void _populateUrl(String url) {
@@ -95,6 +107,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _result = null;
       _error = null;
     });
+    updateUrlState(url: url, target: _selectedPlatform);
   }
 
   Future<void> _handlePaste() async {
@@ -109,6 +122,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _result = null;
       _error = null;
     });
+    updateUrlState();
   }
 
   Future<void> _handleKurl() async {
@@ -122,6 +136,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     });
 
     Analytics.trackKurl(url, _selectedPlatform!);
+    updateUrlState(url: url, target: _selectedPlatform);
 
     try {
       final data = await ApiService.kurl(url, _selectedPlatform!);
@@ -241,6 +256,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       onSelect: (id) {
                         Analytics.trackPlatformSelect(id);
                         setState(() => _selectedPlatform = id);
+                        updateUrlState(url: _urlController.text.trim(), target: id);
                       },
                       disabled: _loading,
                     ),
