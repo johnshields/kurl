@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 from app.constants import LASTFM_TRACK_URL, SCRAPER_TIMEOUT, SCRAPER_USER_AGENT
 from clients._http import get_client
+from clients.resolvers._serp import clean_title
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -26,7 +27,7 @@ async def spotify_url(title: str, artist: str) -> str | None:
     if not title or not artist:
         return None
     try:
-        url = LASTFM_TRACK_URL.format(artist=quote(artist), title=quote(title))
+        url = LASTFM_TRACK_URL.format(artist=quote(artist), title=quote(clean_title(title)))
         resp = await _get_client().get(url)
         if resp.status_code != 200:
             return None

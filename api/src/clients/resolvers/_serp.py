@@ -24,6 +24,15 @@ def primary_artist(artist: str) -> str:
     return primary or artist
 
 
+_BRACKETED = re.compile(r"\s*[\(\[][^)\]]*[\)\]]\s*")
+
+
+def clean_title(title: str) -> str:
+    """Strip bracketed suffixes like (feat. X), (Original Mix), [Remix]."""
+    cleaned = _BRACKETED.sub(" ", title).strip()
+    return cleaned or title
+
+
 async def serp_search(query: str, pattern: re.Pattern, *, label: str) -> re.Match | None:
     """First regex match from DDG HTML SERP, or None."""
     logger.info("DDG SERP %s: %s", label, query)
