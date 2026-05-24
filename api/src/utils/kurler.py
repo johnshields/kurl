@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT, RESCUE_PLATFORMS
 from clients import cache, metadata
-from clients.resolvers import itunes, lastfm, spotify_search
+from clients.resolvers import bandcamp_search, beatport_search, itunes, lastfm, spotify_search
 from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
 from utils.url.canonical_url import build_track_url
 from utils.logging import get_logger
@@ -115,6 +115,18 @@ async def _rescue_url(target_platform: str, title: str, artist: str) -> str | No
         url = await spotify_search.search_track_url(title, artist)
         if url:
             logger.info("Rescued Spotify URL via DDG search: %s", url)
+            return url
+
+    if target_platform == "beatport":
+        url = await beatport_search.search_track_url(title, artist)
+        if url:
+            logger.info("Rescued Beatport URL via DDG search: %s", url)
+            return url
+
+    if target_platform == "bandcamp":
+        url = await bandcamp_search.search_track_url(title, artist)
+        if url:
+            logger.info("Rescued Bandcamp URL via search API: %s", url)
             return url
     return None
 

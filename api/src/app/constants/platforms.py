@@ -27,8 +27,8 @@ PLATFORM_NAMES = {
 # Platforms with direct ISRC/UPC lookup.
 ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal", "soundcloud"}
 
-# Targets needing rescue resolution (iTunes, Last.fm, DDG SERP).
-RESCUE_PLATFORMS = {"spotify", "appleMusic", "youtubeMusic"}
+# Targets needing rescue resolution (iTunes, Last.fm, DDG SERP, Bandcamp API).
+RESCUE_PLATFORMS = {"spotify", "appleMusic", "youtubeMusic", "beatport", "bandcamp"}
 
 # Odesli pair-routing rules.
 ODESLI_UNSUPPORTED_TARGETS = frozenset({"beatport", "bandcamp"})
