@@ -187,6 +187,9 @@ class TestRescuePath:
 
         source = ParsedMusicUrl("appleMusic", "track", "1234", country="us")
         with patch(
+            "utils.kurler.spotify_search.search_track_url",
+            new=AsyncMock(return_value=None),
+        ), patch(
             "utils.kurler.lastfm.spotify_url",
             new=AsyncMock(return_value="https://open.spotify.com/track/LF999"),
         ):
@@ -195,7 +198,7 @@ class TestRescuePath:
         assert result is not None
         assert result.url == "https://open.spotify.com/track/LF999"
 
-    async def test_spotify_rescue_via_ddg_when_lastfm_misses(self, mock_clients):
+    async def test_spotify_rescue_via_ddg(self, mock_clients):
         mock_clients["appleMusic"].get_track = AsyncMock(return_value={})
         mock_clients["appleMusic"].extract_isrc.return_value = "ISRC0005"
         mock_clients["appleMusic"].extract_metadata.return_value = ("Hello", "Adele")
