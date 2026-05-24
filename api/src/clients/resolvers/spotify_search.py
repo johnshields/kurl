@@ -1,4 +1,4 @@
-"""SERP scrape (DDG + Bing) for Spotify track URLs."""
+"""DDG SERP scrape for Spotify track URLs."""
 
 import re
 

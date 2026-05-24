@@ -1,4 +1,4 @@
-"""SERP scrape (DDG + Bing) for Beatport track URLs."""
+"""DDG SERP scrape for Beatport track URLs."""
 
 import re
 

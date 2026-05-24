@@ -1,21 +1,18 @@
-"""Shared SERP scrape helpers: DDG HTML + Bing HTML, first hit wins."""
+"""DDG SERP scrape helper."""
 
 import re
 from urllib.parse import quote
 
-from app.constants import SCRAPER_TIMEOUT, SCRAPER_USER_AGENT
+from app.constants import DDG_SEARCH_URL, SCRAPER_TIMEOUT, SCRAPER_USER_AGENT
 from clients._http import get_client
 from utils.logging import get_logger
 
 logger = get_logger()
 
-_DDG_URL = "https://duckduckgo.com/html/?q={query}"
-_BING_URL = "https://www.bing.com/search?q={query}"
 
-
-def _client(name: str):
+def _client():
     return get_client(
-        name,
+        "serp",
         timeout=SCRAPER_TIMEOUT,
         follow_redirects=True,
         headers={"User-Agent": SCRAPER_USER_AGENT},
@@ -23,25 +20,23 @@ def _client(name: str):
 
 
 def primary_artist(artist: str) -> str:
-    return artist.split(",")[0].split("&")[0].strip() or artist
+    primary = artist.split(",")[0].split("&")[0].strip().rstrip(".")
+    return primary or artist
 
 
 async def serp_search(query: str, pattern: re.Pattern, *, label: str) -> re.Match | None:
-    """Run DDG first, fall back to Bing. Return first regex match or None."""
-    encoded = quote(query)
-    for engine, url, client_name in (
-        ("DDG", _DDG_URL, "serp_ddg"),
-        ("Bing", _BING_URL, "serp_bing"),
-    ):
-        try:
-            resp = await _client(client_name).get(url.format(query=encoded))
-            if resp.status_code != 200:
-                logger.warning("%s SERP %s -> %s", engine, label, resp.status_code)
-                continue
-            m = pattern.search(resp.text)
-            if m:
-                logger.info("%s SERP hit for %s", engine, label)
-                return m
-        except Exception as e:
-            logger.warning("%s SERP failed for %s: %s", engine, label, e)
-    return None
+    """First regex match from DDG HTML SERP, or None."""
+    logger.info("DDG SERP %s: %s", label, query)
+    try:
+        resp = await _client().get(DDG_SEARCH_URL.format(query=quote(query)))
+        if resp.status_code != 200:
+            logger.warning("DDG SERP %s -> %s", label, resp.status_code)
+            return None
+        m = pattern.search(resp.text)
+        if not m:
+            logger.info("DDG SERP no match for %s", label)
+            return None
+        return m
+    except Exception as e:
+        logger.warning("DDG SERP failed for %s: %s", label, e)
+        return None

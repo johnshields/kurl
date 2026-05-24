@@ -133,16 +133,7 @@ class TestSpotifySearchScrape:
             url = await spotify_search.search_track_url("Hello", "Adele")
         assert url == "https://open.spotify.com/track/abcDEF123456ghi789JKL0"
 
-    async def test_falls_back_to_bing_when_ddg_empty(self):
-        ddg = _resp(text="<html>no results</html>")
-        bing = _resp(text='<a href="https://open.spotify.com/track/BINGmatch4567890123456">hit</a>')
-        client = MagicMock()
-        client.get = AsyncMock(side_effect=[ddg, bing])
-        with patch("clients.resolvers._serp._client", return_value=client):
-            url = await spotify_search.search_track_url("x", "y")
-        assert url == "https://open.spotify.com/track/BINGmatch4567890123456"
-
-    async def test_returns_none_when_both_engines_empty(self):
+    async def test_returns_none_when_no_match(self):
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(text="<html>no results</html>"))
         with patch("clients.resolvers._serp._client", return_value=client):
@@ -153,7 +144,7 @@ class TestSpotifySearchScrape:
         assert await spotify_search.search_track_url("", "Adele") is None
         assert await spotify_search.search_track_url("Hello", "") is None
 
-    async def test_returns_none_on_http_error_both(self):
+    async def test_returns_none_on_http_error(self):
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(status=429))
         with patch("clients.resolvers._serp._client", return_value=client):
