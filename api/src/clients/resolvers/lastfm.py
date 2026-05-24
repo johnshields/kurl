@@ -3,7 +3,7 @@
 import re
 from urllib.parse import quote
 
-from app.constants import LASTFMLASTFM_TRACK_URL, SCRAPER_TIMEOUT, SCRAPER_USER_AGENT
+from app.constants import LASTFM_TRACK_URL, SCRAPER_TIMEOUT, SCRAPER_USER_AGENT
 from clients._http import get_client
 from utils.logging import get_logger
 

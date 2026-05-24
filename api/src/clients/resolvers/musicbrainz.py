@@ -2,7 +2,7 @@
 
 import re
 
-from app.constants import MUSICBRAINZ_APIMUSICBRAINZ_API_BASE, MUSICBRAINZMUSICBRAINZ_USER_AGENT
+from app.constants import MUSICBRAINZ_API_BASE, MUSICBRAINZ_USER_AGENT
 from clients._http import get_client
 from utils.logging import get_logger
 

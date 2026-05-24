@@ -2,8 +2,8 @@ import asyncio
 
 from app.config import settings
 from app.constants import (
-    ODESLI_ODESLI_BACKOFF_SECONDS,
-    ODESLI_ODESLI_MAX_RETRIES,
+    ODESLI_BACKOFF_SECONDS,
+    ODESLI_MAX_RETRIES,
     ODESLI_UNRELIABLE_SOURCES,
     ODESLI_UNSUPPORTED_TARGETS,
 )
