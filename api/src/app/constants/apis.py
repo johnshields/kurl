@@ -24,6 +24,7 @@ DEEZER_API_BASE = "https://api.deezer.com"
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 LASTFM_TRACK_URL = "https://www.last.fm/music/{artist}/_/{title}"
 BANDCAMP_SEARCH_URL = "https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic"
+GENIUS_API_BASE = "https://api.genius.com"
 DDG_SEARCH_URL = "https://duckduckgo.com/html/?q={query}"
 
 # Regional defaults.

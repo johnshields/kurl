@@ -50,6 +50,10 @@ class Settings:
         return self._get("ODESLI_API_KEY")
 
     @property
+    def GENIUS_ACCESS_TOKEN(self) -> str | None:
+        return self._get("GENIUS_ACCESS_TOKEN")
+
+    @property
     def CACHE_TTL_SECONDS(self) -> int:
         return self._get_int("CACHE_TTL_SECONDS", 86400)
 

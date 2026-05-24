@@ -222,3 +222,57 @@ class TestBandcampSearch:
         with patch("clients.resolvers.bandcamp_search._get_client", return_value=client):
             url = await bandcamp_search.search_track_url("x", "y")
         assert url is None
+
+
+class TestGeniusResolver:
+    def _patch_settings(self, monkeypatch):
+        from app import config as cfg
+        monkeypatch.setattr(cfg.settings, "GENIUS_ACCESS_TOKEN", "test-token", raising=False)
+
+    @pytest.fixture
+    def settings_with_token(self, monkeypatch):
+        from app import config as cfg
+        original = cfg.settings._get
+        monkeypatch.setattr(cfg.settings, "_get", lambda k, d=None: "test-token" if k == "GENIUS_ACCESS_TOKEN" else original(k, d))
+
+    async def test_returns_spotify_url_from_song_media(self, settings_with_token):
+        from clients.resolvers import genius
+        search_resp = _resp(json_data={"response": {"hits": [{"result": {"id": 42}}]}})
+        song_resp = _resp(json_data={
+            "response": {"song": {"media": [
+                {"provider": "spotify", "url": "https://open.spotify.com/track/G123"},
+                {"provider": "apple_music", "url": "https://music.apple.com/us/song/_/99"},
+            ]}}
+        })
+        client = MagicMock()
+        client.get = AsyncMock(side_effect=[search_resp, song_resp])
+        with patch("clients.resolvers.genius._get_client", return_value=client):
+            url = await genius.spotify_url("Hello", "Adele")
+        assert url == "https://open.spotify.com/track/G123"
+
+    async def test_returns_none_when_no_hits(self, settings_with_token):
+        from clients.resolvers import genius
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(json_data={"response": {"hits": []}}))
+        with patch("clients.resolvers.genius._get_client", return_value=client):
+            url = await genius.spotify_url("x", "y")
+        assert url is None
+
+    async def test_returns_none_when_platform_missing(self, settings_with_token):
+        from clients.resolvers import genius
+        search_resp = _resp(json_data={"response": {"hits": [{"result": {"id": 7}}]}})
+        song_resp = _resp(json_data={"response": {"song": {"media": [
+            {"provider": "soundcloud", "url": "https://soundcloud.com/x/y"}
+        ]}}})
+        client = MagicMock()
+        client.get = AsyncMock(side_effect=[search_resp, song_resp])
+        with patch("clients.resolvers.genius._get_client", return_value=client):
+            url = await genius.spotify_url("x", "y")
+        assert url is None
+
+    async def test_returns_none_without_token(self, monkeypatch):
+        from clients.resolvers import genius
+        from app import config as cfg
+        monkeypatch.setattr(cfg.settings, "_get", lambda k, d=None: None)
+        url = await genius.spotify_url("x", "y")
+        assert url is None

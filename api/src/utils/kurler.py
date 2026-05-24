@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT, RESCUE_PLATFORMS
 from clients import cache, metadata
-from clients.resolvers import bandcamp_search, beatport_search, itunes, lastfm, spotify_search
+from clients.resolvers import bandcamp_search, beatport_search, genius, itunes, lastfm, spotify_search
 from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
 from utils.url.canonical_url import build_track_url
 from utils.logging import get_logger
@@ -109,11 +109,16 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
 
 # (module, attr, label) per target; attr lookup at call time keeps test patches working.
 _RESCUE_CHAIN = {
-    "appleMusic": [(itunes, "fetch_apple_music_url", "iTunes Search")],
+    "appleMusic": [
+        (itunes, "fetch_apple_music_url", "iTunes Search"),
+        (genius, "apple_url", "Genius"),
+    ],
     "spotify": [
         (lastfm, "spotify_url", "Last.fm"),
         (spotify_search, "search_track_url", "DDG search"),
+        (genius, "spotify_url", "Genius"),
     ],
+    "youtubeMusic": [(genius, "youtube_url", "Genius")],
     "beatport": [(beatport_search, "search_track_url", "DDG search")],
     "bandcamp": [(bandcamp_search, "search_track_url", "search API")],
 }
