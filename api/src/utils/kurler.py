@@ -117,8 +117,8 @@ _RESCUE_CHAIN = {
         (genius, "apple_url", "Genius"),
     ],
     "spotify": [
-        (lastfm, "spotify_url", "Last.fm"),
         (spotify_search, "search_track_url", "DDG search"),
+        (lastfm, "spotify_url", "Last.fm"),
         (genius, "spotify_url", "Genius"),
     ],
     "youtubeMusic": [(genius, "youtube_url", "Genius")],
