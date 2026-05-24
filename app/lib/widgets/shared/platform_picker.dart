@@ -55,15 +55,18 @@ class PlatformPicker extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        p.name,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected ? onColour : const Color(0xFFE5E5E5),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          p.name,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w500,
+                            color: isSelected ? onColour : const Color(0xFFE5E5E5),
+                          ),
                         ),
                       ),
                     ),
