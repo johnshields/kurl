@@ -45,7 +45,7 @@ const platforms = [
   StreamingPlatform(
     id: 'beatport',
     name: 'Beatport',
-    colour: Color(0xFF01FF95),
+    colour: Color(0xFF01FF89),
     icon: SimpleIcons.beatport,
   ),
   StreamingPlatform(
