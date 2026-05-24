@@ -5,15 +5,16 @@ import re
 from urllib.parse import urlparse
 
 from app.constants import PLATFORMS
-from clients import cache, itunes, metadata, odesli
-from utils.errors import ApiError
+from clients import cache, metadata
+from clients.resolvers import itunes, odesli
+from utils.http.errors import ApiError
 from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
-from utils.response import json_error, json_success
-from utils.search_url import build_search_url
-from utils.short_links import is_short_link, resolve_short_link
-from utils.url import normalise_url
-from utils.url_parser import is_search_url, parse_music_url, parse_track
+from utils.http.response import json_error, json_success
+from utils.url.search_url import build_search_url
+from utils.url.short_links import is_short_link, resolve_short_link
+from utils.url.normalise import normalise_url
+from utils.url.url_parser import is_search_url, parse_music_url, parse_track
 
 logger = get_logger()
 
