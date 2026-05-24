@@ -22,9 +22,30 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+              - '.github/workflows/kurl.yml'
+            app:
+              - 'app/**'
+              - '.github/workflows/kurl.yml'
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     defaults:
       run:
         working-directory: api
@@ -39,11 +60,33 @@ jobs:
       - name: Check for syntax errors
         run: find . -name "*.py" -not -path "./.venv/*" -not -path "./__pycache__/*" -not -path "./python_modules/*" | xargs python -m py_compile
 
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [changes, lint]
+    if: needs.changes.outputs.api == 'true'
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-asyncio httpx PyJWT
+
+      - name: Run tests
+        run: pytest -q
+
   deploy-api:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, lint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.api == 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [deploy-api]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.api == 'true'
 
     steps:
       - name: Test endpoints
@@ -98,7 +141,8 @@ jobs:
   deploy-web:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.app == 'true'
 
     steps:
       - uses: actions/checkout@v4
