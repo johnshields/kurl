@@ -28,6 +28,7 @@ _SPOTIFY_ARTIST = re.compile(r"/artist/([A-Za-z0-9]+)")
 
 # Country segment is optional -- geo.music.apple.com paths omit it.
 _APPLE_ALBUM_PATH = re.compile(r"(?:/(?P<country>[a-z]{2}))?/album/[^/]+/(?P<album_id>\d+)")
+_APPLE_SONG_PATH = re.compile(r"(?:/(?P<country>[a-z]{2}))?/song/[^/]+/(?P<track_id>\d+)")
 _APPLE_ARTIST = re.compile(r"(?:/(?P<country>[a-z]{2}))?/artist/[^/]+/(?P<artist_id>\d+)")
 
 _DEEZER_TRACK = re.compile(r"/(?:[a-z]{2}/)?track/(\d+)")
@@ -157,6 +158,16 @@ def _parse_apple_music(path: str, query: dict) -> ParsedMusicUrl | None:
             "appleMusic",
             "artist",
             m.group("artist_id"),
+            country=m.group("country"),
+        )
+
+    # /song/{slug}/{id} -- standalone track URL (not embedded in album).
+    m = _APPLE_SONG_PATH.search(path)
+    if m:
+        return ParsedMusicUrl(
+            "appleMusic",
+            "track",
+            m.group("track_id"),
             country=m.group("country"),
         )
 

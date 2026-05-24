@@ -59,6 +59,14 @@ class TestAppleMusic:
         r = parse_music_url("https://music.apple.com/gb/album/x/999?i=888")
         assert r.country == "gb"
 
+    def test_song_url_standalone(self):
+        r = parse_music_url("https://music.apple.com/us/song/never-gonna-give-you-up/1452408575")
+        assert r == ParsedMusicUrl("appleMusic", "track", "1452408575", country="us")
+
+    def test_song_url_no_country(self):
+        r = parse_music_url("https://music.apple.com/song/x/123")
+        assert r == ParsedMusicUrl("appleMusic", "track", "123")
+
 
 class TestYouTube:
     def test_youtu_be_short_link(self):
