@@ -160,10 +160,9 @@ class TestClientFailurePropagation:
 
 
 class TestRescuePath:
-    """Rescue chain: iTunes for Apple, MusicBrainz for ISRC-mapped, Last.fm for Spotify."""
+    """Rescue chain: iTunes for Apple, Last.fm + DDG search for Spotify."""
 
     async def test_apple_rescue_via_itunes(self, mock_clients):
-        # Source has ISRC + metadata; Apple ISRC search returns nothing.
         mock_clients["spotify"].get_track = AsyncMock(return_value={})
         mock_clients["spotify"].extract_isrc.return_value = "ISRC0001"
         mock_clients["spotify"].extract_metadata.return_value = ("Hello", "Adele")
@@ -180,29 +179,7 @@ class TestRescuePath:
         assert result.url == "https://music.apple.com/us/song/_/42"
         assert result.via == "isrc"
 
-    async def test_spotify_rescue_via_musicbrainz(self, mock_clients):
-        mock_clients["appleMusic"].get_track = AsyncMock(return_value={})
-        mock_clients["appleMusic"].extract_isrc.return_value = "ISRC0002"
-        mock_clients["appleMusic"].extract_metadata.return_value = ("Hello", "Adele")
-        mock_clients["spotify"].search_by_isrc = AsyncMock(return_value=None)
-
-        source = ParsedMusicUrl("appleMusic", "track", "1234", country="us")
-        with patch(
-            "utils.kurler.musicbrainz.lookup_url",
-            new=AsyncMock(return_value="https://open.spotify.com/track/MB123"),
-        ), patch(
-            "utils.kurler.itunes.fetch_apple_music_url",
-            new=AsyncMock(return_value=None),
-        ), patch(
-            "utils.kurler.lastfm.spotify_url",
-            new=AsyncMock(return_value=None),
-        ):
-            result = await kurl(source, "spotify")
-
-        assert result is not None
-        assert result.url == "https://open.spotify.com/track/MB123"
-
-    async def test_spotify_rescue_via_lastfm_when_mb_misses(self, mock_clients):
+    async def test_spotify_rescue_via_lastfm(self, mock_clients):
         mock_clients["appleMusic"].get_track = AsyncMock(return_value={})
         mock_clients["appleMusic"].extract_isrc.return_value = "ISRC0003"
         mock_clients["appleMusic"].extract_metadata.return_value = ("Hello", "Adele")
@@ -210,9 +187,6 @@ class TestRescuePath:
 
         source = ParsedMusicUrl("appleMusic", "track", "1234", country="us")
         with patch(
-            "utils.kurler.musicbrainz.lookup_url",
-            new=AsyncMock(return_value=None),
-        ), patch(
             "utils.kurler.lastfm.spotify_url",
             new=AsyncMock(return_value="https://open.spotify.com/track/LF999"),
         ):
@@ -220,6 +194,25 @@ class TestRescuePath:
 
         assert result is not None
         assert result.url == "https://open.spotify.com/track/LF999"
+
+    async def test_spotify_rescue_via_ddg_when_lastfm_misses(self, mock_clients):
+        mock_clients["appleMusic"].get_track = AsyncMock(return_value={})
+        mock_clients["appleMusic"].extract_isrc.return_value = "ISRC0005"
+        mock_clients["appleMusic"].extract_metadata.return_value = ("Hello", "Adele")
+        mock_clients["spotify"].search_by_isrc = AsyncMock(return_value=None)
+
+        source = ParsedMusicUrl("appleMusic", "track", "1234", country="us")
+        with patch(
+            "utils.kurler.lastfm.spotify_url",
+            new=AsyncMock(return_value=None),
+        ), patch(
+            "utils.kurler.spotify_search.search_track_url",
+            new=AsyncMock(return_value="https://open.spotify.com/track/DDG123"),
+        ):
+            result = await kurl(source, "spotify")
+
+        assert result is not None
+        assert result.url == "https://open.spotify.com/track/DDG123"
 
     async def test_non_rescue_target_skips_rescue(self, mock_clients):
         """Deezer is not in RESCUE_PLATFORMS -- rescue chain must not be invoked."""
@@ -230,15 +223,15 @@ class TestRescuePath:
         mock_clients["deezer"].search_track = AsyncMock(return_value=None)
 
         itunes_mock = AsyncMock(return_value="should-not-be-used")
-        mb_mock = AsyncMock(return_value="should-not-be-used")
+        lastfm_mock = AsyncMock(return_value="should-not-be-used")
 
         source = ParsedMusicUrl("spotify", "track", "abc")
         with patch("utils.kurler.itunes.fetch_apple_music_url", new=itunes_mock), \
-             patch("utils.kurler.musicbrainz.lookup_url", new=mb_mock):
+             patch("utils.kurler.lastfm.spotify_url", new=lastfm_mock):
             await kurl(source, "deezer")
 
         itunes_mock.assert_not_awaited()
-        mb_mock.assert_not_awaited()
+        lastfm_mock.assert_not_awaited()
 
 
 class TestRescueWithoutTargetClient:

@@ -27,7 +27,7 @@ PLATFORM_NAMES = {
 # Platforms with direct ISRC/UPC lookup.
 ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal", "soundcloud"}
 
-# Targets needing rescue resolution (iTunes, MusicBrainz, Last.fm).
+# Targets needing rescue resolution (iTunes, Last.fm, DDG SERP).
 RESCUE_PLATFORMS = {"spotify", "appleMusic", "youtubeMusic"}
 
 # Odesli pair-routing rules.

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT, RESCUE_PLATFORMS
 from clients import cache, metadata
-from clients.resolvers import itunes, lastfm, musicbrainz
+from clients.resolvers import itunes, lastfm, spotify_search
 from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
 from utils.url.canonical_url import build_track_url
 from utils.logging import get_logger
@@ -92,33 +92,29 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
         return None
 
     if target_platform in RESCUE_PLATFORMS:
-        rescued = await _rescue_url(target_platform, isrc, title, artist)
+        rescued = await _rescue_url(target_platform, title, artist)
         if rescued:
             return KurlMatch(url=rescued, title=title, artist=artist, via="isrc")
 
     return await _search_track_by_metadata(target_platform, title, artist)
 
 
-async def _rescue_url(
-    target_platform: str, isrc: str | None, title: str, artist: str
-) -> str | None:
-    """Last-ditch URL resolution: iTunes, MusicBrainz, Last.fm."""
+async def _rescue_url(target_platform: str, title: str, artist: str) -> str | None:
+    """Last-ditch URL resolution: iTunes, Last.fm, DDG SERP."""
     if target_platform == "appleMusic":
         url = await itunes.fetch_apple_music_url(title, artist)
         if url:
             logger.info("Rescued Apple Music URL via iTunes Search: %s", url)
             return url
 
-    if isrc:
-        url = await musicbrainz.lookup_url(isrc, target_platform)
-        if url:
-            logger.info("Rescued %s URL via MusicBrainz: %s", target_platform, url)
-            return url
-
     if target_platform == "spotify":
         url = await lastfm.spotify_url(title, artist)
         if url:
             logger.info("Rescued Spotify URL via Last.fm: %s", url)
+            return url
+        url = await spotify_search.search_track_url(title, artist)
+        if url:
+            logger.info("Rescued Spotify URL via DDG search: %s", url)
             return url
     return None
 

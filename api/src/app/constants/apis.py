@@ -23,8 +23,6 @@ DEEZER_API_BASE = "https://api.deezer.com"
 # Resolver endpoints (rescue path).
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 LASTFM_TRACK_URL = "https://www.last.fm/music/{artist}/_/{title}"
-MUSICBRAINZ_API_BASE = "https://musicbrainz.org/ws/2"
-MUSICBRAINZ_USER_AGENT = "kurl/1.0 (https://kurl.online)"
 
 # Regional defaults.
 DEFAULT_COUNTRY = "US"

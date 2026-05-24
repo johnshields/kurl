@@ -1,12 +1,12 @@
 """
-Tests for resolver clients -- iTunes, Last.fm, MusicBrainz. HTTP mocked.
+Tests for resolver clients -- iTunes, Last.fm, DDG Spotify search. HTTP mocked.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from clients.resolvers import itunes, lastfm, musicbrainz
+from clients.resolvers import itunes, lastfm, spotify_search
 
 
 def _resp(status: int = 200, json_data: dict | None = None, text: str = "") -> MagicMock:
@@ -122,75 +122,41 @@ class TestLastfmSpotifyUrl:
         assert url is None
 
 
-class TestMusicbrainzLookupUrl:
-    async def test_resolves_spotify_url_from_relations(self):
-        # First call: ISRC search -> recording mbid.
-        # Second call: recording -> url-rels.
-        responses = [
-            _resp(json_data={"recordings": [{"id": "mb-uuid-1"}]}),
-            _resp(json_data={
-                "relations": [
-                    {"url": {"resource": "https://open.spotify.com/track/SPID123"}}
-                ]
-            }),
-        ]
-        client = MagicMock()
-        client.get = AsyncMock(side_effect=responses)
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("GBTDG0900141", "spotify")
-        assert url == "https://open.spotify.com/track/SPID123"
 
-    async def test_resolves_apple_music_url(self):
-        responses = [
-            _resp(json_data={"recordings": [{"id": "mb-2"}]}),
-            _resp(json_data={
-                "relations": [
-                    {"url": {"resource": "https://music.apple.com/us/song/_/9"}}
-                ]
-            }),
-        ]
-        client = MagicMock()
-        client.get = AsyncMock(side_effect=responses)
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("X1234567890", "appleMusic")
-        assert url == "https://music.apple.com/us/song/_/9"
 
-    async def test_returns_none_for_unsupported_platform(self):
-        url = await musicbrainz.lookup_url("ANY12345678", "beatport")
+class TestSpotifySearchScrape:
+    async def test_extracts_first_track_from_ddg_serp(self):
+        html = '''<html>
+        <a href="https://open.spotify.com/track/abcDEF123456ghi789JKL0">first</a>
+        <a href="https://open.spotify.com/track/zzzZZZ987654321ABCdef0">second</a>
+        </html>'''
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(text=html))
+        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+            url = await spotify_search.search_track_url("Hello", "Adele")
+        assert url == "https://open.spotify.com/track/abcDEF123456ghi789JKL0"
+
+    async def test_returns_none_when_no_match(self):
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(text="<html>no results</html>"))
+        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+            url = await spotify_search.search_track_url("x", "y")
         assert url is None
 
-    async def test_returns_none_when_no_recordings(self):
-        client = MagicMock()
-        client.get = AsyncMock(return_value=_resp(json_data={"recordings": []}))
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("XX1234567890", "spotify")
-        assert url is None
-
-    async def test_returns_none_when_relations_have_no_match(self):
-        responses = [
-            _resp(json_data={"recordings": [{"id": "mb-3"}]}),
-            _resp(json_data={
-                "relations": [
-                    {"url": {"resource": "https://example.com/unrelated"}}
-                ]
-            }),
-        ]
-        client = MagicMock()
-        client.get = AsyncMock(side_effect=responses)
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("XX1234567890", "spotify")
-        assert url is None
+    async def test_returns_none_when_title_or_artist_missing(self):
+        assert await spotify_search.search_track_url("", "Adele") is None
+        assert await spotify_search.search_track_url("Hello", "") is None
 
     async def test_returns_none_on_http_error(self):
         client = MagicMock()
-        client.get = AsyncMock(return_value=_resp(status=500))
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("XX1234567890", "spotify")
+        client.get = AsyncMock(return_value=_resp(status=429))
+        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+            url = await spotify_search.search_track_url("x", "y")
         assert url is None
 
-    async def test_returns_none_on_client_exception(self):
+    async def test_returns_none_on_exception(self):
         client = MagicMock()
         client.get = AsyncMock(side_effect=RuntimeError("boom"))
-        with patch("clients.resolvers.musicbrainz._get_client", return_value=client):
-            url = await musicbrainz.lookup_url("XX1234567890", "spotify")
+        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+            url = await spotify_search.search_track_url("x", "y")
         assert url is None
