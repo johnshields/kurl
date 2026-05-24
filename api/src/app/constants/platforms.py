@@ -1,3 +1,5 @@
+"""Platform identifiers, display names, URL templates, routing sets."""
+
 PLATFORMS = {
     "spotify",
     "appleMusic",
@@ -22,28 +24,22 @@ PLATFORM_NAMES = {
     "deezer": "Deezer",
 }
 
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "https://kurl.online",
-    "https://www.kurl.online",
-]
+# Platforms with direct ISRC/UPC lookup.
+ISRC_PLATFORMS = {"spotify", "appleMusic", "deezer", "tidal", "soundcloud"}
 
-"""
-URL templates per platform.
+# Targets needing rescue resolution (iTunes, MusicBrainz, Last.fm).
+RESCUE_PLATFORMS = {"spotify", "appleMusic", "youtubeMusic"}
 
-Lookup: URL_TEMPLATES[platform][kind] where kind in
-{track, album, artist, search, track_in_album}.
+# Odesli pair-routing rules.
+ODESLI_UNSUPPORTED_TARGETS = frozenset({"beatport", "bandcamp"})
+ODESLI_UNRELIABLE_SOURCES = frozenset({"soundcloud"})
 
-track_in_album is for Apple Music / Amazon where a track URL embeds its
-parent album ID. Falls back to the plain track template when no album_id
-is known.
+# Short-link redirect hosts.
+SHORT_LINK_HOSTS = {"spotify.link", "dzr.page.link", "on.soundcloud.com"}
 
-Placeholders supported: {id}, {album_id}, {country}, {query}. Unused
-placeholders in a given template are ignored by str.format.
-"""
+# Lookup: URL_TEMPLATES[platform][kind] where kind in
+# {track, album, artist, search, track_in_album}. track_in_album is for
+# Apple/Amazon where track URLs embed parent album ID.
 URL_TEMPLATES = {
     "spotify": {
         "track": "https://open.spotify.com/track/{id}",
@@ -100,39 +96,3 @@ URL_TEMPLATES = {
         "search": "https://www.deezer.com/search/{query}",
     },
 }
-
-SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
-
-YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={id}&format=json"
-
-SCRAPER_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-)
-
-"""
-Platform API endpoints
-Base URLs and auth endpoints for direct ISRC/UPC resolution.
-"""
-
-SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SPOTIFY_API_BASE = "https://api.spotify.com/v1"
-
-APPLE_API_BASE = "https://api.music.apple.com/v1"
-APPLE_TOKEN_LIFETIME = 3600 * 12
-
-YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
-
-SOUNDCLOUD_API_BASE = "https://api.soundcloud.com"
-SOUNDCLOUD_TOKEN_URL = "https://api.soundcloud.com/oauth2/token"
-
-TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
-TIDAL_API_BASE = "https://openapi.tidal.com/v2"
-TIDAL_ACCEPT_HEADER = "application/vnd.api+json"
-
-DEEZER_API_BASE = "https://api.deezer.com"
-
-DEFAULT_COUNTRY = "US"
-DEFAULT_STOREFRONT = "us"
-
-CLIENT_TIMEOUT = 10.0
-SCRAPER_TIMEOUT = 5.0

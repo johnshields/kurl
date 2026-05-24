@@ -1,33 +1,31 @@
-"""
-Rate Limit Middleware
-Simple in-memory rate limiting for write endpoints.
-"""
+"""In-memory rate limit for write endpoints."""
 
 import time
 from collections import deque
 
-from utils.response import json_error
-
-WRITE_METHODS = {"POST", "PATCH", "DELETE"}
-EXEMPT_PATHS = {"/api/events"}
-MAX_REQUESTS = 10
-WINDOW_SECONDS = 60
+from app.constants import (
+    RATE_LIMIT_EXEMPT_PATHS,
+    RATE_LIMIT_MAX_REQUESTS,
+    RATE_LIMIT_WINDOW_SECONDS,
+    RATE_LIMIT_WRITE_METHODS,
+)
+from utils.http.response import json_error
 
 _requests: deque[float] = deque()
 
 
 def check_rate_limit(method: str, path: str = ""):
-    if method not in WRITE_METHODS or path in EXEMPT_PATHS:
+    if method not in RATE_LIMIT_WRITE_METHODS or path in RATE_LIMIT_EXEMPT_PATHS:
         return None
 
     now = time.time()
-    cutoff = now - WINDOW_SECONDS
+    cutoff = now - RATE_LIMIT_WINDOW_SECONDS
 
     while _requests and _requests[0] < cutoff:
         _requests.popleft()
 
-    if len(_requests) >= MAX_REQUESTS:
-        retry_after = max(1, int(_requests[0] + WINDOW_SECONDS - now) + 1)
+    if len(_requests) >= RATE_LIMIT_MAX_REQUESTS:
+        retry_after = max(1, int(_requests[0] + RATE_LIMIT_WINDOW_SECONDS - now) + 1)
         return json_error(f"Too many requests. Wait {retry_after}s and try again.", 429, code="RATE_LIMITED")
 
     _requests.append(now)
