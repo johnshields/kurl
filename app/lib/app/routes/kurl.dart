@@ -90,15 +90,15 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     final encoded = uri.queryParameters['url'];
     final target = uri.queryParameters['target'];
     final hasUrl = encoded != null && encoded.isNotEmpty;
-    final hasTarget = target != null && target.isNotEmpty;
+    final validTarget = target != null && findPlatform(target) != null;
     _noCache = uri.queryParameters['cache'] == 'false';
-    if (!hasUrl && !hasTarget) return;
+    if (!hasUrl && !validTarget) return;
 
     if (hasUrl) _populateUrl(compactDecode(encoded));
-    if (hasTarget) setState(() => _selectedPlatform = target);
+    if (validTarget) setState(() => _selectedPlatform = target);
 
     // Both params present -> auto-fire conversion (deep-link / share open).
-    if (hasUrl && hasTarget) {
+    if (hasUrl && validTarget) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _handleKurl());
     }
   }
@@ -137,12 +137,14 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _result = null;
     });
 
-    Analytics.trackKurl(url, _selectedPlatform!);
+    // Skip analytics when ?cache=false is used so admin debug runs don't
+    // pollute matchQuality with self-tests.
+    if (!_noCache) Analytics.trackKurl(url, _selectedPlatform!);
     updateUrlState(url: url, target: _selectedPlatform);
 
     try {
       final data = await ApiService.kurl(url, _selectedPlatform!, noCache: _noCache);
-      Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
+      if (!_noCache) Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
       setState(() => _result = data);
     } catch (e) {
       setState(() => _error = friendlyError(e));
