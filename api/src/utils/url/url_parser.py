@@ -296,17 +296,14 @@ def _parse_beatport(path: str) -> ParsedMusicUrl | None:
 
 
 def _parse_bandcamp(host: str, path: str) -> ParsedMusicUrl | None:
-    # URL structure: {artist}.bandcamp.com/track/{slug} or /album/{slug}.
-    # Bare {artist}.bandcamp.com is the artist page. ID stored as full
-    # host+path so canonical reconstruction needs no extra lookup.
-    parts = [p for p in path.split("/") if p]
-
-    if not parts:
-        # Artist page: id = subdomain (without .bandcamp.com)
-        artist = host.removesuffix(".bandcamp.com")
-        if artist and artist != "bandcamp" and artist != "www":
-            return ParsedMusicUrl("bandcamp", "artist", artist)
+    # Real content lives at {artist}.bandcamp.com; bare bandcamp.com has no tracks.
+    artist = host.removesuffix(".bandcamp.com")
+    if not artist or artist in ("bandcamp", "www", "bandcamp.com"):
         return None
+
+    parts = [p for p in path.split("/") if p]
+    if not parts:
+        return ParsedMusicUrl("bandcamp", "artist", artist)
 
     if len(parts) >= 2 and parts[0] in ("track", "album"):
         kind = "track" if parts[0] == "track" else "album"

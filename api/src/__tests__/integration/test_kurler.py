@@ -79,7 +79,7 @@ class TestIsrcMissFallsBackToMetadataSearch:
 
         source = ParsedMusicUrl("youtubeMusic", "track", "abc123")
 
-        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=("Hello", "Adele"))):
+        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=("Hello", "Adele", None))):
             result = await kurl(source, "deezer")
 
         assert result is not None
@@ -92,7 +92,7 @@ class TestMetadataSearchWithoutMetadata:
         """If neither ISRC nor metadata yields a title+artist, give up."""
         source = ParsedMusicUrl("youtubeMusic", "track", "abc")
 
-        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None))):
+        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None, None))):
             result = await kurl(source, "deezer")
 
         assert result is None
@@ -141,7 +141,7 @@ class TestAppleStorefrontThreading:
         mock_clients["appleMusic"].extract_metadata.return_value = (None, None)
 
         source = ParsedMusicUrl("appleMusic", "track", "1234", country="gb")
-        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None))):
+        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None, None))):
             await kurl(source, "spotify")
 
         mock_clients["appleMusic"].get_track.assert_awaited_once_with("1234", storefront="gb")
@@ -153,7 +153,7 @@ class TestClientFailurePropagation:
         mock_clients["spotify"].get_track = AsyncMock(side_effect=RuntimeError("boom"))
 
         source = ParsedMusicUrl("spotify", "track", "abc")
-        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None))):
+        with patch("utils.kurler.metadata.fetch_metadata", new=AsyncMock(return_value=(None, None, None))):
             result = await kurl(source, "deezer")
 
         assert result is None
