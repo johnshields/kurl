@@ -13,9 +13,8 @@ _PLATFORM_SUFFIX = re.compile(
     re.I,
 )
 
-# Strip Apple Music style release-type suffix (e.g. "Song Title - Single",
-# "Album Name - EP"). Only matches when preceded by " - " so song titles that
-# contain the word naturally (e.g. "Single Ladies") are untouched.
+# Strip Apple Music style release-type suffix. Requires " - " prefix so
+# titles that contain the word naturally are untouched.
 _RELEASE_SUFFIX = re.compile(
     r"\s+-\s+(Single|EP|Album|Deluxe(\s+Edition)?|Remastered(\s+\d{4})?|Live|Acoustic|Demo)\s*$",
     re.I,

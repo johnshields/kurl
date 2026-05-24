@@ -228,17 +228,6 @@ class ResultCard extends StatelessWidget {
                 style: const TextStyle(color: Color(0xFF888888), fontSize: 11),
               ),
             ),
-          if (result.cached)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'cached',
-                  style: TextStyle(color: Color(0xFF555555), fontSize: 11),
-                ),
-              ),
-            ),
         ],
       ),
     );

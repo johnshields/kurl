@@ -4,11 +4,11 @@ import json
 import re
 from urllib.parse import urlparse
 
-from app.constants import PLATFORMS
+from app.constants import NEGATIVE_CACHE_TTL_SECONDS, PLATFORMS
 from clients import cache, metadata
 from clients.resolvers import itunes, odesli
 from utils.http.errors import ApiError
-from utils.kurler import kurl as kurl_direct
+from utils.kurler import is_exact, kurl as kurl_direct
 from utils.logging import get_logger
 from utils.http.response import json_error, json_success
 from utils.url.search_url import build_search_url
@@ -17,11 +17,6 @@ from utils.url.normalise import normalise_url
 from utils.url.url_parser import is_search_url, parse_music_url, parse_track
 
 logger = get_logger()
-
-# Short TTL for negative cache entries -- repeat failures within this window
-# return 404 immediately instead of re-running the full pipeline.
-NEGATIVE_TTL_SECONDS = 600
-
 
 async def kurl(url: str, target_platform: str):
     """Kurl a streaming URL to the target platform.
@@ -144,7 +139,7 @@ async def kurl(url: str, target_platform: str):
                 resolved_url = build_search_url(target_platform, slug, None)
         if not resolved_url:
             # Negative cache so repeat hits don't burn another full pipeline.
-            await cache.set(cache_key, json.dumps({"not_found": True}), ttl=NEGATIVE_TTL_SECONDS)
+            await cache.set(cache_key, json.dumps({"not_found": True}), ttl=NEGATIVE_CACHE_TTL_SECONDS)
             return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
@@ -159,7 +154,9 @@ async def kurl(url: str, target_platform: str):
         "artwork_url": artwork,
     }
 
-    await cache.set(cache_key, json.dumps(result))
+    # Skip cache for search fallbacks so future resolver hits can upgrade them.
+    if is_exact(via):
+        await cache.set(cache_key, json.dumps(result))
 
     result["cached"] = False
     return json_success("Kurled", result)

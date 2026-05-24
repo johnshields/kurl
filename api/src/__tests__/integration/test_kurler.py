@@ -68,7 +68,7 @@ class TestIsrcHappyPath:
 
 class TestIsrcMissFallsBackToMetadataSearch:
     async def test_when_source_has_no_isrc_metadata_search_is_used(self, mock_clients):
-        """Source returns no ISRC (e.g. YouTube without API) -- should scrape and search."""
+        """Source returns no ISRC -- should scrape metadata and search target."""
         # Source is YouTube -- no client -- so _lookup_identifier short-circuits.
         # The fallback scrapes metadata and calls target.search_track.
         target_track = {"link": "https://deezer.com/track/777"}

@@ -21,12 +21,20 @@ _CLIENTS = {
 }
 
 
+# Exact-match via labels; anything outside this set is a fallback.
+EXACT_VIAS = frozenset({"isrc", "upc", "name", "search_api", "direct"})
+
+
+def is_exact(via: str) -> bool:
+    return via in EXACT_VIAS
+
+
 @dataclass
 class KurlMatch:
     url: str
     title: str | None = None
     artist: str | None = None
-    via: str = "isrc"  # isrc, upc, name, search_api
+    via: str = "isrc"
 
 
 def _get_client(platform: str):
