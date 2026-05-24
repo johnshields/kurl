@@ -125,21 +125,27 @@ class TestLastfmSpotifyUrl:
 
 
 class TestSpotifySearchScrape:
-    async def test_extracts_first_track_from_ddg_serp(self):
-        html = '''<html>
-        <a href="https://open.spotify.com/track/abcDEF123456ghi789JKL0">first</a>
-        <a href="https://open.spotify.com/track/zzzZZZ987654321ABCdef0">second</a>
-        </html>'''
+    async def test_extracts_first_track_from_serp(self):
+        html = '<a href="https://open.spotify.com/track/abcDEF123456ghi789JKL0">first</a>'
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(text=html))
-        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+        with patch("clients.resolvers._serp._client", return_value=client):
             url = await spotify_search.search_track_url("Hello", "Adele")
         assert url == "https://open.spotify.com/track/abcDEF123456ghi789JKL0"
 
-    async def test_returns_none_when_no_match(self):
+    async def test_falls_back_to_bing_when_ddg_empty(self):
+        ddg = _resp(text="<html>no results</html>")
+        bing = _resp(text='<a href="https://open.spotify.com/track/BINGmatch4567890123456">hit</a>')
+        client = MagicMock()
+        client.get = AsyncMock(side_effect=[ddg, bing])
+        with patch("clients.resolvers._serp._client", return_value=client):
+            url = await spotify_search.search_track_url("x", "y")
+        assert url == "https://open.spotify.com/track/BINGmatch4567890123456"
+
+    async def test_returns_none_when_both_engines_empty(self):
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(text="<html>no results</html>"))
-        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+        with patch("clients.resolvers._serp._client", return_value=client):
             url = await spotify_search.search_track_url("x", "y")
         assert url is None
 
@@ -147,17 +153,10 @@ class TestSpotifySearchScrape:
         assert await spotify_search.search_track_url("", "Adele") is None
         assert await spotify_search.search_track_url("Hello", "") is None
 
-    async def test_returns_none_on_http_error(self):
+    async def test_returns_none_on_http_error_both(self):
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(status=429))
-        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
-            url = await spotify_search.search_track_url("x", "y")
-        assert url is None
-
-    async def test_returns_none_on_exception(self):
-        client = MagicMock()
-        client.get = AsyncMock(side_effect=RuntimeError("boom"))
-        with patch("clients.resolvers.spotify_search._get_client", return_value=client):
+        with patch("clients.resolvers._serp._client", return_value=client):
             url = await spotify_search.search_track_url("x", "y")
         assert url is None
 
@@ -168,7 +167,7 @@ class TestBeatportSearch:
         html = '<a href="https://www.beatport.com/track/cant-stand-to-lose/20044066">first</a>'
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(text=html))
-        with patch("clients.resolvers.beatport_search._get_client", return_value=client):
+        with patch("clients.resolvers._serp._client", return_value=client):
             url = await beatport_search.search_track_url("Can't Stand To Lose", "HAAi")
         assert url == "https://www.beatport.com/track/cant-stand-to-lose/20044066"
 
@@ -176,7 +175,7 @@ class TestBeatportSearch:
         from clients.resolvers import beatport_search
         client = MagicMock()
         client.get = AsyncMock(return_value=_resp(text="<html>nope</html>"))
-        with patch("clients.resolvers.beatport_search._get_client", return_value=client):
+        with patch("clients.resolvers._serp._client", return_value=client):
             url = await beatport_search.search_track_url("x", "y")
         assert url is None
 
