@@ -36,10 +36,8 @@ jobs:
           filters: |
             api:
               - 'api/**'
-              - '.github/workflows/kurl.yml'
             app:
               - 'app/**'
-              - '.github/workflows/kurl.yml'
 
   lint:
     runs-on: ubuntu-latest
