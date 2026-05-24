@@ -7,10 +7,9 @@ find_additional_modules = false
 [assets]
 directory = "src/public"
 
-# KV binding — add via dashboard if CLI auth lacks perms
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "6992aaa34a2b4899a4f43305bb5c63d5"
+[[kv_namespaces]]
+binding = "CACHE"
+id = "6992aaa34a2b4899a4f43305bb5c63d5"
 
 [[d1_databases]]
 binding = "kurl"
