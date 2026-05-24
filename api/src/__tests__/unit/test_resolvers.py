@@ -175,6 +175,15 @@ class TestBeatportSearch:
         assert await beatport_search.search_track_url("", "y") is None
         assert await beatport_search.search_track_url("x", "") is None
 
+    async def test_rejects_mismatched_slug(self):
+        from clients.resolvers import beatport_search
+        html = '<a href="https://www.beatport.com/track/happiness/26921777">unrelated</a>'
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(text=html))
+        with patch("clients.resolvers._serp._client", return_value=client):
+            url = await beatport_search.search_track_url("Comes Together", "HAAi")
+        assert url is None
+
 
 class TestBandcampSearch:
     async def test_returns_first_track_url(self):
