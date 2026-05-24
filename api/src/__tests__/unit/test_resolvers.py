@@ -87,6 +87,27 @@ class TestItunesMemoisation:
         assert client.get.await_count == 1
 
 
+class TestItunesCanonicalise:
+    def setup_method(self):
+        itunes._search_cache.clear()
+
+    async def test_snaps_to_catalogue_values(self):
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(json_data={
+            "results": [{"trackName": "Can't Stand To Lose", "artistName": "HAAi"}]
+        }))
+        with patch("clients.resolvers.itunes._get_client", return_value=client):
+            t, a = await itunes.canonicalise("cant stand to lose", "haai")
+        assert (t, a) == ("Can't Stand To Lose", "HAAi")
+
+    async def test_passthrough_on_miss(self):
+        client = MagicMock()
+        client.get = AsyncMock(return_value=_resp(json_data={"results": []}))
+        with patch("clients.resolvers.itunes._get_client", return_value=client):
+            t, a = await itunes.canonicalise("Unknown Track", "Nobody")
+        assert (t, a) == ("Unknown Track", "Nobody")
+
+
 class TestLastfmSpotifyUrl:
     async def test_extracts_spotify_uri_from_html(self):
         html = 'random html with spotify:track:abc123DEF456ghi789JKL0 embedded'

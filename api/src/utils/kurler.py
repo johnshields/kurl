@@ -99,6 +99,9 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
     if not title or not artist:
         return None
 
+    # iTunes canonical metadata, so resolver queries stay stable across sources.
+    title, artist = await itunes.canonicalise(title, artist)
+
     if target_platform in RESCUE_PLATFORMS:
         rescued = await _rescue_url(target_platform, title, artist)
         if rescued:

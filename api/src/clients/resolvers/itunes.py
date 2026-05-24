@@ -1,4 +1,4 @@
-"""iTunes Search API: artwork + canonical Apple Music URL lookup."""
+"""iTunes Search API: canonical metadata + Apple Music URL + artwork."""
 
 from app.constants import ITUNES_SEARCH_URL, SCRAPER_USER_AGENT
 from clients._http import get_client
@@ -53,3 +53,13 @@ async def fetch_apple_music_url(title: str | None, artist: str | None) -> str | 
         return None
     result = await _search_one(title, artist)
     return result.get("trackViewUrl") if result else None
+
+
+async def canonicalise(title: str | None, artist: str | None) -> tuple[str | None, str | None]:
+    """Snap title + artist to iTunes' catalogue values; passthrough on miss."""
+    if not title:
+        return title, artist
+    result = await _search_one(title, artist)
+    if not result:
+        return title, artist
+    return result.get("trackName") or title, result.get("artistName") or artist
