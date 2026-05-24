@@ -15,3 +15,7 @@ kurl intercepts music share links and converts them to whatever streaming servic
 ## Supported platforms
 
 Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal, Deezer.
+
+## Admin
+
+`https://api.kurl.online/admin/` — analytics dashboard, login with the worker API key.

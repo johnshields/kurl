@@ -16,9 +16,12 @@ PUBLIC_PATHS = {
     "/api/events",
 }
 
+# Static-asset prefixes served by the Worker's [assets] handler.
+PUBLIC_PREFIXES = ("/admin", "/static", "/favicon")
+
 
 def authenticate(request, path: str, api_key: str | None):
-    if path in PUBLIC_PATHS:
+    if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PREFIXES):
         return None
 
     if not api_key:

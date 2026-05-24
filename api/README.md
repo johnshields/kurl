@@ -39,6 +39,11 @@ TIDAL_CLIENT_SECRET=
 YOUTUBE_API_KEY=
 SOUNDCLOUD_CLIENT_ID=
 SOUNDCLOUD_CLIENT_SECRET=
+GENIUS_ACCESS_TOKEN=
 ```
 
 Production secrets are set via `wrangler secret put`.
+
+## Admin
+
+`https://api.kurl.online/admin/` — login with `KURL_API_KEY`. Shows match quality per platform, approx misses, totals, recent events.
