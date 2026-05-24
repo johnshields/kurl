@@ -1,6 +1,6 @@
 """iTunes Search API: artwork + canonical Apple Music URL lookup."""
 
-from app.constants import ITUNESITUNES_SEARCH_URL, SCRAPER_USER_AGENT
+from app.constants import ITUNES_SEARCH_URL, SCRAPER_USER_AGENT
 from clients._http import get_client
 from utils.logging import get_logger
 
