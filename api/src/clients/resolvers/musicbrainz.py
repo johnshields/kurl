@@ -33,9 +33,11 @@ async def lookup_url(isrc: str, platform: str) -> str | None:
             params={"query": f"isrc:{isrc}", "fmt": "json", "limit": 1},
         )
         if resp.status_code != 200:
+            logger.warning("MB recording search %s -> %s", isrc, resp.status_code)
             return None
         recordings = resp.json().get("recordings") or []
         if not recordings:
+            logger.info("MB no recording for ISRC %s", isrc)
             return None
         mbid = recordings[0].get("id")
         if not mbid:
@@ -46,12 +48,16 @@ async def lookup_url(isrc: str, platform: str) -> str | None:
             params={"inc": "url-rels", "fmt": "json"},
         )
         if resp.status_code != 200:
+            logger.warning("MB url-rels %s -> %s", mbid, resp.status_code)
             return None
-        for rel in resp.json().get("relations") or []:
+        relations = resp.json().get("relations") or []
+        logger.info("MB %s relations=%d", mbid, len(relations))
+        for rel in relations:
             url = (rel.get("url") or {}).get("resource", "")
             m = pattern.search(url)
             if m:
                 return m.group(0)
+        logger.info("MB no %s URL in relations for %s", platform, mbid)
     except Exception as e:
         logger.warning("MusicBrainz lookup failed for %s/%s: %s", platform, isrc, e)
     return None
