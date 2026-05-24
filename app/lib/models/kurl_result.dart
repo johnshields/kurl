@@ -3,7 +3,6 @@ class KurlResult {
   final String? artist;
   final String resolvedUrl;
   final String platform;
-  final bool cached;
   final String via;
   final String? artworkUrl;
 
@@ -12,7 +11,6 @@ class KurlResult {
     this.artist,
     required this.resolvedUrl,
     required this.platform,
-    required this.cached,
     required this.via,
     this.artworkUrl,
   });
@@ -25,7 +23,6 @@ class KurlResult {
       artist: json['artist'],
       resolvedUrl: json['resolved_url'],
       platform: json['platform'],
-      cached: json['cached'] ?? false,
       via: json['via'] ?? 'direct',
       artworkUrl: json['artwork_url'],
     );

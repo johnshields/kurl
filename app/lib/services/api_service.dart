@@ -6,10 +6,10 @@ import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/api_base.dart';
 
 class ApiService {
-  static Future<KurlResult> kurl(String url, String targetPlatform) async {
+  static Future<KurlResult> kurl(String url, String targetPlatform, {bool noCache = false}) async {
     final base = await resolveApiBase();
     final endpoint = '$base/api/kurl';
-    developer.log('POST $endpoint [$targetPlatform] $url', name: 'kurl.api');
+    developer.log('POST $endpoint [$targetPlatform] $url no_cache=$noCache', name: 'kurl.api');
 
     final response = await http.post(
       Uri.parse(endpoint),
@@ -20,6 +20,7 @@ class ApiService {
       body: jsonEncode({
         'url': url,
         'target_platform': targetPlatform,
+        if (noCache) 'no_cache': true,
       }),
     );
 

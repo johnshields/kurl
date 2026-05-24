@@ -18,13 +18,16 @@ from utils.url.url_parser import is_search_url, parse_music_url, parse_track
 
 logger = get_logger()
 
-async def kurl(url: str, target_platform: str):
+async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
     """Kurl a streaming URL to the target platform.
 
     Resolution order:
     1. Direct ISRC/UPC/name via platform APIs (fast path)
     2. Odesli by-id or by-url (fallback)
     3. Metadata scraping + search URL (last resort)
+
+    Pass no_cache=True to skip cache reads; writes still happen so the next
+    request gets the upgraded result.
     """
     if target_platform not in PLATFORMS:
         return json_error(f"Unknown platform: {target_platform}", 400, code="UNKNOWN_PLATFORM")
@@ -41,13 +44,12 @@ async def kurl(url: str, target_platform: str):
 
     cache_key = hashlib.md5(f"{url}{target_platform}".encode()).hexdigest()
 
-    cached = await cache.get(cache_key)
+    cached = None if no_cache else await cache.get(cache_key)
     if cached:
         data = json.loads(cached)
         if data.get("not_found"):
             logger.info("Negative cache hit: %s -> %s", url, target_platform)
             return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
-        data["cached"] = True
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
         return json_success("Kurled from cache", data)
 
@@ -69,7 +71,6 @@ async def kurl(url: str, target_platform: str):
                     "artwork_url": artwork,
                 }
                 await cache.set(cache_key, json.dumps(result))
-                result["cached"] = False
                 return json_success("Kurled", result)
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
@@ -158,7 +159,6 @@ async def kurl(url: str, target_platform: str):
     if is_exact(via):
         await cache.set(cache_key, json.dumps(result))
 
-    result["cached"] = False
     return json_success("Kurled", result)
 
 

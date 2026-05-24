@@ -36,6 +36,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   KurlResult? _result;
   bool _loading = false;
   bool _pressed = false;
+  bool _noCache = false;
   String? _error;
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
   StreamSubscription<Uri>? _linkSub;
@@ -90,6 +91,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     final target = uri.queryParameters['target'];
     final hasUrl = encoded != null && encoded.isNotEmpty;
     final hasTarget = target != null && target.isNotEmpty;
+    _noCache = uri.queryParameters['cache'] == 'false';
     if (!hasUrl && !hasTarget) return;
 
     if (hasUrl) _populateUrl(compactDecode(encoded));
@@ -139,7 +141,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     updateUrlState(url: url, target: _selectedPlatform);
 
     try {
-      final data = await ApiService.kurl(url, _selectedPlatform!);
+      final data = await ApiService.kurl(url, _selectedPlatform!, noCache: _noCache);
       Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
       setState(() => _result = data);
     } catch (e) {

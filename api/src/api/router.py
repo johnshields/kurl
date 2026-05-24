@@ -95,13 +95,14 @@ async def _post_kurl(db, request, **kwargs):
     body = await parse_json_body(request)
     url = body.get("url")
     target_platform = body.get("target_platform")
+    no_cache = bool(body.get("no_cache"))
 
     if not url or not target_platform:
         return json_error(
             "url and target_platform are required", 400, code="INVALID_REQUEST"
         )
 
-    return await kurl_service.kurl(str(url), target_platform)
+    return await kurl_service.kurl(str(url), target_platform, no_cache=no_cache)
 
 
 # Event endpoints
