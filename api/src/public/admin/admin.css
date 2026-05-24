@@ -77,15 +77,15 @@ a:hover { color: var(--accent); }
     color: #000;
     border: none;
     border-radius: 6px;
-    padding: 14px 18px;
+    padding: 10px 14px;
     font-family: inherit;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     transition: opacity 0.15s;
 }
 .btn:hover { opacity: 0.9; }
