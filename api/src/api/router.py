@@ -12,7 +12,7 @@ from api.services import urls as kurl_service
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
 from clients.platforms import apple, deezer, spotify, tidal
-from utils.response import json_error, json_response, parse_json_body
+from utils.http.response import json_error, json_response, parse_json_body
 
 _routes = []
 _start_time = time.time()

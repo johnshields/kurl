@@ -2,7 +2,7 @@
 Tests for utils.search_url -- template-driven search URL fallbacks.
 """
 
-from utils.search_url import build_search_url
+from utils.url.search_url import build_search_url
 
 
 class TestBuildSearchUrl:

@@ -3,7 +3,7 @@ Tests for utils.url_parser -- the URL to (platform, entity_type, id) mapper.
 Most critical correctness surface in the codebase.
 """
 
-from utils.url_parser import (
+from utils.url.url_parser import (
     ParsedMusicUrl,
     ParsedTrack,
     is_search_url,

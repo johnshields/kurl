@@ -12,9 +12,9 @@ from api.middleware.auth import authenticate
 from api.middleware.rate_limit import check_rate_limit
 from api.router import resolve
 from clients import cache
-from utils.errors import ApiError
+from utils.http.errors import ApiError
 from utils.logging import get_logger
-from utils.response import json_error, parse_path, preflight
+from utils.http.response import json_error, parse_path, preflight
 
 logger = get_logger()
 

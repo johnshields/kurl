@@ -20,13 +20,13 @@ def init_kv(kv_binding):
 
 
 async def connect():
-    """No-op — KV is bound at request time, not via lifespan."""
+    """No-op - KV is bound at request time, not via lifespan."""
     if not _kv:
-        logger.info("No KV binding — caching disabled")
+        logger.info("No KV binding - caching disabled")
 
 
 async def disconnect():
-    """No-op — KV has no connection to close."""
+    """No-op - KV has no connection to close."""
     pass
 
 

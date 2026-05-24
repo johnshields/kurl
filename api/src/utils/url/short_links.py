@@ -14,14 +14,12 @@ from urllib.parse import urlparse
 
 import httpx
 
-from app.constants import CLIENT_TIMEOUT, SCRAPER_USER_AGENT
+from app.constants import CLIENT_TIMEOUT, SCRAPER_USER_AGENT, SHORT_LINK_HOSTS
 from utils.logging import get_logger
 
 logger = get_logger()
 
 _client: httpx.AsyncClient | None = None
-
-SHORT_LINK_HOSTS = {"spotify.link", "dzr.page.link", "on.soundcloud.com"}
 
 _META_REFRESH = re.compile(
     r'<meta[^>]+http-equiv=["\']refresh["\'][^>]+url=([^"\'>\s]+)',

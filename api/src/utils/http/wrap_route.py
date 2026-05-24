@@ -1,6 +1,6 @@
 from functools import wraps
 
-from utils.errors import ApiError
+from utils.http.errors import ApiError
 from utils.logging import get_logger
 
 logger = get_logger()

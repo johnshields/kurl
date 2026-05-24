@@ -4,7 +4,7 @@ from app.config import settings
 from app.constants import DEFAULT_COUNTRY, TIDAL_ACCEPT_HEADER, TIDAL_API_BASE, TIDAL_TOKEN_URL
 from clients.platforms._http import get_client
 from clients.platforms._oauth import TokenCache
-from utils.canonical_url import build_album_url, build_artist_url, build_track_url
+from utils.url.canonical_url import build_album_url, build_artist_url, build_track_url
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -41,54 +41,42 @@ def is_configured() -> bool:
 
 
 async def get_track(track_id: str) -> dict:
-    """GET /v2/tracks/{id} -- returns JSON:API track resource."""
     data = await _api_get(f"/tracks/{track_id}")
     return data.get("data", {})
 
 
 async def get_album(album_id: str) -> dict:
-    """GET /v2/albums/{id} -- returns JSON:API album resource."""
     data = await _api_get(f"/albums/{album_id}")
     return data.get("data", {})
 
 
 async def get_artist(artist_id: str) -> dict:
-    """GET /v2/artists/{id} -- returns JSON:API artist resource."""
     data = await _api_get(f"/artists/{artist_id}")
     return data.get("data", {})
 
 
 async def search_by_isrc(isrc: str) -> dict | None:
-    """Filter tracks by ISRC. Returns the first match or None."""
     data = await _api_get("/tracks", params={"filter[isrc]": isrc})
     items = data.get("data", [])
     return items[0] if items else None
 
 
 async def search_by_upc(upc: str) -> dict | None:
-    """Filter albums by barcode. Returns the first match or None."""
     data = await _api_get("/albums", params={"filter[barcodeId]": upc})
     items = data.get("data", [])
     return items[0] if items else None
 
 
 async def search_artist(name: str) -> dict | None:
-    """Search for an artist via free-text. Returns the first match or None."""
     return await _search_first(name, "artists")
 
 
 async def search_track(title: str, artist: str) -> dict | None:
-    """Search for a track via free-text. Returns the first match or None."""
     return await _search_first(f"{artist} {title}", "tracks")
 
 
 async def _search_first(query: str, relation: str) -> dict | None:
-    """Tidal search (v2) -- /searchresults/{query}?include={relation}.
-
-    Tidal returns JSON:API: `data.relationships.{relation}.data[]` is the ordered
-    list of `{type, id}` pointers; `included[]` holds the full resources. Return
-    the first resource in relevance order.
-    """
+    """First JSON:API resource for query; pointer in relationships -> included."""
     encoded = quote(query, safe="")
     data = await _api_get(f"/searchResults/{encoded}", params={"include": relation})
 
@@ -127,9 +115,8 @@ def extract_artist_url(artist: dict) -> str | None:
 
 
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
+    # Artist lives in relationships/included; not hydrated for search results.
     attrs = track.get("attributes", {})
-    # v2 JSON:API: artists live in relationships/included, not inline on the resource.
-    # For free-text search, include=tracks doesn't hydrate artists -- only the title is returned.
     return attrs.get("title"), None
 
 

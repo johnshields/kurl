@@ -5,7 +5,7 @@ API key validation for protected endpoints.
 
 import hmac
 
-from utils.response import json_error
+from utils.http.response import json_error
 
 PUBLIC_PATHS = {
     "/",

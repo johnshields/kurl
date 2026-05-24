@@ -8,12 +8,7 @@ from urllib.parse import urlparse
 
 from workers import Response
 
-CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
-    "Access-Control-Allow-Credentials": "true",
-}
+from app.constants import CORS_HEADERS
 
 
 def json_response(data: dict, status: int = 200) -> Response:

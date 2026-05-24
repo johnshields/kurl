@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from utils.kurler import kurl
-from utils.url_parser import ParsedMusicUrl
+from utils.url.url_parser import ParsedMusicUrl
 
 
 def _mock_client() -> MagicMock:

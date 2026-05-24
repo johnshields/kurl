@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 
 from api.controllers import events_controller
 from utils.logging import get_logger
-from utils.response import json_error, json_response, parse_json_body
+from utils.http.response import json_error, json_response, parse_json_body
 
 logger = get_logger()
 

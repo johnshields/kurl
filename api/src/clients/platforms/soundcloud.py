@@ -4,7 +4,7 @@ from app.config import settings
 from app.constants import SOUNDCLOUD_API_BASE, SOUNDCLOUD_TOKEN_URL
 from clients.platforms._http import get_client
 from clients.platforms._oauth import TokenCache
-from utils.canonical_url import build_track_url
+from utils.url.canonical_url import build_track_url
 from utils.logging import get_logger
 
 logger = get_logger()
@@ -37,36 +37,32 @@ def is_configured() -> bool:
 
 
 async def _resolve(url: str) -> dict:
-    """Resolve any SoundCloud permalink URL to its resource object."""
     return await _api_get("/resolve", params={"url": url})
 
 
 async def get_track(track_id: str) -> dict:
-    """Fetch a track by permalink path (user/slug) or numeric ID."""
+    """Track by permalink (user/slug) or numeric ID."""
     if "/" in track_id:
         return await _resolve(f"https://soundcloud.com/{track_id}")
     return await _api_get(f"/tracks/{track_id}")
 
 
 async def get_album(playlist_id: str) -> dict:
-    """Fetch a playlist/set by permalink path or numeric ID."""
+    """Playlist/set by permalink or numeric ID."""
     if "/" in playlist_id:
         return await _resolve(f"https://soundcloud.com/{playlist_id}")
     return await _api_get(f"/playlists/{playlist_id}")
 
 
 async def get_artist(user_id: str) -> dict:
-    """Fetch a user profile by permalink slug or numeric ID."""
+    """User by permalink slug or numeric ID."""
     if not user_id.isdigit():
         return await _resolve(f"https://soundcloud.com/{user_id}")
     return await _api_get(f"/users/{user_id}")
 
 
 async def search_by_isrc(isrc: str) -> dict | None:
-    """Filter tracks by ISRC. SoundCloud's /tracks endpoint silently ignores
-    unknown query params, so verify the returned track's publisher_metadata.isrc
-    matches to avoid returning a random track.
-    """
+    """Filter by ISRC. /tracks silently ignores unknown params -- verify match."""
     data = await _api_get("/tracks", params={"isrc": isrc, "limit": 1})
     items = data if isinstance(data, list) else data.get("collection", [])
     if not items:
@@ -82,11 +78,7 @@ async def search_by_upc(upc: str) -> dict | None:
 
 
 async def search_track(title: str, artist: str) -> dict | None:
-    """Free-text track search. Only returns a result if the uploading account
-    matches the target artist -- otherwise falls through to the search URL.
-    SoundCloud is mostly user uploads, so without an artist-account match the
-    result cannot be trusted to be the original.
-    """
+    """Free-text search; only returns when uploading account matches the artist."""
     data = await _api_get("/tracks", params={"q": f"{artist} {title}", "limit": 10})
     items = data if isinstance(data, list) else data.get("collection", [])
     for track in items:
@@ -110,7 +102,7 @@ def _slug(s: str) -> str:
 
 
 async def search_artist(name: str) -> dict | None:
-    """Free-text user search. Returns the first match or None."""
+    """First user match for free-text name."""
     data = await _api_get("/users", params={"q": name, "limit": 1})
     items = data if isinstance(data, list) else data.get("collection", [])
     return items[0] if items else None

@@ -2,7 +2,7 @@
 Tests for utils.url -- tracking param stripping.
 """
 
-from utils.url import normalise_url
+from utils.url.normalise import normalise_url
 
 
 class TestNormaliseUrl:

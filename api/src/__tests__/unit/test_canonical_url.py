@@ -2,7 +2,7 @@
 Tests for utils.canonical_url -- builds platform URLs from ids.
 """
 
-from utils.canonical_url import build_album_url, build_artist_url, build_track_url
+from utils.url.canonical_url import build_album_url, build_artist_url, build_track_url
 
 
 class TestBuildTrackUrl:
