@@ -27,7 +27,7 @@ class Analytics {
   }
 
   static void trackKurlSuccess(String sourceUrl, String platform, String via) {
-    _send('kurl_success', {'sourceUrl': sourceUrl, 'platform': platform});
+    _send('kurl_success', {'sourceUrl': sourceUrl, 'platform': platform, 'via': via});
   }
 
   static void trackPlatformSelect(String platform) {

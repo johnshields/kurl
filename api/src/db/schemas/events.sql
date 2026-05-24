@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS events (
     type        TEXT NOT NULL,
     source_url  TEXT,
     platform    TEXT,
+    via         TEXT,
     referrer    TEXT,
     user_agent  TEXT,
     country     TEXT,
@@ -17,4 +18,5 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_uid ON events(uid);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(type);
 CREATE INDEX IF NOT EXISTS idx_events_platform ON events(platform);
+CREATE INDEX IF NOT EXISTS idx_events_via ON events(via);
 CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);

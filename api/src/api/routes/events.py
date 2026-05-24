@@ -29,14 +29,23 @@ async def create_event(db, request):
     return json_response(result, 201)
 
 
-async def get_summary(db, request):
-    days = 7
+def _parse_days(request) -> int:
     try:
         qs = parse_qs(urlparse(str(request.url)).query)
         if "days" in qs:
-            days = max(1, min(365, int(qs["days"][0])))
+            return max(1, min(365, int(qs["days"][0])))
     except (ValueError, IndexError):
-        days = 7
+        pass
+    return 7
 
+
+async def get_summary(db, request):
+    days = _parse_days(request)
     result = await events_controller.get_summary(db, days)
+    return json_response({"status": "success", "data": result})
+
+
+async def get_approx_pairs(db, request):
+    days = _parse_days(request)
+    result = await events_controller.get_approx_pairs(db, days)
     return json_response({"status": "success", "data": result})

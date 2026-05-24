@@ -118,6 +118,11 @@ async def _events_summary(db, request, **kwargs):
     return await events.get_summary(db, request)
 
 
+@route("GET", "/api/events/approx-pairs")
+async def _events_approx_pairs(db, request, **kwargs):
+    return await events.get_approx_pairs(db, request)
+
+
 # Resolve
 
 
