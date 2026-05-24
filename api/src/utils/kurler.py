@@ -44,7 +44,8 @@ def _ctx(platform: str, country: str | None = None) -> dict:
 
 async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
     """Resolve source URL to target via ISRC/UPC/name. None = fall back to Odesli."""
-    if not _get_client(target_platform):
+    # Rescue targets resolve via third-party resolvers; native client optional.
+    if not _get_client(target_platform) and target_platform not in RESCUE_PLATFORMS:
         return None
 
     if source.entity_type == "track":
