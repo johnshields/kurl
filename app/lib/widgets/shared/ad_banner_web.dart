@@ -31,6 +31,7 @@ class _AdBannerState extends State<AdBanner> {
       ins.className = 'adsbygoogle';
       ins.style.display = 'block';
       ins.style.width = '100%';
+      ins.style.height = '100%';
       ins.setAttribute('data-ad-client', adsenseClient);
       ins.setAttribute('data-ad-slot', widget.slot);
       ins.setAttribute('data-ad-format', 'auto');
