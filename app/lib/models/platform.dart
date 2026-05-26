@@ -71,7 +71,7 @@ const platforms = [
     id: 'deezer',
     name: 'Deezer',
     colour: Color(0xFFA238FF),
-    icon: Icons.music_note,
+    icon: Icons.favorite,
   ),
 ];
 
