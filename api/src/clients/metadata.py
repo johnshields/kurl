@@ -1,3 +1,4 @@
+import html
 import json
 import re
 from urllib.parse import urlparse
@@ -19,6 +20,12 @@ logger = get_logger()
 
 # ISRC: CC + 3-char registrant + YY + 5-digit designation, anywhere in page JSON.
 _ISRC_PATTERN = re.compile(r'"isrc"\s*:\s*"([A-Z]{2}[A-Z0-9]{3}\d{7})"', re.I)
+
+
+def _clean(s: str | None) -> str | None:
+    """Decode HTML entities (&#39; -> ') and trim whitespace."""
+    return html.unescape(s).strip() if s else s
+
 
 def _get_client():
     return get_client(
@@ -65,7 +72,7 @@ async def _fetch_spotify(track_id: str) -> tuple[str | None, str | None, str | N
     title = entity.get("title")
     artists = [a.get("name") for a in entity.get("artists", []) if a.get("name")]
     artist = ", ".join(artists) if artists else None
-    return title, artist, _isrc(response.text)
+    return _clean(title), _clean(artist), _isrc(response.text)
 
 
 # SoundCloud hydration JSON; og:title alone misses artist on many tracks.
@@ -93,7 +100,7 @@ async def _fetch_soundcloud(url: str) -> tuple[str | None, str | None, str | Non
         if parts:
             artist = parts[0]
 
-    return title, artist, _isrc(html)
+    return _clean(title), _clean(artist), _isrc(html)
 
 
 async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None, str | None]:
@@ -109,7 +116,7 @@ async def _fetch_youtube(video_id: str) -> tuple[str | None, str | None, str | N
     if not raw_title:
         return None, None, None
 
-    title, artist = _parse_youtube_title(raw_title, author)
+    title, artist = _parse_youtube_title(_clean(raw_title) or "", _clean(author))
     return title, artist, None
 
 
@@ -173,4 +180,4 @@ async def _fetch_og(url: str) -> tuple[str | None, str | None, str | None]:
     if artist:
         artist = strip_platform_suffix(artist)
 
-    return title, artist, _isrc(response.text)
+    return _clean(title), _clean(artist), _isrc(response.text)
