@@ -14,7 +14,7 @@ from utils.http.response import json_error, json_success
 from utils.url.search_url import build_search_url
 from utils.url.short_links import is_short_link, resolve_short_link
 from utils.url.normalise import normalise_url
-from utils.url.url_parser import is_search_url, parse_music_url, parse_track
+from utils.url.url_parser import ParsedTrack, is_search_url, parse_music_url, parse_track
 
 logger = get_logger()
 
@@ -95,6 +95,11 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
 
     if parsed:
         scrape_task = asyncio.create_task(metadata.fetch_metadata(parsed, url))
+    elif parsed_full and parsed_full.entity_type == "album":
+        # Album URLs without ?i= still need a scrape so we can build a search
+        # URL fallback instead of returning 404.
+        scrape_task = asyncio.create_task(metadata.fetch_metadata(
+            ParsedTrack(parsed_full.platform, parsed_full.id), url))
 
     odesli_data: dict = {}
     if odesli_task is not None:

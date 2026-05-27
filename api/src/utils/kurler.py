@@ -126,6 +126,13 @@ _RESCUE_CHAIN = {
     "bandcamp": [(bandcamp_search, "search_track_url", "search API")],
 }
 
+_ALBUM_RESCUE_CHAIN = {
+    "appleMusic": [(itunes, "fetch_apple_album_url", "iTunes Search")],
+    "spotify": [(spotify_search, "search_album_url", "DDG search")],
+    "beatport": [(beatport_search, "search_album_url", "DDG search")],
+    "bandcamp": [(bandcamp_search, "search_album_url", "search API")],
+}
+
 
 async def _rescue_url(target_platform: str, title: str, artist: str) -> str | None:
     """Last-ditch URL resolution; tries each resolver in order until one hits."""
@@ -133,6 +140,16 @@ async def _rescue_url(target_platform: str, title: str, artist: str) -> str | No
         url = await getattr(mod, attr)(title, artist)
         if url:
             logger.info("Rescued %s URL via %s: %s", target_platform, label, url)
+            return url
+    return None
+
+
+async def _rescue_album_url(target_platform: str, title: str, artist: str) -> str | None:
+    """Album-version of _rescue_url for cases without a UPC."""
+    for mod, attr, label in _ALBUM_RESCUE_CHAIN.get(target_platform, []):
+        url = await getattr(mod, attr)(title, artist)
+        if url:
+            logger.info("Rescued %s album URL via %s: %s", target_platform, label, url)
             return url
     return None
 
@@ -145,19 +162,40 @@ async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
         metadata_fn="extract_album_metadata",
         label="UPC",
     )
-    if not upc:
+
+    if upc:
+        match = await _search_by_identifier(
+            target_platform,
+            upc,
+            search="search_by_upc",
+            url_getter="extract_album_url",
+            via="upc",
+            metadata_fn="extract_album_metadata",
+            hint_title=title,
+            hint_artist=artist,
+        )
+        if match:
+            return match
+
+    # No UPC or target lookup missed -- scrape album page for title + artist
+    # and try the album rescue chain.
+    if not title or not artist:
+        scraped_title, scraped_artist, _ = await metadata.fetch_metadata(
+            ParsedTrack(source.platform, source.id),
+            _build_source_url(source),
+        )
+        title = title or scraped_title
+        artist = artist or scraped_artist
+
+    if not title or not artist:
         return None
 
-    return await _search_by_identifier(
-        target_platform,
-        upc,
-        search="search_by_upc",
-        url_getter="extract_album_url",
-        via="upc",
-        metadata_fn="extract_album_metadata",
-        hint_title=title,
-        hint_artist=artist,
-    )
+    title, artist = await itunes.canonicalise(title, artist)
+
+    rescued = await _rescue_album_url(target_platform, title, artist)
+    if rescued:
+        return KurlMatch(url=rescued, title=title, artist=artist, via="upc")
+    return None
 
 
 async def _kurl_artist(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:

@@ -14,15 +14,15 @@ def _get_client():
     return get_client("itunes", timeout=3.0, headers={"User-Agent": SCRAPER_USER_AGENT})
 
 
-async def _search_one(title: str, artist: str | None) -> dict | None:
-    key = (title, artist or "")
+async def _search_one(title: str, artist: str | None, entity: str = "song") -> dict | None:
+    key = (entity, title, artist or "")
     if key in _search_cache:
         return _search_cache[key]
     query = f"{title} {artist}" if artist else title
     try:
         response = await _get_client().get(
             ITUNES_SEARCH_URL,
-            params={"term": query, "entity": "song", "limit": 1, "media": "music"},
+            params={"term": query, "entity": entity, "limit": 1, "media": "music"},
         )
         if response.status_code != 200:
             _search_cache[key] = None
@@ -63,3 +63,11 @@ async def canonicalise(title: str | None, artist: str | None) -> tuple[str | Non
     if not result:
         return title, artist
     return result.get("trackName") or title, result.get("artistName") or artist
+
+
+async def fetch_apple_album_url(title: str | None, artist: str | None) -> str | None:
+    """Canonical music.apple.com album URL via iTunes Search."""
+    if not title:
+        return None
+    result = await _search_one(title, artist, entity="album")
+    return result.get("collectionViewUrl") if result else None

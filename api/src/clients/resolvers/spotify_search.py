@@ -1,10 +1,11 @@
-"""DDG SERP scrape for Spotify track URLs."""
+"""DDG SERP scrape for Spotify track and album URLs."""
 
 import re
 
 from clients.resolvers._serp import clean_title, primary_artist, serp_search
 
 _SPOTIFY_TRACK = re.compile(r"open\.spotify\.com/track/([A-Za-z0-9]{22})")
+_SPOTIFY_ALBUM = re.compile(r"open\.spotify\.com/album/([A-Za-z0-9]{22})")
 
 
 async def search_track_url(title: str, artist: str) -> str | None:
@@ -13,3 +14,11 @@ async def search_track_url(title: str, artist: str) -> str | None:
     query = f"site:open.spotify.com/track {clean_title(title)} {primary_artist(artist)}"
     m = await serp_search(query, _SPOTIFY_TRACK, label=f"spotify:{title}")
     return f"https://open.spotify.com/track/{m.group(1)}" if m else None
+
+
+async def search_album_url(title: str, artist: str) -> str | None:
+    if not title or not artist:
+        return None
+    query = f"site:open.spotify.com/album {clean_title(title)} {primary_artist(artist)}"
+    m = await serp_search(query, _SPOTIFY_ALBUM, label=f"spotify-album:{title}")
+    return f"https://open.spotify.com/album/{m.group(1)}" if m else None
