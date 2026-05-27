@@ -4,7 +4,7 @@ import json
 import re
 from urllib.parse import urlparse
 
-from app.constants import NEGATIVE_CACHE_TTL_SECONDS, PLATFORMS
+from app.constants import PLATFORMS
 from clients import cache, metadata
 from clients.resolvers import itunes, odesli
 from utils.http.errors import ApiError
@@ -47,9 +47,6 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
     cached = None if no_cache else await cache.get(cache_key)
     if cached:
         data = json.loads(cached)
-        if data.get("not_found"):
-            logger.info("Negative cache hit: %s -> %s", url, target_platform)
-            return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
         return json_success("Kurled from cache", data)
 
@@ -144,8 +141,6 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
             if slug:
                 resolved_url = build_search_url(target_platform, slug, None)
         if not resolved_url:
-            # Negative cache so repeat hits don't burn another full pipeline.
-            await cache.set(cache_key, json.dumps({"not_found": True}), ttl=NEGATIVE_CACHE_TTL_SECONDS)
             return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)

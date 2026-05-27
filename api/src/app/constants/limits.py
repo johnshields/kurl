@@ -9,6 +9,3 @@ RATE_LIMIT_WINDOW_SECONDS = 60
 # Odesli retry policy.
 ODESLI_MAX_RETRIES = 3
 ODESLI_BACKOFF_SECONDS = (1, 2, 4)
-
-# Short TTL for negative cache entries so repeat 404s skip the full pipeline.
-NEGATIVE_CACHE_TTL_SECONDS = 600
