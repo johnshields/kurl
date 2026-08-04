@@ -6,8 +6,8 @@ Supported by the API (`api/src/app/constants.py::PLATFORMS`).
 |---|---|---|---|---|
 | `spotify` | Spotify | `#1DB954` | SimpleIcons.spotify | OAuth client creds |
 | `appleMusic` | Apple | `#FA2D48` | SimpleIcons.applemusic | JWT (ES256, requires Apple Developer Program) |
-| `youtubeMusic` | YouTube | `#FF0000` | SimpleIcons.youtubemusic | oEmbed scrape only |
-| `soundcloud` | SoundCloud | `#FF5500` | SimpleIcons.soundcloud | og scrape only |
+| `youtubeMusic` | YouTube | `#FF0000` | SimpleIcons.youtubemusic | API key (Data API v3), no ISRC |
+| `soundcloud` | SoundCloud | `#FF5500` | SimpleIcons.soundcloud | OAuth client creds, ISRC via `/tracks?isrc=` |
 | `beatport` | Beatport | `#A8E00F` | SimpleIcons.beatport | search URL only |
 | `bandcamp` | Bandcamp | `#629AA9` | SimpleIcons.bandcamp | og scrape only |
 | `amazonMusic` | Amazon | `#25D1DA` | SimpleIcons.amazonmusic | search URL only |

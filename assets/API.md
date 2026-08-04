@@ -13,9 +13,10 @@ X-API-Key: <key>
 |---|---|
 | `GET /`, `/api`, `/api/info`, `/api/healthz` | Public |
 | `POST /api/events` | Public |
-| `POST /api/kurl` | API key |
+| `POST /api/kurl` | Public |
 | `GET /api/readyz` | API key |
 | `GET /api/events/summary` | API key |
+| `GET /api/events/approx-pairs` | API key |
 
 ## `POST /api/kurl`
 
@@ -96,6 +97,22 @@ Analytics summary. Requires API key. Accepts `?days=7` (1-365).
     "topPlatforms": [{"platform": "spotify", "count": 20}],
     "countries": [{"country": "IE", "count": 15}],
     "recent": [...]
+  }
+}
+```
+
+## `GET /api/events/approx-pairs`
+
+Source URLs that repeatedly missed on a given target platform (approximate near-matches). Requires API key. Accepts `?days=7`.
+
+**Response**
+```json
+{
+  "status": "success",
+  "data": {
+    "days": 7,
+    "since": "2026-07-28T00:00:00Z",
+    "pairs": [{"sourceUrl": "https://open.spotify.com/track/...", "platform": "beatport", "misses": 3}]
   }
 }
 ```

@@ -10,8 +10,8 @@ Per-platform clients live in `api/src/clients/platforms/`.
 |---|---|---|---|---|
 | Spotify | OAuth client creds | `external_ids.isrc` | `external_ids.upc` | `search?q=track:X artist:Y` |
 | Apple Music | JWT (ES256) | `attributes.isrc` | `attributes.upc` | `search?term=` |
-| YouTube Music | - | no public API | - | - |
-| SoundCloud | - | no public API | - | - |
+| YouTube Music | API key (Data API v3) | no ISRC search | - | `/search?type=video` |
+| SoundCloud | OAuth client creds | `publisher_metadata.isrc` (`/tracks?isrc=`) | - | `/tracks?q=` |
 | Beatport | - | partner-only API | - | - |
 | Bandcamp | - | API deprecated 2014 | - | - |
 | Amazon Music | - | no public API | no public API | - |
@@ -26,14 +26,42 @@ Per-platform clients live in `api/src/clients/platforms/`.
 3. KURLER (fast path):
    a. If source has an API client: fetch ISRC/UPC from source
       → search target by identifier → return (via=isrc or via=upc)
-   b. If (a) fails: scrape metadata from source (oEmbed / NEXT_DATA / OG tags)
-      → search target by title+artist → return (via=search_api)
+   b. If (a) fails: scrape metadata from source (oEmbed / NEXT_DATA / OG tags),
+      canonicalise title+artist via iTunes Search
+   c. If target is a rescue platform: try its resolver chain in order
+      → return (via=isrc or via=upc)
+   d. Else: search target by title+artist → return (via=search_api)
 4. ODESLI fallback: by-id or by-url, 3× retry w/ backoff
 5. SEARCH URL fallback: build deep-link into target's search page (via=search)
 6. 404: no metadata available anywhere
 ```
 
-Entry point: `utils/kurler.py::kurl(source, target_platform)`. Service wrapper: `api/services/urls.py`.
+Entry point: `utils/kurler.py::kurl(source, target_platform)`. Service wrapper: `api/src/api/services/urls.py`.
+
+## Rescue resolvers
+
+For targets without a native API client (or when the native client's search misses), `utils/kurler.py::_RESCUE_CHAIN` / `_ALBUM_RESCUE_CHAIN` try third-party resolvers in order until one returns a URL. Modules live in `api/src/clients/resolvers/`.
+
+| Target | Resolver chain (in order) |
+|---|---|
+| Apple Music | iTunes Search → Genius |
+| Spotify | DDG search → Last.fm → Genius |
+| YouTube Music | Genius |
+| Beatport | DDG search |
+| Bandcamp | Bandcamp search API |
+
+Album rescue (no UPC) only covers Apple Music, Spotify, Beatport, Bandcamp - iTunes Search / DDG search / Bandcamp search API, no Genius or Last.fm (track-only).
+
+## Odesli fallback (song.link)
+
+Used when direct ISRC resolution and the rescue chain both miss.
+
+- API base: `https://api.song.link/v1-alpha.1/links`
+- Pass a streaming URL, get back `linksByPlatform` with URLs for every platform the track exists on
+- Also returns `entitiesByUniqueId` with track metadata (title, artist, ISRC)
+- Free tier works without an API key, has rate limits
+- Matching is done via ISRC codes internally
+- Docs: https://odesli.co
 
 ## Client interface
 
@@ -113,3 +141,4 @@ Tidal migrated from v1 → v2 (JSON:API) - v1 paths return 404. Things to know:
 - Apple Music API: https://developer.apple.com/documentation/applemusicapi/
 - Deezer API: https://developers.deezer.com/api
 - Tidal Developer: https://developer.tidal.com/ / https://tidal-music.github.io/tidal-api-reference/
+- Matching tracks across platforms: https://medium.com/@leemartin/how-to-match-tracks-between-spotify-and-apple-music-2d6b6159957e

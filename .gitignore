@@ -35,3 +35,4 @@ pubspec.lock
 
 # Temp
 /temp/
+.claude/
