@@ -1,6 +1,6 @@
 # kurl
 
-kurl intercepts music share links and converts them to whatever streaming service your friend actually uses.
+**[kurl](https://kurl.online)** intercepts music share links and converts them to whatever streaming service your friend actually uses.
 
 Supports Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal, Deezer.
 
