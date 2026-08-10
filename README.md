@@ -1,8 +1,6 @@
 # kurl
 
-> Share any song. To anyone. On any streaming service.
-
-Cross-platform music link resolver: a Flutter app and a Python API on Cloudflare Workers. Paste a Spotify/Apple Music/Tidal/etc. link, get back the same track on whatever platform your friend uses, resolved via ISRC/UPC matching with an Odesli fallback.
+Cross-platform music link resolver built with Flutter and Python on Cloudflare Workers. Paste a Spotify/Apple Music/Tidal/etc. link and get back the same track on Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal or Deezer, resolved via ISRC/UPC matching with an Odesli fallback.
 
 **[kurl.online](https://kurl.online)**
 
@@ -13,29 +11,46 @@ Cross-platform music link resolver: a Flutter app and a Python API on Cloudflare
 
 All communication between app and api runs over the public HTTP API - see [.assets/API.md](.assets/API.md).
 
-## Resolution logic
+## Resolution Order
 
 Fast path first, cheapest and most confident match wins:
 
 1. KV cache hit
 2. Direct ISRC/UPC lookup against source + target platform APIs
-3. Rescue-resolver chain (target-specific, see [.assets/ISRC_KURLER.md](.assets/ISRC_KURLER.md))
+3. Rescue-resolver chain (target-specific)
 4. Odesli fallback (by-id or by-url)
 5. Search-page deep-link into the target platform
 
 Full breakdown: [.assets/ISRC_KURLER.md](.assets/ISRC_KURLER.md).
 
-## Supported platforms
+## Running the Project
 
-Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal, Deezer.
+### Stack
 
-## Stack
+- Python on Cloudflare Workers (Pyodide runtime), Cloudflare KV + D1
+- Flutter (iOS, Android, Web)
+- GitHub Actions (lint, deploy, smoke test)
 
-- **API** - Python on Cloudflare Workers (Pyodide runtime)
-- **App** - Flutter (iOS, Android, Web)
-- **Cache** - Cloudflare KV
-- **Analytics** - Cloudflare D1 (SQLite)
-- **CI/CD** - GitHub Actions (lint, deploy, smoke test)
+### 1. Run the API
+
+```bash
+cd api
+pip install uv
+uv tool install workers-py
+pywrangler dev
+```
+
+Serves on `http://localhost:8787`, live reload on file change.
+
+### 2. Run the app
+
+```bash
+cd app
+flutter pub get
+flutter run
+```
+
+Debug builds probe `localhost:8787` and fall back to prod if the worker is offline.
 
 ## License
 
