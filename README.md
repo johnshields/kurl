@@ -4,6 +4,9 @@ Cross-platform music link resolver built with Flutter and Python on Cloudflare W
 
 **[kurl.online](https://kurl.online)**
 
+<img width="2196" height="1450" alt="image" src="https://github.com/user-attachments/assets/6aad45ca-9f3d-49e2-b9f4-28e68f1f8182" />
+
+
 ## Components
 
 - **api**: Cloudflare Workers Python service. Parses the source URL, resolves via ISRC/UPC against the source and target platform APIs (`via=isrc`/`upc`), falls back to a rescue-resolver chain (iTunes, Genius, Last.fm, DuckDuckGo search) for platforms without a native client, then Odesli, then a search-page deep-link (`via=search`). Results cached in KV; every kurl and page view logged to D1 for the `/admin` analytics console.
