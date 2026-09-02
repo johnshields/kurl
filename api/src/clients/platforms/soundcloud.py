@@ -4,8 +4,8 @@ from app.config import settings
 from app.constants import SOUNDCLOUD_API_BASE, SOUNDCLOUD_TOKEN_URL
 from clients.platforms._http import get_client
 from clients.platforms._oauth import TokenCache
-from utils.url.canonical_url import build_track_url
 from utils.logging import get_logger
+from utils.url.canonical_url import build_track_url
 
 logger = get_logger()
 

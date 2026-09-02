@@ -292,8 +292,8 @@ class TestGeniusResolver:
         assert url is None
 
     async def test_returns_none_without_token(self, monkeypatch):
-        from clients.resolvers import genius
         from app import config as cfg
+        from clients.resolvers import genius
         monkeypatch.setattr(cfg.settings, "_get", lambda k, d=None: None)
         url = await genius.spotify_url("x", "y")
         assert url is None

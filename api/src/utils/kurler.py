@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 from app.constants import DEFAULT_STOREFRONT, RESCUE_PLATFORMS
 from clients import cache, metadata
-from clients.resolvers import bandcamp_search, beatport_search, genius, itunes, lastfm, spotify_search
 from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
-from utils.url.canonical_url import build_track_url
+from clients.resolvers import bandcamp_search, beatport_search, genius, itunes, lastfm, spotify_search
 from utils.logging import get_logger
+from utils.url.canonical_url import build_track_url
 from utils.url.url_parser import ParsedMusicUrl, ParsedTrack
 
 logger = get_logger()

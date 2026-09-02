@@ -4,8 +4,8 @@ from app.config import settings
 from app.constants import DEFAULT_COUNTRY, TIDAL_ACCEPT_HEADER, TIDAL_API_BASE, TIDAL_TOKEN_URL
 from clients.platforms._http import get_client
 from clients.platforms._oauth import TokenCache
-from utils.url.canonical_url import build_album_url, build_artist_url, build_track_url
 from utils.logging import get_logger
+from utils.url.canonical_url import build_album_url, build_artist_url, build_track_url
 
 logger = get_logger()
 
