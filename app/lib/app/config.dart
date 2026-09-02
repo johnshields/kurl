@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 const _prodUrl = 'https://api.kurl.online';
-const apiKey = String.fromEnvironment('KURL_API_KEY');
 
 // AdSense slot IDs are public (visible in rendered HTML), so safe to
 // commit. Override via --dart-define for staging / different sites.

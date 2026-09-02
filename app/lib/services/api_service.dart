@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
-import 'package:kurl/app/config.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/api_base.dart';
 
@@ -15,7 +14,6 @@ class ApiService {
       Uri.parse(endpoint),
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': apiKey,
       },
       body: jsonEncode({
         'url': url,
