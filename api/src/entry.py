@@ -4,7 +4,11 @@ Cloudflare Workers entrypoint.
 """
 
 import os
+import sys
 import time
+
+# __import__ (not __main__ execution) skips adding this dir to sys.path, so sibling packages can fail to resolve -- add it explicitly.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from workers import WorkerEntrypoint
 
@@ -13,8 +17,8 @@ from api.middleware.rate_limit import check_rate_limit
 from api.router import resolve
 from clients import cache
 from utils.http.errors import ApiError
-from utils.logging import get_logger
 from utils.http.response import json_error, parse_path, preflight
+from utils.logging import get_logger
 
 logger = get_logger()
 
