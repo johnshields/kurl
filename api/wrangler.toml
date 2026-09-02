@@ -1,7 +1,7 @@
 name = "kurl-api"
 main = "src/entry.py"
 compatibility_date = "2026-04-26"
-compatibility_flags = ["python_workers"]
+compatibility_flags = ["python_workers", "python_process_pth_files"]
 find_additional_modules = false
 
 [assets]
