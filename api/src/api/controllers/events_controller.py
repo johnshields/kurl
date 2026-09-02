@@ -22,6 +22,9 @@ BOT_PATTERNS = [
 
 def _is_bot(user_agent: str) -> bool:
     ua = (user_agent or "").lower()
+    # Real browsers always send a User-Agent; scripted/headless clients often skip it.
+    if not ua:
+        return True
     return any(p in ua for p in BOT_PATTERNS)
 
 
