@@ -9,17 +9,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from workers import WorkerEntrypoint  # noqa: I001
-
-from clients import cache
-from api.middleware.auth import authenticate
-from api.middleware.rate_limit import check_rate_limit
-from api.router import resolve
-from utils.http.errors import ApiError
-from utils.http.response import json_error, parse_path, preflight
-from utils.logging import get_logger
-
-logger = get_logger()
+from workers import WorkerEntrypoint
 
 # Secret names to inject from Worker env into os.environ.
 _SECRET_KEYS = [
@@ -37,6 +27,8 @@ _SECRET_KEYS = [
     "GENIUS_ACCESS_TOKEN",
 ]
 
+_logger = None
+
 
 def _inject_env(env):
     """Copy Worker secret bindings into os.environ so Settings/os.getenv works."""
@@ -48,6 +40,19 @@ def _inject_env(env):
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
+        # Imported here, not at module level -- deploy-time validation runs before the local source tree is mounted.
+        from api.middleware.auth import authenticate
+        from api.middleware.rate_limit import check_rate_limit
+        from api.router import resolve
+        from clients import cache
+        from utils.http.errors import ApiError
+        from utils.http.response import json_error, parse_path, preflight
+        from utils.logging import get_logger
+
+        global _logger
+        if _logger is None:
+            _logger = get_logger()
+
         method = request.method
         path = parse_path(request.url)
         start = time.time()
@@ -73,13 +78,13 @@ class Default(WorkerEntrypoint):
 
             response = await resolve(db, method, path, request)
         except ApiError as e:
-            logger.warning("ApiError on [%s] %s: %s", method, path, e.detail)
+            _logger.warning("ApiError on [%s] %s: %s", method, path, e.detail)
             response = json_error(e.detail, e.status_code, code=e.code)
         except Exception as e:
-            logger.error("Unhandled exception on [%s] %s: %s", method, path, e)
+            _logger.error("Unhandled exception on [%s] %s: %s", method, path, e)
             response = json_error("Internal server error", 500, code="INTERNAL_ERROR")
 
         duration = round((time.time() - start) * 1000, 1)
-        logger.info("%s %s %s %sms", method, path, response.status, duration)
+        _logger.info("%s %s %s %sms", method, path, response.status, duration)
 
         return response
