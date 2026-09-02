@@ -41,13 +41,20 @@ def _inject_env(env):
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         # Imported here, not at module level -- deploy-time validation runs before the local source tree is mounted.
-        from api.middleware.auth import authenticate
-        from api.middleware.rate_limit import check_rate_limit
-        from api.router import resolve
-        from clients import cache
-        from utils.http.errors import ApiError
-        from utils.http.response import json_error, parse_path, preflight
-        from utils.logging import get_logger
+        try:
+            from api.middleware.auth import authenticate
+            from api.middleware.rate_limit import check_rate_limit
+            from api.router import resolve
+            from clients import cache
+            from utils.http.errors import ApiError
+            from utils.http.response import json_error, parse_path, preflight
+            from utils.logging import get_logger
+        except Exception as e:
+            import traceback
+
+            from workers import Response
+
+            return Response(f"IMPORT DIAGNOSTIC: {type(e).__name__}: {e}\n{traceback.format_exc()}", status=500)
 
         global _logger
         if _logger is None:
