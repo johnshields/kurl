@@ -1,6 +1,6 @@
 name = "kurl-api"
 main = "src/entry.py"
-compatibility_date = "2026-04-26"
+compatibility_date = "2026-09-02"
 compatibility_flags = ["python_workers", "disable_python_external_sdk"]
 find_additional_modules = false
 
