@@ -2,7 +2,7 @@ name = "kurl-api"
 main = "src/entry.py"
 compatibility_date = "2026-09-02"
 compatibility_flags = ["python_workers", "disable_python_external_sdk"]
-find_additional_modules = false
+find_additional_modules = true
 
 [assets]
 directory = "src/public"
@@ -19,6 +19,11 @@ database_id = "32af40a9-051b-4e7b-9a11-eca5e1ce7440"
 [[rules]]
 type = "Text"
 globs = ["src/public/**/*.html", "src/public/**/*.css", "src/public/**/*.js", "src/public/**/*.json", "src/public/**/*.ico"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["api/**/*.py", "app/**/*.py", "clients/**/*.py", "db/**/*.py", "models/**/*.py", "utils/**/*.py"]
 fallthrough = true
 
 [observability]
