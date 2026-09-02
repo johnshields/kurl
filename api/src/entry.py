@@ -64,7 +64,7 @@ class Default(WorkerEntrypoint):
             if auth_error:
                 return auth_error
 
-            rate_error = check_rate_limit(method, path)
+            rate_error = check_rate_limit(request, method, path)
             if rate_error:
                 return rate_error
 

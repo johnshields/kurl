@@ -1,9 +1,13 @@
 """Rate-limit, retry, backoff knobs."""
 
-# In-memory write-endpoint rate limit.
+# In-memory, per-IP write-endpoint rate limit.
 RATE_LIMIT_WRITE_METHODS = {"POST", "PATCH", "DELETE"}
 RATE_LIMIT_MAX_REQUESTS = 10
 RATE_LIMIT_WINDOW_SECONDS = 60
+
+# Above this many tracked IPs, sweep out entries whose whole window has
+# aged out -- bounds dict growth on a long-lived isolate.
+RATE_LIMIT_MAX_TRACKED_IPS = 5000
 
 # Separate, looser bucket for analytics events -- a single page load fires
 # several (page_view, kurl, kurl_success, platform_select, open_result), so
