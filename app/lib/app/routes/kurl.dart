@@ -7,6 +7,7 @@ import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
+import 'package:kurl/services/auth_service.dart';
 import 'package:kurl/utils/clipboard_paste.dart';
 import 'package:kurl/utils/friendly_error.dart';
 import 'package:kurl/utils/url_short.dart';
@@ -56,6 +57,18 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _listenForUniversalLinks();
     }
     _handleUri(Uri.base);
+    _loadPreferredPlatform();
+  }
+
+  // A deep-link target (handled above) takes priority; this only fills in
+  // the default when nothing else has already chosen one.
+  Future<void> _loadPreferredPlatform() async {
+    final user = await AuthService.getProfile();
+    final preferred = user?.preferredPlatform;
+    if (preferred == null || findPlatform(preferred) == null) return;
+    if (mounted && _selectedPlatform == null) {
+      setState(() => _selectedPlatform = preferred);
+    }
   }
 
   void _listenForShares() {
