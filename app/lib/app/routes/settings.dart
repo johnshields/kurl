@@ -78,6 +78,8 @@ class _AuthFormState extends State<_AuthForm> {
   final _confirmPasswordController = TextEditingController();
   bool _isSignup = false;
   bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String? _error;
 
   Future<void> _submit() async {
@@ -115,12 +117,13 @@ class _AuthFormState extends State<_AuthForm> {
     super.dispose();
   }
 
-  InputDecoration _decoration(String hint) {
+  InputDecoration _decoration(String hint, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
       filled: true,
       fillColor: const Color(0xFF141414),
+      suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
       enabledBorder:
@@ -129,6 +132,13 @@ class _AuthFormState extends State<_AuthForm> {
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _borderFocused),
       ),
+    );
+  }
+
+  Widget _visibilityToggle(bool obscured, VoidCallback onPressed) {
+    return IconButton(
+      icon: Icon(obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF888888), size: 18),
+      onPressed: _loading ? null : onPressed,
     );
   }
 
@@ -169,20 +179,32 @@ class _AuthFormState extends State<_AuthForm> {
                 TextField(
                   controller: _passwordController,
                   enabled: !_loading,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   onSubmitted: _isSignup ? null : (_) => _submit(),
                   style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                  decoration: _decoration('Password'),
+                  decoration: _decoration(
+                    'Password',
+                    suffixIcon: _visibilityToggle(
+                      _obscurePassword,
+                      () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
                 ),
                 if (_isSignup) ...[
                   const SizedBox(height: 12),
                   TextField(
                     controller: _confirmPasswordController,
                     enabled: !_loading,
-                    obscureText: true,
+                    obscureText: _obscureConfirmPassword,
                     onSubmitted: (_) => _submit(),
                     style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                    decoration: _decoration('Confirm password'),
+                    decoration: _decoration(
+                      'Confirm password',
+                      suffixIcon: _visibilityToggle(
+                        _obscureConfirmPassword,
+                        () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      ),
+                    ),
                   ),
                 ],
                 if (_error != null) ...[

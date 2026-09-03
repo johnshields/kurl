@@ -12,10 +12,13 @@ async def fetch_all(db, sql: str, *params):
     result = await db.prepare(sql).bind(*params).all()
     if not result:
         return []
-    rows = result.results.to_py()
+    rows = result.results
+    rows = rows.to_py() if hasattr(rows, "to_py") else rows
     return rows if rows else []
 
 
 async def fetch_one(db, sql: str, *params):
     result = await db.prepare(sql).bind(*params).first()
-    return result.to_py() if result else None
+    if not result:
+        return None
+    return result.to_py() if hasattr(result, "to_py") else result

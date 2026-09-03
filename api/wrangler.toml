@@ -6,6 +6,7 @@ find_additional_modules = true
 
 [assets]
 directory = "src/public"
+not_found_handling = "single-page-application"
 
 [[kv_namespaces]]
 binding = "CACHE"
