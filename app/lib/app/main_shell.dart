@@ -28,8 +28,7 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       body: Stack(
-        // expand: without this the Stack sizes itself to KurlScreen's content,
-        // so taps below it (where the nav sits) never reach the nav's InkWell.
+        // expand: loose Stacks size to content, leaving the nav unclickable below it.
         fit: StackFit.expand,
         children: [
           IndexedStack(

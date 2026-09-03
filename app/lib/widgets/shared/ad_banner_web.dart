@@ -59,9 +59,7 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    // Render nothing if AdSense isn't configured, or outside a release build --
-    // AdSense doesn't serve real ads on localhost and the unauthorized-domain
-    // fallback can resize/reposition the injected <ins> element unpredictably.
+    // AdSense's unauthorized-domain fallback on localhost resizes the <ins> unpredictably.
     if (adsenseClient.isEmpty || widget.slot.isEmpty || !kReleaseMode) {
       return const SizedBox.shrink();
     }

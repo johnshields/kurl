@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/auth_service.dart';
+import 'package:kurl/utils/auth_validator.dart';
 import 'package:kurl/utils/friendly_error.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 
@@ -74,6 +75,7 @@ class _AuthForm extends StatefulWidget {
 class _AuthFormState extends State<_AuthForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isSignup = false;
   bool _loading = false;
   String? _error;
@@ -81,7 +83,14 @@ class _AuthFormState extends State<_AuthForm> {
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    if (email.isEmpty || password.isEmpty) return;
+
+    final validationError = validateEmail(email) ??
+        validatePassword(password) ??
+        (_isSignup ? validateConfirmPassword(password, _confirmPasswordController.text) : null);
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -102,6 +111,7 @@ class _AuthFormState extends State<_AuthForm> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -160,10 +170,21 @@ class _AuthFormState extends State<_AuthForm> {
                   controller: _passwordController,
                   enabled: !_loading,
                   obscureText: true,
-                  onSubmitted: (_) => _submit(),
+                  onSubmitted: _isSignup ? null : (_) => _submit(),
                   style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
                   decoration: _decoration('Password'),
                 ),
+                if (_isSignup) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _confirmPasswordController,
+                    enabled: !_loading,
+                    obscureText: true,
+                    onSubmitted: (_) => _submit(),
+                    style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                    decoration: _decoration('Confirm password'),
+                  ),
+                ],
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 13)),
@@ -194,6 +215,7 @@ class _AuthFormState extends State<_AuthForm> {
                         : () => setState(() {
                               _isSignup = !_isSignup;
                               _error = null;
+                              _confirmPasswordController.clear();
                             }),
                     child: Text(
                       _isSignup ? 'Already have an account? Sign in' : "No account? Create one",
