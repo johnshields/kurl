@@ -72,7 +72,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install test dependencies
-        run: pip install pytest pytest-asyncio httpx PyJWT
+        run: pip install pytest pytest-asyncio httpx PyJWT coolname
 
       - name: Run tests
         run: pytest -q
