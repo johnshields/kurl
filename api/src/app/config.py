@@ -106,5 +106,10 @@ class Settings:
     def SOUNDCLOUD_CLIENT_SECRET(self) -> str | None:
         return self._get("SOUNDCLOUD_CLIENT_SECRET")
 
+    # User accounts (session JWT signing key -- distinct from KURL_API_KEY)
+    @property
+    def SESSION_SECRET(self) -> str | None:
+        return self._get("SESSION_SECRET")
+
 
 settings = Settings()

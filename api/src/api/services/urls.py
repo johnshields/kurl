@@ -4,6 +4,7 @@ import json
 import re
 from urllib.parse import urlparse
 
+from api.controllers import kurls_controller
 from app.constants import PLATFORMS
 from clients import cache, metadata
 from clients.resolvers import itunes, odesli
@@ -19,7 +20,25 @@ from utils.url.url_parser import ParsedTrack, is_search_url, parse_music_url, pa
 
 logger = get_logger()
 
-async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
+
+async def _record_if_signed_in(db, user_uid: str | None, url: str, result: dict) -> None:
+    """Best-effort: kurling stays fully anonymous by default, this never
+    affects the response either way."""
+    if not user_uid or not db:
+        return
+    await kurls_controller.record_kurl(
+        db,
+        user_uid,
+        source_url=url,
+        target_url=result["resolved_url"],
+        platform=result["platform"],
+        via=result["via"],
+        title=result.get("title"),
+        artist=result.get("artist"),
+    )
+
+
+async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=None, user_uid: str | None = None):
     """Kurl a streaming URL to the target platform.
 
     Resolution order:
@@ -29,6 +48,10 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False):
 
     Pass no_cache=True to skip cache reads; writes still happen so the next
     request gets the upgraded result.
+
+    db/user_uid are optional -- kurl works exactly as before when omitted.
+    When both are present (a signed-in user), the result is also saved to
+    their kurl history, best-effort.
     """
     if target_platform not in PLATFORMS:
         return json_error(f"Unknown platform: {target_platform}", 400, code="UNKNOWN_PLATFORM")

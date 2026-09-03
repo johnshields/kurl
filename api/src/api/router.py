@@ -7,7 +7,9 @@ import asyncio
 import re
 import time
 
-from api.routes import events
+from api.middleware.session_auth import get_session_user_uid
+from api.routes import auth, events
+from api.routes import kurls as kurls_routes
 from api.services import urls as kurl_service
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
@@ -102,7 +104,41 @@ async def _post_kurl(db, request, **kwargs):
             "url and target_platform are required", 400, code="INVALID_REQUEST"
         )
 
-    return await kurl_service.kurl(str(url), target_platform, no_cache=no_cache)
+    # Public endpoint regardless of login -- a session, if present, only
+    # adds best-effort history recording on top of the same result.
+    user_uid = get_session_user_uid(request)
+    return await kurl_service.kurl(str(url), target_platform, no_cache=no_cache, db=db, user_uid=user_uid)
+
+
+# Auth endpoints (accounts are optional -- kurling never requires one)
+
+
+@route("POST", "/api/auth/signup")
+async def _auth_signup(db, request, **kwargs):
+    return await auth.signup(db, request)
+
+
+@route("POST", "/api/auth/login")
+async def _auth_login(db, request, **kwargs):
+    return await auth.login(db, request)
+
+
+@route("GET", "/api/auth/profile")
+async def _auth_get_profile(db, request, **kwargs):
+    return await auth.get_profile(db, request)
+
+
+@route("PATCH", "/api/auth/profile")
+async def _auth_update_profile(db, request, **kwargs):
+    return await auth.update_profile(db, request)
+
+
+# Kurl history (signed-in users only)
+
+
+@route("GET", "/api/kurls")
+async def _list_kurls(db, request, **kwargs):
+    return await kurls_routes.list_kurls(db, request)
 
 
 # Event endpoints

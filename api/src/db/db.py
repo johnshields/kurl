@@ -14,3 +14,8 @@ async def fetch_all(db, sql: str, *params):
         return []
     rows = result.results.to_py()
     return rows if rows else []
+
+
+async def fetch_one(db, sql: str, *params):
+    result = await db.prepare(sql).bind(*params).first()
+    return result.to_py() if result else None

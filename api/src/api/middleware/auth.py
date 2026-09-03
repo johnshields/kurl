@@ -14,6 +14,12 @@ PUBLIC_PATHS = {
     "/api/healthz",
     "/api/kurl",
     "/api/events",
+    # User-account routes -- gated by their own session token (session_auth.py),
+    # not the shared admin API key checked by this middleware.
+    "/api/auth/signup",
+    "/api/auth/login",
+    "/api/auth/profile",
+    "/api/kurls",
 }
 
 # Static-asset prefixes served by the Worker's [assets] handler.

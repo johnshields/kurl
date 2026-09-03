@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "httpx",
     "PyJWT",
+    "coolname",
 ]
 
 [tool.pytest.ini_options]
