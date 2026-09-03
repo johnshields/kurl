@@ -100,8 +100,8 @@ async def update_profile(db, user_uid: str, data: dict) -> dict:
         logger.info("Updated username for %s: %s", user_uid, username)
 
     if "preferredPlatform" in data:
-        platform = data.get("preferredPlatform") or ""
-        if platform not in PLATFORMS:
+        platform = data.get("preferredPlatform")
+        if platform is not None and platform not in PLATFORMS:
             return {"status": "error", "code": "UNKNOWN_PLATFORM", "message": "Unknown platform."}
         await execute(db, queries.UPDATE_PREFERRED_PLATFORM, platform, user_uid)
         logger.info("Updated preferred platform for %s: %s", user_uid, platform)

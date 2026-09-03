@@ -45,7 +45,11 @@ class AuthService {
     return data == null ? null : KurlUser.fromJson(data);
   }
 
-  static Future<KurlUser> updateProfile({String? username, String? preferredPlatform}) async {
+  static Future<KurlUser> updateProfile({
+    String? username,
+    String? preferredPlatform,
+    bool clearPreferredPlatform = false,
+  }) async {
     final token = await getToken();
     if (token == null) {
       throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
@@ -56,7 +60,7 @@ class AuthService {
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       body: jsonEncode({
         'username': ?username,
-        'preferredPlatform': ?preferredPlatform,
+        if (clearPreferredPlatform) 'preferredPlatform': null else 'preferredPlatform': ?preferredPlatform,
       }),
     );
     final json = jsonDecode(response.body);

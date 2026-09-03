@@ -321,6 +321,18 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  Future<void> _deselectPlatform() async {
+    setState(() => _savingPlatform = true);
+    try {
+      final updated = await AuthService.updateProfile(clearPreferredPlatform: true);
+      if (mounted) widget.onUpdated(updated);
+    } catch (_) {
+      // Best-effort -- the picker simply won't reflect the change on failure.
+    } finally {
+      if (mounted) setState(() => _savingPlatform = false);
+    }
+  }
+
   Widget _card({required List<Widget> children}) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
   }
@@ -440,6 +452,7 @@ class _ProfileViewState extends State<_ProfileView> {
                       child: PlatformPicker(
                         selected: widget.user.preferredPlatform,
                         onSelect: _selectPlatform,
+                        onDeselect: _deselectPlatform,
                         disabled: _savingPlatform,
                       ),
                     ),

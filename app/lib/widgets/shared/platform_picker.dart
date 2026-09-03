@@ -4,12 +4,14 @@ import 'package:kurl/models/platform.dart';
 class PlatformPicker extends StatelessWidget {
   final String? selected;
   final ValueChanged<String> onSelect;
+  final VoidCallback? onDeselect;
   final bool disabled;
 
   const PlatformPicker({
     super.key,
     required this.selected,
     required this.onSelect,
+    this.onDeselect,
     this.disabled = false,
   });
 
@@ -34,7 +36,9 @@ class PlatformPicker extends StatelessWidget {
             color: isSelected ? p.colour : const Color(0xFF141414),
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
-              onTap: disabled ? null : () => onSelect(p.id),
+              onTap: disabled
+                  ? null
+                  : () => (isSelected && onDeselect != null) ? onDeselect!() : onSelect(p.id),
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 clipBehavior: Clip.hardEdge,
