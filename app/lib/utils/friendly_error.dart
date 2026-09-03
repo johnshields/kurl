@@ -1,4 +1,4 @@
-import 'package:kurl/services/api_service.dart';
+import 'package:kurl/services/api_exception.dart';
 
 // Map backend error codes (and stray network exceptions) to user-facing copy.
 // Codes are the contract -- backend strings can change without breaking the UI.

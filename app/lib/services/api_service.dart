@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/api_base.dart';
+import 'package:kurl/services/api_exception.dart';
+import 'package:kurl/services/auth_service.dart';
 
 class ApiService {
   static Future<KurlResult> kurl(String url, String targetPlatform, {bool noCache = false}) async {
@@ -10,10 +12,15 @@ class ApiService {
     final endpoint = '$base/api/kurl';
     developer.log('POST $endpoint [$targetPlatform] $url no_cache=$noCache', name: 'kurl.api');
 
+    // Optional -- kurling works identically with or without a session. A
+    // token, if present, only opts the result into the user's history.
+    final token = await AuthService.getToken();
+
     final response = await http.post(
       Uri.parse(endpoint),
       headers: {
         'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
         'url': url,
@@ -48,19 +55,4 @@ class ApiService {
 
     return KurlResult.fromJson(data);
   }
-}
-
-class ApiException implements Exception {
-  final String code;
-  final String message;
-  final int status;
-
-  ApiException({
-    required this.code,
-    required this.message,
-    required this.status,
-  });
-
-  @override
-  String toString() => message;
 }

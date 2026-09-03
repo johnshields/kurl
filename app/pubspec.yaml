@@ -16,6 +16,7 @@ dependencies:
   receive_sharing_intent: ^1.8.1
   app_links: ^6.3.2
   share_plus: ^10.1.4
+  shared_preferences: ^2.3.2
   web: ^1.1.0
   flutter_web_plugins:
     sdk: flutter

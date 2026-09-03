@@ -49,7 +49,7 @@ Frontend (new files):
 - **Password hashing**: stdlib `hashlib.pbkdf2_hmac("sha256", ...)`, no new C-extension dependency (none available in Pyodide anyway). 120,000 iterations, well below OWASP's 600k -- a deliberate tradeoff for Workers' CPU-time budget, not yet benchmarked against real Workers limits (local dev was blocked by an unrelated Node/pywrangler issue all session -- benchmark this once unblocked). See `api/src/utils/password.py`.
 - **Session tokens**: stateless JWT via the already-present `PyJWT`, signed with a new dedicated `SESSION_SECRET` (never reuses `KURL_API_KEY` -- mixing admin and user auth was exactly the bug fixed earlier this session). 30-day expiry, no revocation/denylist in phase 1 -- logout is client-side token discard only.
 - **Usernames**: auto-generated on signup via `coolname` (pure Python, zero deps, added to `pyproject.toml`), two-word slugs like `classy-flounder`. User-changeable via `PATCH /api/auth/profile`, enforced unique (3-40 chars, letters/numbers/`-`/`_`).
-- **Token storage (Flutter)**: not yet decided/built -- see Frontend below.
+- **Token storage (Flutter)**: `shared_preferences`. Works identically across web/iOS/Android with one package; not encrypted-at-rest on mobile (Keychain/Keystore would be), a deliberate simplicity tradeoff for a bearer token with a 30-day expiry, not a password.
 - **Recording a kurl**: server-side, inside `services/urls.py`, best-effort (wrapped so a D1 write failure never affects the actual kurl response). Triggered only when the request carries a valid session `Authorization: Bearer <token>` header -- **kurling itself stays fully public and anonymous by default, exactly as before**. No session = no recording, no error, no behaviour change.
 - **`wrap_route.py`**: left unused, matching the router's existing bare try/except style -- not adopted, to avoid an unrelated style change riding along with this feature.
 - **Rate limiting**: reused the existing generic `check_rate_limit` as-is for phase 1. A dedicated stricter bucket for signup/login (brute-force protection) is a real gap, not yet built -- flagged as a followup, not blocking.
@@ -74,10 +74,13 @@ Session auth = `Authorization: Bearer <JWT>`, verified by `api/src/api/middlewar
 - Apply `api/src/db/schemas/users.sql` and `api/src/db/schemas/kurls.sql` to the D1 database by hand (same as `events.sql` was).
 - `coolname` is a new `pyproject.toml` dependency -- confirm it bundles correctly on an actual deploy (pure Python, zero deps, so low risk, but nothing in this runtime has been "low risk and it just worked" so far this session).
 
-## Frontend -- not yet built
+## Frontend -- built
 
-- `app/lib/services/auth_service.dart`, `app/lib/models/user.dart`
-- Wire `app/lib/app/routes/settings.dart` (login/signup form, username display/edit, `PlatformPicker` reuse for preferred platform)
-- Wire `app/lib/app/routes/kurls.dart` (history list, empty state for logged-out)
-- Token storage needs a new pubspec dependency -- still open, decide when building this half
-- `app/lib/services/api_service.dart` -- attach `Authorization` header when a session exists, still optional/best-effort per the backend contract above
+- `app/lib/services/auth_service.dart` -- signup/login/logout, token persistence (`shared_preferences`), profile get/update, kurl history fetch
+- `app/lib/services/api_exception.dart` -- `ApiException` moved out of `api_service.dart` into its own file, to break the circular import with `auth_service.dart`
+- `app/lib/models/user.dart`, `app/lib/models/kurl_history_item.dart`
+- `app/lib/app/routes/settings.dart` -- login/signup form when logged out; profile view (email, editable username, `PlatformPicker` reuse for preferred platform, logout) when logged in
+- `app/lib/app/routes/kurls.dart` -- history list; distinct empty states for "not signed in" vs "no kurls yet"
+- `app/lib/services/api_service.dart` -- attaches `Authorization: Bearer <token>` when a session exists; still fully functional with no session, unchanged
+
+Not done: no automated tests written for the new screens/services beyond the pre-existing smoke test. Not visually verified in a running app this session (`pywrangler dev` was blocked by the Node/wasm-flag issue noted earlier; web preview was declined) -- `flutter analyze` and `flutter test` are clean, but a real run-through hasn't happened yet.
