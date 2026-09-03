@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kurl/app/routes/kurl.dart';
+import 'package:kurl/app/main_shell.dart';
 
 class KurlApp extends StatelessWidget {
   const KurlApp({super.key});
@@ -18,7 +18,7 @@ class KurlApp extends StatelessWidget {
       theme: base.copyWith(
         textTheme: GoogleFonts.jetBrainsMonoTextTheme(base.textTheme),
       ),
-      home: const KurlScreen(),
+      home: const MainShell(),
     );
   }
 }
