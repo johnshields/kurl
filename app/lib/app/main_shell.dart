@@ -24,24 +24,28 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [for (final entry in _tabs) entry.screen],
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 24, right: 24, bottom: 16),
-        child: SafeArea(
-          top: false,
-          child: Center(
-            child: FloatingNavBar(
-              tabs: [for (final entry in _tabs) entry.tab],
-              selectedIndex: _selectedIndex,
-              onSelect: (i) => setState(() => _selectedIndex = i),
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _selectedIndex,
+            children: [for (final entry in _tabs) entry.screen],
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: bottomInset + 16,
+            child: Center(
+              child: FloatingNavBar(
+                tabs: [for (final entry in _tabs) entry.tab],
+                selectedIndex: _selectedIndex,
+                onSelect: (i) => setState(() => _selectedIndex = i),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
