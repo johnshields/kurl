@@ -9,7 +9,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-(cd "$root/api" && pywrangler dev 2>&1 | sed 's/^/[api] /') &
+(cd "$root/api" && PATH="/opt/homebrew/opt/node@24/bin:$PATH" pywrangler dev 2>&1 | sed 's/^/[api] /') &
 (cd "$root/app" && flutter run -d chrome --web-port 5173 2>&1 | sed 's/^/[app] /') &
 
 wait

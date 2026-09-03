@@ -201,6 +201,9 @@ def _slug_query(url: str) -> str | None:
         return None
     # Trailing slug usually carries the track name.
     raw = segs[-1]
+    if "-" not in raw and "_" not in raw:
+        # No separators -- opaque track ID (Spotify/Deezer/Tidal hash), not a slug.
+        return None
     cleaned = re.sub(r"[-_]+", " ", raw).strip()
     # Drop pure-numeric IDs.
     if cleaned.isdigit() or len(cleaned) < 3:
