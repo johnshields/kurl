@@ -72,6 +72,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
     if cached:
         data = json.loads(cached)
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
+        await _record_if_signed_in(db, user_uid, url, data)
         return json_success("Kurled from cache", data)
 
     # Try direct ISRC/UPC resolution via platform APIs first.
@@ -92,6 +93,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
                     "artwork_url": artwork,
                 }
                 await cache.set(cache_key, json.dumps(result))
+                await _record_if_signed_in(db, user_uid, url, result)
                 return json_success("Kurled", result)
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
@@ -183,6 +185,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
     if is_exact(via):
         await cache.set(cache_key, json.dumps(result))
 
+    await _record_if_signed_in(db, user_uid, url, result)
     return json_success("Kurled", result)
 
 
