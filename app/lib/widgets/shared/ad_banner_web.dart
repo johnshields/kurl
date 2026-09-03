@@ -22,6 +22,7 @@ class AdBanner extends StatefulWidget {
 
 class _AdBannerState extends State<AdBanner> {
   late final String _viewType;
+  web.ResizeObserver? _resizeObserver;
 
   @override
   void initState() {
@@ -38,23 +39,36 @@ class _AdBannerState extends State<AdBanner> {
       ins.setAttribute('data-ad-format', 'auto');
       ins.setAttribute('data-full-width-responsive', 'true');
 
-      // Push to adsbygoogle queue once element is mounted.
-      Future<void>.delayed(Duration.zero, () {
-        try {
-          final adsbygoogle = globalContext.getProperty('adsbygoogle'.toJS);
-          if (adsbygoogle.isDefinedAndNotNull) {
-            (adsbygoogle as JSObject).callMethod(
-              'push'.toJS,
-              JSObject(),
-            );
-          }
-        } catch (_) {
-          // AdSense script not loaded (blocked / dev env) -- silent fail.
-        }
-      });
+      // Push once the element has real layout width -- pushing while still
+      // at availableWidth=0 (before Flutter finishes inserting it) errors.
+      _resizeObserver = web.ResizeObserver(
+        ((JSArray<web.ResizeObserverEntry> entries, web.ResizeObserver observer) {
+          if (ins.offsetWidth == 0) return;
+          observer.disconnect();
+          _pushAd();
+        }).toJS,
+      );
+      _resizeObserver!.observe(ins);
 
       return ins;
     });
+  }
+
+  void _pushAd() {
+    try {
+      final adsbygoogle = globalContext.getProperty('adsbygoogle'.toJS);
+      if (adsbygoogle.isDefinedAndNotNull) {
+        (adsbygoogle as JSObject).callMethod('push'.toJS, JSObject());
+      }
+    } catch (_) {
+      // AdSense script not loaded (blocked / dev env) -- silent fail.
+    }
+  }
+
+  @override
+  void dispose() {
+    _resizeObserver?.disconnect();
+    super.dispose();
   }
 
   @override
