@@ -76,6 +76,26 @@ class AuthService {
     return (data as List).map((e) => KurlHistoryItem.fromJson(e)).toList();
   }
 
+  static Future<void> deleteKurl(String uid) async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final response = await http.delete(
+      Uri.parse('$base/api/kurls/$uid'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final json = jsonDecode(response.body);
+    if (json['status'] == 'error') {
+      throw ApiException(
+        code: json['code'] as String? ?? 'INTERNAL_ERROR',
+        message: json['message'] as String? ?? 'Request failed',
+        status: response.statusCode,
+      );
+    }
+  }
+
   static Future<void> _saveToken(String token) async {
     _cachedToken = token;
     final prefs = await SharedPreferences.getInstance();

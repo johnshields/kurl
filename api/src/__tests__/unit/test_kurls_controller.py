@@ -66,3 +66,15 @@ class TestListKurls:
         with patch("api.controllers.kurls_controller.fetch_all", AsyncMock(return_value=[])):
             result = await kurls_controller.list_kurls(db=object(), user_uid="USR_X")
         assert result["data"] == []
+
+
+class TestDeleteKurl:
+    async def test_deletes_scoped_to_owner(self):
+        execute_mock = AsyncMock()
+        with patch("api.controllers.kurls_controller.execute", execute_mock):
+            result = await kurls_controller.delete_kurl(db=object(), user_uid="USR_X", kurl_uid="KRL_1")
+
+        execute_mock.assert_awaited_once()
+        args = execute_mock.await_args.args
+        assert args[-2:] == ("KRL_1", "USR_X")
+        assert result["status"] == "success"

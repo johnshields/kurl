@@ -40,3 +40,10 @@ async def record_kurl(
 async def list_kurls(db, user_uid: str) -> dict:
     rows = await fetch_all(db, queries.LIST_FOR_USER, user_uid)
     return {"status": "success", "data": [from_db_row(r) for r in rows]}
+
+
+async def delete_kurl(db, user_uid: str, kurl_uid: str) -> dict:
+    # Scoped to owner in the query itself -- deleting is idempotent either way.
+    await execute(db, queries.DELETE, kurl_uid, user_uid)
+    logger.info("Deleted kurl %s for %s", kurl_uid, user_uid)
+    return {"status": "success", "message": "Kurl deleted."}

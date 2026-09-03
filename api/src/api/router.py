@@ -141,6 +141,11 @@ async def _list_kurls(db, request, **kwargs):
     return await kurls_routes.list_kurls(db, request)
 
 
+@route("DELETE", "/api/kurls/:uid")
+async def _delete_kurl(db, request, uid, **kwargs):
+    return await kurls_routes.delete_kurl(db, request, uid)
+
+
 # Event endpoints
 
 

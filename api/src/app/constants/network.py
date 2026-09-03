@@ -19,7 +19,7 @@ ALLOWED_ORIGINS = [
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization",
     "Access-Control-Allow-Credentials": "true",
 }

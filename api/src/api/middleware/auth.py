@@ -25,9 +25,17 @@ PUBLIC_PATHS = {
 # Static-asset prefixes served by the Worker's [assets] handler.
 PUBLIC_PREFIXES = ("/admin", "/static", "/favicon")
 
+# Dynamic session-gated routes (e.g. DELETE /api/kurls/<uid>) that can't be
+# listed in PUBLIC_PATHS as an exact string.
+SESSION_GATED_PREFIXES = ("/api/kurls/",)
+
 
 def authenticate(request, path: str, api_key: str | None):
-    if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PREFIXES):
+    if (
+        path in PUBLIC_PATHS
+        or any(path.startswith(p) for p in PUBLIC_PREFIXES)
+        or any(path.startswith(p) for p in SESSION_GATED_PREFIXES)
+    ):
         return None
 
     if not api_key:

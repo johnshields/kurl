@@ -15,12 +15,14 @@ class MainShell extends StatefulWidget {
 typedef _TabEntry = ({NavTab tab, Widget screen, String path});
 
 class _MainShellState extends State<MainShell> {
+  final _kurlsKey = GlobalKey<KurlsScreenState>();
+
   late int _selectedIndex = _tabs.indexWhere((t) => t.path == currentTabPath()).clamp(0, _tabs.length - 1);
 
-  static const _tabs = <_TabEntry>[
-    (tab: NavTab(icon: Icons.home_rounded, label: 'Home'), screen: KurlScreen(), path: '/'),
-    (tab: NavTab(icon: Icons.link_rounded, label: 'Kurls'), screen: KurlsScreen(), path: '/kurls'),
-    (tab: NavTab(icon: Icons.settings_rounded, label: 'Settings'), screen: SettingsScreen(), path: '/settings'),
+  late final _tabs = <_TabEntry>[
+    (tab: const NavTab(icon: Icons.home_rounded, label: 'Home'), screen: const KurlScreen(), path: '/'),
+    (tab: const NavTab(icon: Icons.link_rounded, label: 'Kurls'), screen: KurlsScreen(key: _kurlsKey), path: '/kurls'),
+    (tab: const NavTab(icon: Icons.settings_rounded, label: 'Settings'), screen: const SettingsScreen(), path: '/settings'),
   ];
 
   @override
@@ -47,6 +49,7 @@ class _MainShellState extends State<MainShell> {
                   onSelect: (i) => setState(() {
                     _selectedIndex = i;
                     updateTabPath(_tabs[i].path);
+                    if (_tabs[i].path == '/kurls') _kurlsKey.currentState?.refresh();
                   }),
                 ),
               ),

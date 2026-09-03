@@ -4,14 +4,16 @@ import 'package:kurl/models/kurl_history_item.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/auth_service.dart';
 
+const _errorRed = Color(0xFFEF4444);
+
 class KurlsScreen extends StatefulWidget {
   const KurlsScreen({super.key});
 
   @override
-  State<KurlsScreen> createState() => _KurlsScreenState();
+  State<KurlsScreen> createState() => KurlsScreenState();
 }
 
-class _KurlsScreenState extends State<KurlsScreen> {
+class KurlsScreenState extends State<KurlsScreen> {
   bool _loading = true;
   bool _loggedIn = false;
   List<KurlHistoryItem> _kurls = [];
@@ -20,6 +22,21 @@ class _KurlsScreenState extends State<KurlsScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  // Called by MainShell when this tab becomes active -- IndexedStack keeps
+  // the screen mounted, so initState alone would only ever load it once.
+  Future<void> refresh() => _load();
+
+  Future<void> _delete(String uid) async {
+    final previous = _kurls;
+    setState(() => _kurls = _kurls.where((k) => k.uid != uid).toList());
+    try {
+      await AuthService.deleteKurl(uid);
+    } catch (_) {
+      // Delete failed -- restore the tile rather than leaving it silently gone.
+      if (mounted) setState(() => _kurls = previous);
+    }
   }
 
   Future<void> _load() async {
@@ -65,7 +82,7 @@ class _KurlsScreenState extends State<KurlsScreen> {
                         title: 'No kurls yet',
                         subtitle: 'Kurl something and it will show up here.',
                       )
-                    : _KurlsList(kurls: _kurls),
+                    : _KurlsList(kurls: _kurls, onDelete: _delete),
       ),
     );
   }
@@ -105,8 +122,9 @@ class _EmptyState extends StatelessWidget {
 
 class _KurlsList extends StatelessWidget {
   final List<KurlHistoryItem> kurls;
+  final ValueChanged<String> onDelete;
 
-  const _KurlsList({required this.kurls});
+  const _KurlsList({required this.kurls, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +148,7 @@ class _KurlsList extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 for (final kurl in kurls) ...[
-                  _KurlTile(kurl: kurl),
+                  _KurlTile(kurl: kurl, onDelete: () => onDelete(kurl.uid)),
                   const SizedBox(height: 8),
                 ],
               ],
@@ -144,8 +162,36 @@ class _KurlsList extends StatelessWidget {
 
 class _KurlTile extends StatelessWidget {
   final KurlHistoryItem kurl;
+  final VoidCallback onDelete;
 
-  const _KurlTile({required this.kurl});
+  const _KurlTile({required this.kurl, required this.onDelete});
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: const Text('Delete kurl?', style: TextStyle(color: Color(0xFFE5E5E5))),
+        content: Text(
+          kurl.title ?? kurl.targetUrl,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xFF888888)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: _errorRed)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onDelete();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +238,12 @@ class _KurlTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 18, color: Color(0xFF555555)),
+              IconButton(
+                onPressed: () => _confirmDelete(context),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                color: const Color(0xFF555555),
+                tooltip: 'Delete',
+              ),
             ],
           ),
         ),
