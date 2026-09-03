@@ -321,8 +321,22 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  Widget _card({required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: _borderIdle),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final initial = widget.user.email.isNotEmpty ? widget.user.email[0].toUpperCase() : '?';
+
     return SingleChildScrollView(
       child: Center(
         child: ConstrainedBox(
@@ -341,67 +355,103 @@ class _ProfileViewState extends State<_ProfileView> {
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(widget.user.email, style: const TextStyle(fontSize: 14, color: Color(0xFF888888))),
-                const SizedBox(height: 24),
-                const Text(
-                  'Username',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _usernameController,
-                        enabled: !_savingUsername,
-                        onSubmitted: (_) => _saveUsername(),
-                        style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF141414),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: _borderIdle),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: _borderIdle),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: _borderFocused),
-                          ),
-                        ),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF141414),
+                        border: Border.all(color: _borderIdle),
+                      ),
+                      child: Text(
+                        initial,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFFE5E5E5)),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: _savingUsername ? null : _saveUsername,
-                      icon: const Icon(Icons.check),
-                      color: const Color(0xFF888888),
-                      tooltip: 'Save username',
-                    ),
+                    const SizedBox(width: 12),
+                    Text(widget.user.email, style: const TextStyle(fontSize: 14, color: Color(0xFF888888))),
                   ],
                 ),
-                if (_usernameError != null) ...[
-                  const SizedBox(height: 6),
-                  Text(_usernameError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
-                ],
                 const SizedBox(height: 24),
-                const Text(
-                  'Preferred platform',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                _card(
+                  children: [
+                    const Text(
+                      'Username',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _usernameController,
+                            enabled: !_savingUsername,
+                            onSubmitted: (_) => _saveUsername(),
+                            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFF141414),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: _borderIdle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: _borderIdle),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: _borderFocused),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _usernameController,
+                          builder: (context, value, _) {
+                            final unchanged = value.text.trim() == widget.user.username;
+                            return Opacity(
+                              opacity: unchanged ? 0.3 : 1,
+                              child: IconButton(
+                                onPressed: (_savingUsername || unchanged) ? null : _saveUsername,
+                                icon: const Icon(Icons.check),
+                                color: const Color(0xFF888888),
+                                tooltip: 'Save username',
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    if (_usernameError != null) ...[
+                      const SizedBox(height: 6),
+                      Text(_usernameError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Opacity(
-                  opacity: _savingPlatform ? 0.5 : 1,
-                  child: PlatformPicker(
-                    selected: widget.user.preferredPlatform,
-                    onSelect: _selectPlatform,
-                    disabled: _savingPlatform,
-                  ),
+                const SizedBox(height: 16),
+                _card(
+                  children: [
+                    const Text(
+                      'Preferred platform',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    Opacity(
+                      opacity: _savingPlatform ? 0.5 : 1,
+                      child: PlatformPicker(
+                        selected: widget.user.preferredPlatform,
+                        onSelect: _selectPlatform,
+                        disabled: _savingPlatform,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
                 SizedBox(
