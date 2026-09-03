@@ -32,17 +32,17 @@ class PlatformPicker extends StatelessWidget {
           opacity: disabled ? 0.5 : 1,
           child: Material(
             color: isSelected ? p.colour : const Color(0xFF141414),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(8),
             child: InkWell(
               onTap: disabled ? null : () => onSelect(p.id),
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               child: Container(
                 clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: isSelected ? p.colour : const Color(0xFF333333),
                   ),
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: Row(
