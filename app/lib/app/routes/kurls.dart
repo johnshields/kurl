@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/kurl_history_item.dart';
-import 'package:kurl/models/platform.dart';
+import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/auth_service.dart';
+import 'package:kurl/widgets/shared/result_card.dart';
 
 const _errorRed = Color(0xFFEF4444);
 
@@ -195,59 +195,15 @@ class _KurlTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final platform = findPlatform(kurl.platform);
-
-    return Material(
-      color: const Color(0xFF141414),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: () => launchUrl(Uri.parse(kurl.targetUrl)),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFF333333)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(
-                platform?.icon ?? Icons.music_note,
-                size: 20,
-                color: platform?.colour ?? const Color(0xFF888888),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      kurl.title ?? kurl.targetUrl,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
-                    ),
-                    if (kurl.artist != null)
-                      Text(
-                        kurl.artist!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
-                      ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => _confirmDelete(context),
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                color: const Color(0xFF555555),
-                tooltip: 'Delete',
-              ),
-            ],
-          ),
-        ),
+    return ResultCard(
+      result: KurlResult(
+        title: kurl.title,
+        artist: kurl.artist,
+        resolvedUrl: kurl.targetUrl,
+        platform: kurl.platform,
+        via: kurl.via,
       ),
+      onDelete: () => _confirmDelete(context),
     );
   }
 }

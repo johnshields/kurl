@@ -11,8 +11,9 @@ import 'package:kurl/widgets/shared/marquee_text.dart';
 
 class ResultCard extends StatelessWidget {
   final KurlResult result;
+  final VoidCallback? onDelete;
 
-  const ResultCard({super.key, required this.result});
+  const ResultCard({super.key, required this.result, this.onDelete});
 
   Future<void> _share(BuildContext context) async {
     try {
@@ -217,6 +218,21 @@ class ResultCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 8),
+                Material(
+                  color: const Color(0xFF222222),
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: onDelete,
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFE5E5E5)),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           if (result.isSearch)
