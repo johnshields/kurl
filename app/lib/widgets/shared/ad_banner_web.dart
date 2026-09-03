@@ -2,6 +2,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
@@ -58,8 +59,10 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    // Render nothing if AdSense isn't configured.
-    if (adsenseClient.isEmpty || widget.slot.isEmpty) {
+    // Render nothing if AdSense isn't configured, or outside a release build --
+    // AdSense doesn't serve real ads on localhost and the unauthorized-domain
+    // fallback can resize/reposition the injected <ins> element unpredictably.
+    if (adsenseClient.isEmpty || widget.slot.isEmpty || !kReleaseMode) {
       return const SizedBox.shrink();
     }
     return SizedBox(
