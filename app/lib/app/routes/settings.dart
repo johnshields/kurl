@@ -322,15 +322,7 @@ class _ProfileViewState extends State<_ProfileView> {
   }
 
   Widget _card({required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: _borderIdle),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
   }
 
   @override
@@ -456,15 +448,26 @@ class _ProfileViewState extends State<_ProfileView> {
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
+                  child: ElevatedButton(
                     onPressed: widget.onLogout,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _errorRed,
-                      side: const BorderSide(color: _borderIdle),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _errorRed,
+                      foregroundColor: const Color(0xFF0A0A0A),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      elevation: 0,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
-                    child: const Text('Log out'),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.logout_rounded, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Log out',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
