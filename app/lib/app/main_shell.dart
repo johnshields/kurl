@@ -33,15 +33,16 @@ class _MainShellState extends State<MainShell> {
             index: _selectedIndex,
             children: [for (final entry in _tabs) entry.screen],
           ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: bottomInset + 16,
-            child: Center(
-              child: FloatingNavBar(
-                tabs: [for (final entry in _tabs) entry.tab],
-                selectedIndex: _selectedIndex,
-                onSelect: (i) => setState(() => _selectedIndex = i),
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: bottomInset + 16),
+                child: FloatingNavBar(
+                  tabs: [for (final entry in _tabs) entry.tab],
+                  selectedIndex: _selectedIndex,
+                  onSelect: (i) => setState(() => _selectedIndex = i),
+                ),
               ),
             ),
           ),
