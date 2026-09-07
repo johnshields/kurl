@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:kurl/models/deezer_account.dart';
+// import 'package:kurl/models/deezer_account.dart'; -- Deezer app registration is closed, re-enable once available.
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
@@ -24,12 +24,13 @@ Future<String?> _launchSpotifyAuth() async {
   return url;
 }
 
-/// Same as [_launchSpotifyAuth], for Deezer.
+/* Deezer app registration is closed -- re-enable once available.
 Future<String?> _launchDeezerAuth() async {
   final url = await AuthService.startDeezerAuth();
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
 }
+*/
 
 void _showToast(BuildContext context, String message) {
   final overlay = Overlay.of(context);
@@ -514,7 +515,7 @@ class _AuthFormState extends State<_AuthForm> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _spotifyLoading = false;
-  bool _deezerLoading = false;
+  // bool _deezerLoading = false; -- Deezer app registration is closed, re-enable once available.
   String? _error;
 
   Future<void> _signInWithSpotify() async {
@@ -532,6 +533,7 @@ class _AuthFormState extends State<_AuthForm> {
     }
   }
 
+  /* Deezer app registration is closed -- re-enable once available.
   Future<void> _signInWithDeezer() async {
     setState(() {
       _deezerLoading = true;
@@ -546,6 +548,7 @@ class _AuthFormState extends State<_AuthForm> {
       if (mounted) setState(() => _deezerLoading = false);
     }
   }
+  */
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
@@ -610,7 +613,6 @@ class _AuthFormState extends State<_AuthForm> {
   @override
   Widget build(BuildContext context) {
     final spotify = findPlatform('spotify');
-    final deezer = findPlatform('deezer');
 
     return SingleChildScrollView(
       child: Center(
@@ -656,6 +658,7 @@ class _AuthFormState extends State<_AuthForm> {
                     ),
                   ),
                 ),
+                /* Deezer app registration is closed -- re-enable once available.
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
@@ -677,6 +680,7 @@ class _AuthFormState extends State<_AuthForm> {
                     ),
                   ),
                 ),
+                */
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -807,9 +811,10 @@ class _ProfileViewState extends State<_ProfileView> {
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
-  DeezerAccount _deezer = DeezerAccount.disconnected;
-  bool _loadingDeezer = true;
-  bool _connectingDeezer = false;
+  // Deezer app registration is closed -- re-enable once available.
+  // DeezerAccount _deezer = DeezerAccount.disconnected;
+  // bool _loadingDeezer = true;
+  // bool _connectingDeezer = false;
   bool _resendingVerification = false;
 
   @override
@@ -817,9 +822,7 @@ class _ProfileViewState extends State<_ProfileView> {
     super.initState();
     _usernameController = TextEditingController(text: widget.user.username);
     _loadSpotifyStatus();
-    _loadDeezerStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showDeezerReturnMessage());
     WidgetsBinding.instance.addPostFrameCallback((_) => _showVerifyEmailMessage());
   }
 
@@ -827,12 +830,6 @@ class _ProfileViewState extends State<_ProfileView> {
     final spotifyParam = Uri.base.queryParameters['spotify'];
     if (spotifyParam == null || !mounted) return;
     _showToast(context, spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed');
-  }
-
-  void _showDeezerReturnMessage() {
-    final deezerParam = Uri.base.queryParameters['deezer'];
-    if (deezerParam == null || !mounted) return;
-    _showToast(context, deezerParam == 'connected' ? 'Deezer connected' : 'Deezer connection failed');
   }
 
   void _showVerifyEmailMessage() {
@@ -860,6 +857,7 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  /* Deezer app registration is closed -- re-enable once available.
   Future<void> _loadDeezerStatus() async {
     final status = await AuthService.getDeezerStatus();
     if (mounted) {
@@ -878,6 +876,7 @@ class _ProfileViewState extends State<_ProfileView> {
       if (mounted) setState(() => _connectingDeezer = false);
     }
   }
+  */
 
   Future<void> _resendVerification() async {
     setState(() => _resendingVerification = true);
@@ -903,6 +902,7 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  /* Deezer app registration is closed -- re-enable once available.
   Future<void> _disconnectDeezer() async {
     setState(() => _connectingDeezer = true);
     try {
@@ -914,6 +914,7 @@ class _ProfileViewState extends State<_ProfileView> {
       if (mounted) setState(() => _connectingDeezer = false);
     }
   }
+  */
 
   @override
   void didUpdateWidget(covariant _ProfileView oldWidget) {
@@ -1198,6 +1199,7 @@ class _ProfileViewState extends State<_ProfileView> {
                       ),
                   ],
                 ),
+                /* Deezer app registration is closed -- re-enable once available.
                 const SizedBox(height: 24),
                 _card(
                   children: [
@@ -1247,6 +1249,7 @@ class _ProfileViewState extends State<_ProfileView> {
                       ),
                   ],
                 ),
+                */
                 const SizedBox(height: 24),
                 _card(
                   children: [
