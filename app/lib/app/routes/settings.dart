@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:kurl/models/deezer_account.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
@@ -19,6 +20,13 @@ const _borderFocused = Color(0xFF555555);
 /// was opened, or null if Spotify sign-in isn't available right now.
 Future<String?> _launchSpotifyAuth() async {
   final url = await AuthService.startSpotifyAuth();
+  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+  return url;
+}
+
+/// Same as [_launchSpotifyAuth], for Deezer.
+Future<String?> _launchDeezerAuth() async {
+  final url = await AuthService.startDeezerAuth();
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
 }
@@ -506,6 +514,7 @@ class _AuthFormState extends State<_AuthForm> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _spotifyLoading = false;
+  bool _deezerLoading = false;
   String? _error;
 
   Future<void> _signInWithSpotify() async {
@@ -520,6 +529,21 @@ class _AuthFormState extends State<_AuthForm> {
       }
     } finally {
       if (mounted) setState(() => _spotifyLoading = false);
+    }
+  }
+
+  Future<void> _signInWithDeezer() async {
+    setState(() {
+      _deezerLoading = true;
+      _error = null;
+    });
+    try {
+      final url = await _launchDeezerAuth();
+      if (url == null && mounted) {
+        setState(() => _error = 'Deezer sign-in is not available right now.');
+      }
+    } finally {
+      if (mounted) setState(() => _deezerLoading = false);
     }
   }
 
@@ -586,6 +610,7 @@ class _AuthFormState extends State<_AuthForm> {
   @override
   Widget build(BuildContext context) {
     final spotify = findPlatform('spotify');
+    final deezer = findPlatform('deezer');
 
     return SingleChildScrollView(
       child: Center(
@@ -627,6 +652,27 @@ class _AuthFormState extends State<_AuthForm> {
                         Icon(spotify?.icon, size: 18, color: spotify?.colour),
                         const SizedBox(width: 8),
                         Text(_spotifyLoading ? 'Connecting...' : 'Continue with Spotify'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: (_loading || _deezerLoading) ? null : _signInWithDeezer,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFE5E5E5),
+                      side: BorderSide(color: deezer?.colour ?? _borderIdle),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(deezer?.icon, size: 18, color: deezer?.colour),
+                        const SizedBox(width: 8),
+                        Text(_deezerLoading ? 'Connecting...' : 'Continue with Deezer'),
                       ],
                     ),
                   ),
@@ -761,6 +807,9 @@ class _ProfileViewState extends State<_ProfileView> {
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
+  DeezerAccount _deezer = DeezerAccount.disconnected;
+  bool _loadingDeezer = true;
+  bool _connectingDeezer = false;
   bool _resendingVerification = false;
 
   @override
@@ -768,7 +817,9 @@ class _ProfileViewState extends State<_ProfileView> {
     super.initState();
     _usernameController = TextEditingController(text: widget.user.username);
     _loadSpotifyStatus();
+    _loadDeezerStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showDeezerReturnMessage());
     WidgetsBinding.instance.addPostFrameCallback((_) => _showVerifyEmailMessage());
   }
 
@@ -776,6 +827,12 @@ class _ProfileViewState extends State<_ProfileView> {
     final spotifyParam = Uri.base.queryParameters['spotify'];
     if (spotifyParam == null || !mounted) return;
     _showToast(context, spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed');
+  }
+
+  void _showDeezerReturnMessage() {
+    final deezerParam = Uri.base.queryParameters['deezer'];
+    if (deezerParam == null || !mounted) return;
+    _showToast(context, deezerParam == 'connected' ? 'Deezer connected' : 'Deezer connection failed');
   }
 
   void _showVerifyEmailMessage() {
@@ -803,6 +860,25 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  Future<void> _loadDeezerStatus() async {
+    final status = await AuthService.getDeezerStatus();
+    if (mounted) {
+      setState(() {
+        _deezer = status;
+        _loadingDeezer = false;
+      });
+    }
+  }
+
+  Future<void> _connectDeezer() async {
+    setState(() => _connectingDeezer = true);
+    try {
+      await _launchDeezerAuth();
+    } finally {
+      if (mounted) setState(() => _connectingDeezer = false);
+    }
+  }
+
   Future<void> _resendVerification() async {
     setState(() => _resendingVerification = true);
     try {
@@ -824,6 +900,18 @@ class _ProfileViewState extends State<_ProfileView> {
       // Best-effort -- the card simply won't reflect the change on failure.
     } finally {
       if (mounted) setState(() => _connectingSpotify = false);
+    }
+  }
+
+  Future<void> _disconnectDeezer() async {
+    setState(() => _connectingDeezer = true);
+    try {
+      await AuthService.disconnectDeezer();
+      if (mounted) setState(() => _deezer = DeezerAccount.disconnected);
+    } catch (_) {
+      // Best-effort -- the card simply won't reflect the change on failure.
+    } finally {
+      if (mounted) setState(() => _connectingDeezer = false);
     }
   }
 
@@ -1106,6 +1194,55 @@ class _ProfileViewState extends State<_ProfileView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                           ),
                           child: Text(_connectingSpotify ? 'Connecting...' : 'Connect Spotify'),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _card(
+                  children: [
+                    const Text(
+                      'Deezer',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_loadingDeezer)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
+                      )
+                    else if (_deezer.connected)
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle, size: 16, color: findPlatform('deezer')?.colour),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connected as ${_deezer.displayName ?? _deezer.deezerUserId}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _connectingDeezer ? null : _disconnectDeezer,
+                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _connectingDeezer ? null : _connectDeezer,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE5E5E5),
+                            side: const BorderSide(color: _borderIdle),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          child: Text(_connectingDeezer ? 'Connecting...' : 'Connect Deezer'),
                         ),
                       ),
                   ],

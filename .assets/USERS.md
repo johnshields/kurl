@@ -291,3 +291,57 @@ Frontend (edited):
 - Apply the schema change to the live D1 database by hand: `ALTER TABLE users ADD COLUMN email_verified_at TEXT;` (safe, additive -- no table rebuild, no data loss, unlike the earlier nullable-column migration).
 - Everything else (Email Sending domain, `send_email` binding) is already set up from the forgot-password work above -- no new secrets or bindings needed.
 - Not visually verified end-to-end -- same caveat as forgot-password: unit-tested and analyze-clean, but no real signup-then-click-the-link run has happened yet.
+
+## 2026-09-07 (later): Sign in with Deezer
+
+Same identity-only sign-in flow as Spotify, built independently against Deezer's older OAuth dialect.
+
+### Stack confirmed from source
+
+- Deezer's public catalogue client (`clients/platforms/deezer.py`) is already credential-free (no `is_configured()` gate) -- the OAuth client here is entirely new, unrelated code, same split as `spotify_oauth_client.py` vs `clients/platforms/spotify.py`.
+- Confirmed via external research (Deezer's own docs render client-side, so fetched via WebSearch/WebFetch against `python-social-auth`, `PHPoAuthLib`, and a manual `curl` to `api.deezer.com`), not guessed:
+  - Authorize: `GET connect.deezer.com/oauth/auth.php?app_id=&redirect_uri=&perms=`.
+  - Token exchange: `GET connect.deezer.com/oauth/access_token.php?app_id=&secret=&code=` -- response is `access_token=X&expires=Y` (query string, not JSON).
+  - No refresh token is ever issued; requesting the `offline_access` perm returns a token that does not expire (`expires=0`).
+  - Identity: `GET api.deezer.com/user/me?access_token=` -- `id`, `name`, `email` (with the `email` perm).
+  - **Deezer's dialect predates the OAuth2 `state` param and does not reliably echo one back on redirect** -- `python-social-auth` explicitly disables its own state handling for this provider (`REDIRECT_STATE = False`).
+
+### Decisions made (built)
+
+- **State/CSRF token**: reused `utils/oauth_state.py` as-is (already provider-agnostic, no change needed) -- but since Deezer will not hand a `state` param back, the signed token travels inside the `redirect_uri` itself (`https://api.kurl.online/api/auth/deezer/callback?state=<jwt>`). Deezer redirects to exactly the `redirect_uri` it was given with `?code=` appended, so this survives the round trip without depending on Deezer's own state handling at all.
+- **Token storage**: `deezer_accounts` table, one row per `user_uid`, mirroring `spotify_accounts` but with no `refresh_token` column (Deezer never issues one) and a nullable `expires_at` (`NULL` = a non-expiring `offline_access` token).
+- **Scopes**: `basic_access,email,offline_access` -- identity plus a non-expiring token, no library scopes.
+- **Everything else** (anonymous sign-in vs link mode, `_resolve_user()` match-by-id then match-by-email then create, `?token=` handback on the redirect, profile card layout) follows the same shape as Spotify, built as separate, parallel code rather than a shared abstraction -- generalising the two into one mechanism was flagged as out of scope for this pass.
+
+### Touch points (as built)
+
+Backend (new):
+- `api/src/db/schemas/deezer_accounts.sql`, `api/src/db/queries/deezer_accounts.py`, `api/src/models/deezer_account.py`
+- `api/src/clients/deezer_oauth_client.py` -- authorize URL, code exchange (query-string parsing), `/user/me` fetch
+- `api/src/api/controllers/deezer_auth_controller.py`, `api/src/api/routes/deezer_auth.py`
+- `api/src/__tests__/unit/test_deezer_auth_controller.py`
+
+Backend (edited):
+- `api/src/app/constants/apis.py` -- `DEEZER_AUTHORIZE_URL`, `DEEZER_TOKEN_URL`
+- `api/src/app/config.py` -- `DEEZER_APP_ID`, `DEEZER_APP_SECRET`, `DEEZER_REDIRECT_URI`, `DEEZER_APP_REDIRECT_URL`
+- `api/src/api/router.py` -- `GET /api/auth/deezer`, `GET /api/auth/deezer/start`, `GET /api/auth/deezer/callback`, `DELETE /api/auth/deezer`
+- `api/src/api/middleware/auth.py` -- all four paths added to `PUBLIC_PATHS`
+- `api/src/entry.py` -- `DEEZER_APP_ID`/`DEEZER_APP_SECRET`/`DEEZER_REDIRECT_URI`/`DEEZER_APP_REDIRECT_URL` added to `_SECRET_KEYS`
+
+Frontend (new):
+- `app/lib/models/deezer_account.dart`
+
+Frontend (edited):
+- `app/lib/services/auth_service.dart` -- `getDeezerStatus`, `startDeezerAuth`, `disconnectDeezer`
+- `app/lib/app/routes/settings.dart` -- "Continue with Deezer" button on the sign-in form (below Spotify's); Deezer card (Connect / Connected as X + Disconnect) in the profile view, between the Spotify card and Preferred platform; reads `?deezer=connected|error` on return, same toast pattern as Spotify
+
+282 backend tests pass (added 17), `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+### Before deploying
+
+- Register an app at `developers.deezer.com/myapps` to get `DEEZER_APP_ID` + `DEEZER_APP_SECRET`, and register the redirect URI -- must exactly match `DEEZER_REDIRECT_URI` (e.g. `https://api.kurl.online/api/auth/deezer/callback`), **with no query string**, since the state token is appended at request time, not pre-registered.
+- **Real unknown, flagged honestly**: whether Deezer's redirect-URI validation accepts a request-time `?state=` suffix appended onto the registered base URI, or requires a byte-exact match with no extra query string. Every source consulted (official docs excepted -- they render client-side and couldn't be fetched) describes the redirect_uri as caller-supplied and echoed back verbatim, which is how this is built, but none confirms the dashboard's exact-match strictness. If the real app rejects it, check `wrangler tail` on a real `/start` call -- the fallback would be a signed cookie set on `/start` and read on `/callback` instead (more plumbing: needs CORS to allow credentials across the `kurl.online`/`api.kurl.online` origin split, not attempted here).
+- Apply `api/src/db/schemas/deezer_accounts.sql` to D1 by hand (same manual step every other schema file has needed).
+- Set Worker secrets: `DEEZER_APP_ID`, `DEEZER_APP_SECRET`, `DEEZER_REDIRECT_URI`, optionally `DEEZER_APP_REDIRECT_URL` if not using the `kurl.online/settings` default.
+- Confirm the app's Deezer dashboard quota/review status before relying on this for real users -- not checked, no Deezer app has been registered yet.
+- Not visually verified end-to-end (no real Deezer app registered yet, so the actual OAuth roundtrip hasn't been run) -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through hasn't happened.

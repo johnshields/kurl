@@ -20,6 +20,8 @@ TIDAL_API_BASE = "https://openapi.tidal.com/v2"
 TIDAL_ACCEPT_HEADER = "application/vnd.api+json"
 
 DEEZER_API_BASE = "https://api.deezer.com"
+DEEZER_AUTHORIZE_URL = "https://connect.deezer.com/oauth/auth.php"
+DEEZER_TOKEN_URL = "https://connect.deezer.com/oauth/access_token.php"
 
 # Resolver endpoints (rescue path).
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"

@@ -14,8 +14,6 @@ PUBLIC_PATHS = {
     "/api/healthz",
     "/api/kurl",
     "/api/events",
-    # User-account routes -- gated by their own session token (session_auth.py),
-    # not the shared admin API key checked by this middleware.
     "/api/auth/signup",
     "/api/auth/login",
     "/api/auth/forgot-password",
@@ -24,11 +22,12 @@ PUBLIC_PATHS = {
     "/api/auth/resend-verification",
     "/api/auth/profile",
     "/api/kurls",
-    # Sign in with Spotify -- start works with or without a session (sign-in
-    # vs link mode); callback is state-authenticated, not session-gated.
     "/api/auth/spotify",
     "/api/auth/spotify/start",
     "/api/auth/spotify/callback",
+    "/api/auth/deezer",
+    "/api/auth/deezer/start",
+    "/api/auth/deezer/callback",
 }
 
 # Static-asset prefixes served by the Worker's [assets] handler.

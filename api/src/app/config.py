@@ -77,6 +77,25 @@ class Settings:
         """Frontend URL the callback bounces the browser back to once done."""
         return self._get("SPOTIFY_APP_REDIRECT_URL", "https://kurl.online/settings")
 
+    # Deezer (OAuth authorization_code -- Sign in with Deezer)
+    @property
+    def DEEZER_APP_ID(self) -> str | None:
+        return self._get("DEEZER_APP_ID")
+
+    @property
+    def DEEZER_APP_SECRET(self) -> str | None:
+        return self._get("DEEZER_APP_SECRET")
+
+    @property
+    def DEEZER_REDIRECT_URI(self) -> str | None:
+        """Must exactly match a redirect URI registered in the Deezer app dashboard."""
+        return self._get("DEEZER_REDIRECT_URI")
+
+    @property
+    def DEEZER_APP_REDIRECT_URL(self) -> str:
+        """Frontend URL the callback bounces the browser back to once done."""
+        return self._get("DEEZER_APP_REDIRECT_URL", "https://kurl.online/settings")
+
     # Apple Music (JWT via MusicKit)
     @property
     def APPLE_TEAM_ID(self) -> str | None:

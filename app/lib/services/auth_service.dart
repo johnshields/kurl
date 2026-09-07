@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kurl/models/deezer_account.dart';
 import 'package:kurl/models/kurl_history_item.dart';
 import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
@@ -149,6 +150,39 @@ class AuthService {
     final base = await resolveApiBase();
     final response = await http.delete(
       Uri.parse('$base/api/auth/spotify'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    _throwIfError(jsonDecode(response.body), response.statusCode);
+  }
+
+  static Future<DeezerAccount> getDeezerStatus() async {
+    final data = await _authedGet('/api/auth/deezer');
+    return data == null ? DeezerAccount.disconnected : DeezerAccount.fromJson(data);
+  }
+
+  /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
+  /// (link mode) or signed-out (full sign-in).
+  static Future<String?> startDeezerAuth() async {
+    final results = await Future.wait([getToken(), resolveApiBase()]);
+    final token = results[0];
+    final base = results[1]!;
+    final response = await http.get(
+      Uri.parse('$base/api/auth/deezer/start'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    final json = jsonDecode(response.body);
+    if (json['status'] == 'error') return null;
+    return json['data']?['url'];
+  }
+
+  static Future<void> disconnectDeezer() async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final response = await http.delete(
+      Uri.parse('$base/api/auth/deezer'),
       headers: {'Authorization': 'Bearer $token'},
     );
     _throwIfError(jsonDecode(response.body), response.statusCode);
