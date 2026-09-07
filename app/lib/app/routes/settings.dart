@@ -113,6 +113,129 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
   }
 }
 
+class _ChangePasswordDialog extends StatefulWidget {
+  final ValueChanged<KurlUser> onUpdated;
+
+  const _ChangePasswordDialog({required this.onUpdated});
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _save() async {
+    final password = _passwordController.text;
+    final validationError =
+        validatePassword(password) ?? validateConfirmPassword(password, _confirmPasswordController.text);
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final updated = await AuthService.updateProfile(password: password);
+      if (mounted) {
+        widget.onUpdated(updated);
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Widget _visibilityToggle(bool obscured, VoidCallback onPressed) {
+    return IconButton(
+      icon: Icon(obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF888888), size: 18),
+      onPressed: _saving ? null : onPressed,
+    );
+  }
+
+  InputDecoration _decoration(String hint, {required Widget suffixIcon}) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+      filled: true,
+      fillColor: const Color(0xFF0A0A0A),
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF141414),
+      title: const Text('Change password', style: TextStyle(color: Color(0xFFE5E5E5))),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _passwordController,
+            enabled: !_saving,
+            obscureText: _obscurePassword,
+            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+            decoration: _decoration(
+              'New password',
+              suffixIcon: _visibilityToggle(_obscurePassword, () => setState(() => _obscurePassword = !_obscurePassword)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirmPasswordController,
+            enabled: !_saving,
+            obscureText: _obscureConfirmPassword,
+            onSubmitted: (_) => _save(),
+            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+            decoration: _decoration(
+              'Confirm new password',
+              suffixIcon: _visibilityToggle(
+                _obscureConfirmPassword,
+                () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+              ),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
+        ),
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -604,15 +727,9 @@ class _ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<_ProfileView> {
   late final TextEditingController _usernameController;
-  final _newPasswordController = TextEditingController();
-  final _confirmNewPasswordController = TextEditingController();
   bool _savingUsername = false;
   bool _savingPlatform = false;
-  bool _savingPassword = false;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmNewPassword = true;
   String? _usernameError;
-  String? _passwordError;
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
@@ -698,37 +815,7 @@ class _ProfileViewState extends State<_ProfileView> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _newPasswordController.dispose();
-    _confirmNewPasswordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _savePassword() async {
-    final password = _newPasswordController.text;
-    final validationError =
-        validatePassword(password) ?? validateConfirmPassword(password, _confirmNewPasswordController.text);
-    if (validationError != null) {
-      setState(() => _passwordError = validationError);
-      return;
-    }
-
-    setState(() {
-      _savingPassword = true;
-      _passwordError = null;
-    });
-    try {
-      final updated = await AuthService.updateProfile(password: password);
-      if (mounted) {
-        widget.onUpdated(updated);
-        _newPasswordController.clear();
-        _confirmNewPasswordController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
-      }
-    } catch (e) {
-      if (mounted) setState(() => _passwordError = e is ApiException ? e.message : friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _savingPassword = false);
-    }
   }
 
   Future<void> _saveUsername() async {
@@ -905,97 +992,24 @@ class _ProfileViewState extends State<_ProfileView> {
                 _card(
                   children: [
                     const Text(
-                      'Change password',
+                      'Password',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _newPasswordController,
-                      enabled: !_savingPassword,
-                      obscureText: _obscureNewPassword,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                      decoration: InputDecoration(
-                        hintText: 'New password',
-                        hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
-                        filled: true,
-                        fillColor: const Color(0xFF141414),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: const Color(0xFF888888),
-                            size: 18,
-                          ),
-                          onPressed:
-                              _savingPassword ? null : () => setState(() => _obscureNewPassword = !_obscureNewPassword),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderIdle),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderIdle),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderFocused),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _confirmNewPasswordController,
-                      enabled: !_savingPassword,
-                      obscureText: _obscureConfirmNewPassword,
-                      onSubmitted: (_) => _savePassword(),
-                      style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                      decoration: InputDecoration(
-                        hintText: 'Confirm new password',
-                        hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
-                        filled: true,
-                        fillColor: const Color(0xFF141414),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: const Color(0xFF888888),
-                            size: 18,
-                          ),
-                          onPressed: _savingPassword
-                              ? null
-                              : () => setState(() => _obscureConfirmNewPassword = !_obscureConfirmNewPassword),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderIdle),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderIdle),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _borderFocused),
-                        ),
-                      ),
-                    ),
-                    if (_passwordError != null) ...[
-                      const SizedBox(height: 6),
-                      Text(_passwordError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
-                    ],
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: _savingPassword ? null : _savePassword,
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) => _ChangePasswordDialog(onUpdated: widget.onUpdated),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFE5E5E5),
                           side: const BorderSide(color: _borderIdle),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         ),
-                        child: Text(_savingPassword ? 'Saving...' : 'Update password'),
+                        child: const Text('Change password'),
                       ),
                     ),
                   ],

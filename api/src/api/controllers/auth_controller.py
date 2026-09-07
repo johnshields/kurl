@@ -117,7 +117,7 @@ async def forgot_password(db, data: dict) -> dict:
                 "This link expires in 30 minutes. If you didn't request this, ignore this email.",
             )
             logger.info("Sent password reset email to %s", row["uid"])
-    return {"status": "success", "message": "If that email has an account, a reset link has been sent."}
+    return {"status": "success", "message": "If that email has an account, a reset link has been sent.", "data": {}}
 
 
 async def reset_password(db, data: dict) -> dict:
@@ -158,7 +158,7 @@ async def verify_email(db, data: dict) -> dict:
     if not row.get("email_verified_at"):
         await execute(db, queries.UPDATE_EMAIL_VERIFIED, uid)
         logger.info("Verified email for %s", uid)
-    return {"status": "success", "message": "Email verified."}
+    return {"status": "success", "message": "Email verified.", "data": {}}
 
 
 async def resend_verification(db, user_uid: str) -> dict:

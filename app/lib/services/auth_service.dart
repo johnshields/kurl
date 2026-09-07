@@ -169,7 +169,7 @@ class AuthService {
     );
     final json = jsonDecode(response.body);
     _throwIfError(json, response.statusCode);
-    return json['data'];
+    return json['data'] ?? {};
   }
 
   static void _throwIfError(Map<String, dynamic> json, int statusCode) {
