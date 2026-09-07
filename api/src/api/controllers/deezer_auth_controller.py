@@ -71,10 +71,8 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
     deezer_user_id = str(deezer_user_id)
 
     if linked_user_uid:
-        # Explicit link from an already-authenticated session.
         user_uid = linked_user_uid
     else:
-        # Anonymous sign-in -- find or create the account for this identity.
         user_uid = await _resolve_user(db, deezer_user_id, profile.get("email"))
 
     expires_in = int(tokens.get("expires") or 0)
@@ -97,7 +95,6 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
     )
     logger.info("Linked Deezer account %s for %s", deezer_user_id, user_uid)
 
-    # Already had a session (link mode) -- no need to mint or hand back a new one.
     session_token = None if linked_user_uid else create_session_token(user_uid, settings.SESSION_SECRET)
     return _app_redirect("connected", session_token)
 

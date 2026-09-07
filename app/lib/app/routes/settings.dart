@@ -307,7 +307,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       try {
         await AuthService.verifyEmail(verifyToken);
       } catch (_) {
-        // Best-effort -- a stale/invalid link just falls through to the profile as-is.
       }
     }
 
@@ -959,7 +958,6 @@ class _ProfileViewState extends State<_ProfileView> {
       await AuthService.resendVerification();
       if (mounted) _showToast(context, 'Verification email sent');
     } catch (_) {
-      // Best-effort -- no feedback needed beyond the button re-enabling.
     } finally {
       if (mounted) setState(() => _resendingVerification = false);
     }
@@ -971,7 +969,6 @@ class _ProfileViewState extends State<_ProfileView> {
       await AuthService.disconnectSpotify();
       if (mounted) setState(() => _spotify = SpotifyAccount.disconnected);
     } catch (_) {
-      // Best-effort -- the card simply won't reflect the change on failure.
     } finally {
       if (mounted) setState(() => _connectingSpotify = false);
     }
@@ -1040,7 +1037,6 @@ class _ProfileViewState extends State<_ProfileView> {
       final updated = await AuthService.updateProfile(preferredPlatform: id);
       if (mounted) widget.onUpdated(updated);
     } catch (_) {
-      // Best-effort -- the picker simply won't reflect the change on failure.
     } finally {
       if (mounted) setState(() => _savingPlatform = false);
     }
@@ -1052,7 +1048,6 @@ class _ProfileViewState extends State<_ProfileView> {
       final updated = await AuthService.updateProfile(clearPreferredPlatform: true);
       if (mounted) widget.onUpdated(updated);
     } catch (_) {
-      // Best-effort -- the picker simply won't reflect the change on failure.
     } finally {
       if (mounted) setState(() => _savingPlatform = false);
     }

@@ -77,10 +77,8 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
     soundcloud_user_id = str(soundcloud_user_id)
 
     if linked_user_uid:
-        # Explicit link from an already-authenticated session.
         user_uid = linked_user_uid
     else:
-        # Anonymous sign-in -- find or create the account for this identity.
         user_uid = await _resolve_user(db, soundcloud_user_id)
 
     expires_at = (datetime.now(UTC) + timedelta(seconds=tokens.get("expires_in", 3600))).strftime(
@@ -102,7 +100,6 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
     )
     logger.info("Linked SoundCloud account %s for %s", soundcloud_user_id, user_uid)
 
-    # Already had a session (link mode) -- no need to mint or hand back a new one.
     session_token = None if linked_user_uid else create_session_token(user_uid, settings.SESSION_SECRET)
     return _app_redirect("connected", session_token)
 
