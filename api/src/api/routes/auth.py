@@ -17,6 +17,7 @@ _ERROR_STATUS = {
     "UNKNOWN_PLATFORM": 400,
     "INVALID_USERNAME": 400,
     "USERNAME_TAKEN": 409,
+    "INVALID_TOKEN": 400,
 }
 
 
@@ -35,6 +36,18 @@ async def signup(db, request):
 async def login(db, request):
     body = await parse_json_body(request)
     result = await auth_controller.login(db, body)
+    return _respond(result)
+
+
+async def forgot_password(db, request):
+    body = await parse_json_body(request)
+    result = await auth_controller.forgot_password(db, body)
+    return _respond(result)
+
+
+async def reset_password(db, request):
+    body = await parse_json_body(request)
+    result = await auth_controller.reset_password(db, body)
     return _respond(result)
 
 

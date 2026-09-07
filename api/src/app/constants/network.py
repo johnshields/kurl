@@ -17,6 +17,9 @@ ALLOWED_ORIGINS = [
     "https://www.kurl.online",
 ]
 
+APP_BASE_URL = "https://kurl.online"
+EMAIL_FROM = "noreply@kurl.online"
+
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",

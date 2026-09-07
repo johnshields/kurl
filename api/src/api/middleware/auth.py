@@ -18,6 +18,8 @@ PUBLIC_PATHS = {
     # not the shared admin API key checked by this middleware.
     "/api/auth/signup",
     "/api/auth/login",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
     "/api/auth/profile",
     "/api/kurls",
     # Sign in with Spotify -- start works with or without a session (sign-in

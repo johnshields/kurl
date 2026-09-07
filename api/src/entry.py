@@ -11,7 +11,7 @@ from workers import WorkerEntrypoint
 from api.middleware.auth import authenticate
 from api.middleware.rate_limit import check_rate_limit
 from api.router import resolve
-from clients import cache
+from clients import cache, email
 from utils.http.errors import ApiError
 from utils.http.response import json_error, parse_path, preflight
 from utils.logging import get_logger
@@ -62,6 +62,7 @@ class Default(WorkerEntrypoint):
             kv = getattr(self.env, "CACHE", None)
             api_key = getattr(self.env, "KURL_API_KEY", None)
             cache.init_kv(kv)
+            email.init_email(getattr(self.env, "EMAIL", None))
 
             auth_error = authenticate(request, path, api_key)
             if auth_error:

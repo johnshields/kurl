@@ -27,3 +27,7 @@ UPDATE_USERNAME = """
 UPDATE_PREFERRED_PLATFORM = """
     UPDATE users SET preferred_platform = ? WHERE uid = ?
 """
+
+UPDATE_PASSWORD = """
+    UPDATE users SET password_hash = ? WHERE uid = ?
+"""

@@ -7,6 +7,7 @@ import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/auth_service.dart';
 import 'package:kurl/utils/auth_validator.dart';
 import 'package:kurl/utils/friendly_error.dart';
+import 'package:kurl/utils/url_state.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 
 const _errorRed = Color(0xFFEF4444);
@@ -20,6 +21,96 @@ Future<String?> _launchSpotifyAuth() async {
   final url = await AuthService.startSpotifyAuth();
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
+}
+
+class _ForgotPasswordDialog extends StatefulWidget {
+  const _ForgotPasswordDialog();
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  final _emailController = TextEditingController();
+  bool _sending = false;
+  bool _sent = false;
+  String? _error;
+
+  Future<void> _send() async {
+    final error = validateEmail(_emailController.text);
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
+    try {
+      await AuthService.forgotPassword(_emailController.text.trim());
+      if (mounted) setState(() => _sent = true);
+    } catch (e) {
+      if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF141414),
+      title: const Text('Reset password', style: TextStyle(color: Color(0xFFE5E5E5))),
+      content: _sent
+          ? const Text(
+              'If that email has an account, a reset link is on its way.',
+              style: TextStyle(color: Color(0xFF888888)),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _emailController,
+                  enabled: !_sending,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+                    filled: true,
+                    fillColor: const Color(0xFF0A0A0A),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: _borderIdle),
+                    ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+                ],
+              ],
+            ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(_sent ? 'Close' : 'Cancel', style: const TextStyle(color: Color(0xFF888888))),
+        ),
+        if (!_sent)
+          TextButton(
+            onPressed: _sending ? null : _send,
+            child: const Text('Send'),
+          ),
+      ],
+    );
+  }
 }
 
 class SettingsScreen extends StatefulWidget {
@@ -60,6 +151,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final resetToken = Uri.base.queryParameters['reset'];
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
@@ -67,13 +160,169 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
               )
-            : _user == null
-                ? _AuthForm(onAuthenticated: (user) => setState(() => _user = user))
-                : _ProfileView(
-                    user: _user!,
-                    onUpdated: (user) => setState(() => _user = user),
-                    onLogout: _logout,
+            : resetToken != null
+                ? _ResetPasswordForm(
+                    token: resetToken,
+                    onDone: (user) => setState(() => _user = user),
+                  )
+                : _user == null
+                    ? _AuthForm(onAuthenticated: (user) => setState(() => _user = user))
+                    : _ProfileView(
+                        user: _user!,
+                        onUpdated: (user) => setState(() => _user = user),
+                        onLogout: _logout,
+                      ),
+      ),
+    );
+  }
+}
+
+class _ResetPasswordForm extends StatefulWidget {
+  final String token;
+  final ValueChanged<KurlUser> onDone;
+
+  const _ResetPasswordForm({required this.token, required this.onDone});
+
+  @override
+  State<_ResetPasswordForm> createState() => _ResetPasswordFormState();
+}
+
+class _ResetPasswordFormState extends State<_ResetPasswordForm> {
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _loading = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    final password = _passwordController.text;
+    final validationError =
+        validatePassword(password) ?? validateConfirmPassword(password, _confirmPasswordController.text);
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = await AuthService.resetPassword(widget.token, password);
+      if (mounted) {
+        updateUrlState(); // clear ?reset=... so a refresh lands back on the profile
+        widget.onDone(user);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _decoration(String hint, {required Widget suffixIcon}) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+      filled: true,
+      fillColor: const Color(0xFF141414),
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
+      enabledBorder:
+          OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: _borderFocused),
+      ),
+    );
+  }
+
+  Widget _visibilityToggle(bool obscured, VoidCallback onPressed) {
+    return IconButton(
+      icon: Icon(obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF888888), size: 18),
+      onPressed: _loading ? null : onPressed,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Set a new password',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFE5E5E5), letterSpacing: -0.5),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _passwordController,
+                  enabled: !_loading,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                  decoration: _decoration(
+                    'New password',
+                    suffixIcon: _visibilityToggle(
+                      _obscurePassword,
+                      () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _confirmPasswordController,
+                  enabled: !_loading,
+                  obscureText: _obscureConfirmPassword,
+                  onSubmitted: (_) => _submit(),
+                  style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                  decoration: _decoration(
+                    'Confirm new password',
+                    suffixIcon: _visibilityToggle(
+                      _obscureConfirmPassword,
+                      () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 13)),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE5E5E5),
+                      foregroundColor: const Color(0xFF0A0A0A),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Text(
+                      _loading ? '...' : 'Update password',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -256,6 +505,19 @@ class _AuthFormState extends State<_AuthForm> {
                     ),
                   ),
                 ),
+                if (!_isSignup) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () => showDialog(context: context, builder: (_) => const _ForgotPasswordDialog()),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                      child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF888888), fontSize: 12)),
+                    ),
+                  ),
+                ],
                 if (_isSignup) ...[
                   const SizedBox(height: 12),
                   TextField(
@@ -333,9 +595,15 @@ class _ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<_ProfileView> {
   late final TextEditingController _usernameController;
+  final _newPasswordController = TextEditingController();
+  final _confirmNewPasswordController = TextEditingController();
   bool _savingUsername = false;
   bool _savingPlatform = false;
+  bool _savingPassword = false;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmNewPassword = true;
   String? _usernameError;
+  String? _passwordError;
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
@@ -397,7 +665,37 @@ class _ProfileViewState extends State<_ProfileView> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _newPasswordController.dispose();
+    _confirmNewPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _savePassword() async {
+    final password = _newPasswordController.text;
+    final validationError =
+        validatePassword(password) ?? validateConfirmPassword(password, _confirmNewPasswordController.text);
+    if (validationError != null) {
+      setState(() => _passwordError = validationError);
+      return;
+    }
+
+    setState(() {
+      _savingPassword = true;
+      _passwordError = null;
+    });
+    try {
+      final updated = await AuthService.updateProfile(password: password);
+      if (mounted) {
+        widget.onUpdated(updated);
+        _newPasswordController.clear();
+        _confirmNewPasswordController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _passwordError = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _savingPassword = false);
+    }
   }
 
   Future<void> _saveUsername() async {
@@ -546,6 +844,105 @@ class _ProfileViewState extends State<_ProfileView> {
                       const SizedBox(height: 6),
                       Text(_usernameError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
                     ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _card(
+                  children: [
+                    const Text(
+                      'Change password',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _newPasswordController,
+                      enabled: !_savingPassword,
+                      obscureText: _obscureNewPassword,
+                      style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                      decoration: InputDecoration(
+                        hintText: 'New password',
+                        hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+                        filled: true,
+                        fillColor: const Color(0xFF141414),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: const Color(0xFF888888),
+                            size: 18,
+                          ),
+                          onPressed:
+                              _savingPassword ? null : () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderIdle),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderIdle),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderFocused),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _confirmNewPasswordController,
+                      enabled: !_savingPassword,
+                      obscureText: _obscureConfirmNewPassword,
+                      onSubmitted: (_) => _savePassword(),
+                      style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                      decoration: InputDecoration(
+                        hintText: 'Confirm new password',
+                        hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+                        filled: true,
+                        fillColor: const Color(0xFF141414),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: const Color(0xFF888888),
+                            size: 18,
+                          ),
+                          onPressed: _savingPassword
+                              ? null
+                              : () => setState(() => _obscureConfirmNewPassword = !_obscureConfirmNewPassword),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderIdle),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderIdle),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _borderFocused),
+                        ),
+                      ),
+                    ),
+                    if (_passwordError != null) ...[
+                      const SizedBox(height: 6),
+                      Text(_passwordError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+                    ],
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _savingPassword ? null : _savePassword,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE5E5E5),
+                          side: const BorderSide(color: _borderIdle),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        child: Text(_savingPassword ? 'Saving...' : 'Update password'),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),

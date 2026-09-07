@@ -11,6 +11,9 @@ directory = "src/public"
 binding = "CACHE"
 id = "6992aaa34a2b4899a4f43305bb5c63d5"
 
+[[send_email]]
+name = "EMAIL"
+
 [[d1_databases]]
 binding = "kurl"
 database_name = "kurl"

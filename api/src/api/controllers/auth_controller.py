@@ -4,12 +4,14 @@ Signup, login, and current-user logic for the (optional) account system.
 """
 
 from app.config import settings
-from app.constants import PLATFORMS
+from app.constants import APP_BASE_URL, EMAIL_FROM, PLATFORMS
+from clients import email as email_client
 from db.db import execute, fetch_one
 from db.queries import users as queries
 from models.user import public_user, to_db_params
 from utils.logging import get_logger
 from utils.password import hash_password, verify_password
+from utils.password_reset import create_reset_token, decode_reset_token, matches_current_password
 from utils.session import create_session_token
 from utils.uid import gen_uid
 from utils.username import generate_username, generate_username_with_suffix, is_valid_username
@@ -76,6 +78,53 @@ async def login(db, data: dict) -> dict:
     }
 
 
+async def forgot_password(db, data: dict) -> dict:
+    """Always succeeds -- avoids leaking which emails are registered."""
+    email = (data.get("email") or "").strip().lower()
+    if email:
+        row = await fetch_one(db, queries.GET_BY_EMAIL, email)
+        if row:
+            token = create_reset_token(row["uid"], row["password_hash"], settings.SESSION_SECRET)
+            link = f"{APP_BASE_URL}/settings?reset={token}"
+            await email_client.send(
+                to=email,
+                from_address=EMAIL_FROM,
+                subject="Reset your kurl password",
+                html=f'<p>Reset your kurl password:</p><p><a href="{link}">{link}</a></p>'
+                f"<p>This link expires in 30 minutes. If you didn't request this, ignore this email.</p>",
+                text=f"Reset your kurl password: {link}\n\n"
+                "This link expires in 30 minutes. If you didn't request this, ignore this email.",
+            )
+            logger.info("Sent password reset email to %s", row["uid"])
+    return {"status": "success", "message": "If that email has an account, a reset link has been sent."}
+
+
+async def reset_password(db, data: dict) -> dict:
+    token = data.get("token") or ""
+    password = data.get("password") or ""
+
+    if len(password) < 8:
+        return {"status": "error", "code": "WEAK_PASSWORD", "message": "Password must be at least 8 characters."}
+
+    decoded = decode_reset_token(token, settings.SESSION_SECRET)
+    if not decoded:
+        return {"status": "error", "code": "INVALID_TOKEN", "message": "Reset link is invalid or expired."}
+    uid, fingerprint = decoded
+
+    row = await fetch_one(db, queries.GET_BY_UID, uid)
+    if not row or not matches_current_password(fingerprint, row["password_hash"]):
+        return {"status": "error", "code": "INVALID_TOKEN", "message": "Reset link is invalid or expired."}
+
+    await execute(db, queries.UPDATE_PASSWORD, hash_password(password), uid)
+    token = create_session_token(uid, settings.SESSION_SECRET)
+    logger.info("Password reset for %s", uid)
+    return {
+        "status": "success",
+        "message": "Password updated.",
+        "data": {"token": token, "user": public_user(row)},
+    }
+
+
 async def get_me(db, user_uid: str) -> dict:
     row = await fetch_one(db, queries.GET_BY_UID, user_uid)
     if not row:
@@ -84,7 +133,14 @@ async def get_me(db, user_uid: str) -> dict:
 
 
 async def update_profile(db, user_uid: str, data: dict) -> dict:
-    """Partial update -- applies whichever of username/preferredPlatform are present."""
+    """Partial update -- applies whichever of username/preferredPlatform/password are present."""
+    if "password" in data:
+        password = data.get("password") or ""
+        if len(password) < 8:
+            return {"status": "error", "code": "WEAK_PASSWORD", "message": "Password must be at least 8 characters."}
+        await execute(db, queries.UPDATE_PASSWORD, hash_password(password), user_uid)
+        logger.info("Updated password for %s", user_uid)
+
     if "username" in data:
         username = (data.get("username") or "").strip()
         if not is_valid_username(username):

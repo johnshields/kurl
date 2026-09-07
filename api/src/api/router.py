@@ -124,6 +124,16 @@ async def _auth_login(db, request, **kwargs):
     return await auth.login(db, request)
 
 
+@route("POST", "/api/auth/forgot-password")
+async def _auth_forgot_password(db, request, **kwargs):
+    return await auth.forgot_password(db, request)
+
+
+@route("POST", "/api/auth/reset-password")
+async def _auth_reset_password(db, request, **kwargs):
+    return await auth.reset_password(db, request)
+
+
 @route("GET", "/api/auth/profile")
 async def _auth_get_profile(db, request, **kwargs):
     return await auth.get_profile(db, request)

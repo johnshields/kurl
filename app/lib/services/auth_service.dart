@@ -50,6 +50,7 @@ class AuthService {
     String? username,
     String? preferredPlatform,
     bool clearPreferredPlatform = false,
+    String? password,
   }) async {
     final token = await getToken();
     if (token == null) {
@@ -61,12 +62,23 @@ class AuthService {
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       body: jsonEncode({
         'username': ?username,
+        'password': ?password,
         if (clearPreferredPlatform) 'preferredPlatform': null else 'preferredPlatform': ?preferredPlatform,
       }),
     );
     final json = jsonDecode(response.body);
     _throwIfError(json, response.statusCode);
     return KurlUser.fromJson(json['data']);
+  }
+
+  static Future<void> forgotPassword(String email) async {
+    await _post('/api/auth/forgot-password', {'email': email});
+  }
+
+  static Future<KurlUser> resetPassword(String token, String password) async {
+    final data = await _post('/api/auth/reset-password', {'token': token, 'password': password});
+    await _saveToken(data['token']);
+    return KurlUser.fromJson(data['user']);
   }
 
   static Future<List<KurlHistoryItem>> getKurls() async {

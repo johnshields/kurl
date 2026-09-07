@@ -208,3 +208,47 @@ Original build above only let an **already-signed-in** kurl user link Spotify (s
 - **Frontend**: `AuthService.startSpotifyAuth()` now sends the session token only if one exists (works signed-out too); new `AuthService.adoptSessionToken()` stores a token handed back via `?token=` on redirect. `SettingsScreen._loadProfile()` checks for that param before loading the profile. `_AuthForm` (the actual sign-in/signup screen) gained a "Continue with Spotify" button above the email/password fields, with an "or" divider.
 
 Tests rewritten for the new signatures/flow (`test_oauth_state.py`, `test_spotify_auth_controller.py`). 238 backend tests pass, `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+## 2026-09-07: Forgot password + change password
+
+Email/password accounts can now reset a forgotten password via emailed link, and a signed-in user can change their password directly from Settings.
+
+### Decisions made (built)
+
+- **Email delivery**: Cloudflare Email Service (`env.EMAIL.send()` via the `send_email` binding) -- user confirmed they're already on the Workers Paid plan, which Email Sending to arbitrary recipients requires (not available on Free). `api/src/clients/email.py` follows the exact same module-level-binding pattern as `clients/cache.py` (`init_email()` called from `entry.py`, alongside `cache.init_kv()`), avoiding threading the binding through every controller/route signature.
+- **Reset token**: stateless signed JWT (`utils/password_reset.py`), no DB table -- same rationale as `oauth_state.py`. Embeds a fingerprint (`sha256(password_hash)[:16]`) of the account's password_hash *at issue time*; on reset, the fingerprint is compared against the *current* password_hash, so a token becomes invalid the instant the password actually changes -- gives single-use-like behaviour for free, no separate used-token tracking. Also works for an account with no password yet (Spotify-only) -- fingerprints a `None` hash consistently, so the same link doubles as "set your first password."
+- **Enumeration**: `POST /api/auth/forgot-password` always returns the same success message regardless of whether the email has an account -- only sends an email when one exists.
+- **Change password (signed in)**: reused the existing `PATCH /api/auth/profile` partial-update endpoint rather than a new route -- `update_profile()` now also accepts `password`, same session-gated mechanism as username/preferredPlatform.
+- **Reset link target**: `https://kurl.online/settings?reset=<token>` -- new `APP_BASE_URL` constant (`app/constants/network.py`), separate from the Spotify-specific `SPOTIFY_APP_REDIRECT_URL`.
+
+### Touch points (as built)
+
+Backend (new):
+- `api/src/clients/email.py`, `api/src/utils/password_reset.py`
+- `api/src/__tests__/unit/test_password_reset.py`
+
+Backend (edited):
+- `api/src/db/schemas/users.sql` already nullable from the Spotify work; `api/src/db/queries/users.py` -- `UPDATE_PASSWORD`
+- `api/src/api/controllers/auth_controller.py` -- `forgot_password`, `reset_password`, `update_profile` now also handles `password`
+- `api/src/api/routes/auth.py`, `api/src/api/router.py` -- `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`
+- `api/src/api/middleware/auth.py` -- both new paths added to `PUBLIC_PATHS` (no session/API key -- forgot-password is pre-login, reset-password authenticates via the token itself)
+- `api/src/app/constants/network.py` -- `APP_BASE_URL`, `EMAIL_FROM`
+- `api/src/entry.py` -- `email.init_email(...)` wired in alongside the KV cache init
+- `api/wrangler.toml` -- `[[send_email]] name = "EMAIL"`
+- `api/src/__tests__/unit/test_auth_controller.py` -- new `TestForgotPassword`, `TestResetPassword`, password cases added to `TestUpdateProfile`
+
+Frontend (new):
+- `_ForgotPasswordDialog`, `_ResetPasswordForm` in `app/lib/app/routes/settings.dart`
+
+Frontend (edited):
+- `app/lib/services/auth_service.dart` -- `forgotPassword`, `resetPassword`, `updateProfile(password:)`
+- `app/lib/app/routes/settings.dart` -- "Forgot password?" link (sign-in mode only) opening the dialog; `?reset=` query param shows `_ResetPasswordForm` instead of the normal sign-in/profile view, clears the param via `updateUrlState()` on success; new "Change password" card in the profile view between Username and Spotify
+
+253 backend tests pass (added 15), `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+### Before deploying
+
+- Onboard the sending domain: `npx wrangler email sending enable kurl.online` (adds SPF/DKIM DNS records -- since kurl.online is already on Cloudflare DNS this should be quick, but hasn't been run yet).
+- Confirm `EMAIL_FROM` (`noreply@kurl.online`) doesn't need a specific mailbox to exist -- Email Sending sends *from* any address on an onboarded domain, no inbox required unless also using Email Routing.
+- **Real unknown, flagged honestly**: calling `env.EMAIL.send()` from Python Workers hasn't been done anywhere in this codebase before. The kwargs -> JS-object calling convention is proven for `_kv.put(key, value, expirationTtl=seconds)` in `clients/cache.py`, and `clients/email.py`'s `send()` follows that exact same shape, but it's reasoned from precedent, not verified against the real `send_email` binding. If it doesn't work as expected, check `wrangler tail` after a real `forgot-password` call -- `email.send()` already catches and logs any exception rather than raising, so a failure there won't break the request, just silently not send the email.
+- Not visually verified end-to-end (no real email has been sent) -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through (request reset -> receive email -> click link -> set password) hasn't happened yet.

@@ -175,3 +175,105 @@ class TestUpdateProfile:
         assert result["status"] == "success"
         assert result["data"]["preferredPlatform"] is None
         assert execute_mock.await_args.args[-2:] == (None, "USR_X")
+
+    async def test_rejects_short_password(self):
+        result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"password": "short"})
+        assert result["status"] == "error"
+        assert result["code"] == "WEAK_PASSWORD"
+
+    async def test_updates_password(self):
+        execute_mock = AsyncMock()
+        stub = _fetch_one_stub(
+            by_uid={
+                "uid": "USR_X",
+                "email": "a@b.com",
+                "username": "my-name",
+                "preferred_platform": None,
+                "created_at": "2026-01-01T00:00:00.000Z",
+            }
+        )
+        with patch("api.controllers.auth_controller.execute", execute_mock), patch(
+            "api.controllers.auth_controller.fetch_one", stub
+        ):
+            result = await auth_controller.update_profile(
+                db=object(), user_uid="USR_X", data={"password": "longenough"}
+            )
+        assert result["status"] == "success"
+        execute_mock.assert_awaited_once()
+
+
+class TestForgotPassword:
+    async def test_always_succeeds_even_for_unknown_email(self):
+        with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_email=None)):
+            result = await auth_controller.forgot_password(db=object(), data={"email": "ghost@b.com"})
+        assert result["status"] == "success"
+
+    async def test_sends_an_email_when_the_account_exists(self):
+        row = {"uid": "USR_X", "password_hash": "some-hash"}
+        send_mock = AsyncMock(return_value=True)
+        with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_email=row)), patch(
+            "api.controllers.auth_controller.email_client.send", send_mock
+        ), patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await auth_controller.forgot_password(db=object(), data={"email": "a@b.com"})
+        assert result["status"] == "success"
+        send_mock.assert_awaited_once()
+        assert send_mock.await_args.kwargs["to"] == "a@b.com"
+
+
+class TestResetPassword:
+    async def test_rejects_short_password(self):
+        result = await auth_controller.reset_password(db=object(), data={"token": "x", "password": "short"})
+        assert result["status"] == "error"
+        assert result["code"] == "WEAK_PASSWORD"
+
+    async def test_rejects_invalid_token(self):
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await auth_controller.reset_password(
+                db=object(), data={"token": "garbage", "password": "longenough"}
+            )
+        assert result["status"] == "error"
+        assert result["code"] == "INVALID_TOKEN"
+
+    async def test_rejects_a_stale_token_after_password_already_changed(self):
+        from utils.password_reset import create_reset_token
+
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_reset_token("USR_X", "old-hash", "test-secret")
+
+            row = {"uid": "USR_X", "password_hash": "new-hash"}
+            with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)):
+                result = await auth_controller.reset_password(
+                    db=object(), data={"token": token, "password": "longenough"}
+                )
+        assert result["status"] == "error"
+        assert result["code"] == "INVALID_TOKEN"
+
+    async def test_resets_password_and_returns_a_session(self):
+        from utils.password_reset import create_reset_token
+
+        execute_mock = AsyncMock()
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_reset_token("USR_X", "old-hash", "test-secret")
+
+            row = {
+                "uid": "USR_X",
+                "email": "a@b.com",
+                "username": "my-name",
+                "password_hash": "old-hash",
+                "preferred_platform": None,
+                "created_at": "2026-01-01T00:00:00.000Z",
+            }
+            with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)), patch(
+                "api.controllers.auth_controller.execute", execute_mock
+            ):
+                result = await auth_controller.reset_password(
+                    db=object(), data={"token": token, "password": "longenough"}
+                )
+        assert result["status"] == "success"
+        assert result["data"]["token"]
+        assert result["data"]["user"]["uid"] == "USR_X"
+        execute_mock.assert_awaited_once()
