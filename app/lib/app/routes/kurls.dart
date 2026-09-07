@@ -202,6 +202,7 @@ class _KurlTile extends StatelessWidget {
         resolvedUrl: kurl.targetUrl,
         platform: kurl.platform,
         via: kurl.via,
+        createdAt: kurl.createdAt,
       ),
       onDelete: () => _confirmDelete(context),
     );

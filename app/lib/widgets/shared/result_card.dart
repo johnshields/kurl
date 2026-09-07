@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/analytics_service.dart';
+import 'package:kurl/utils/date_format.dart';
 import 'package:kurl/widgets/shared/marquee_text.dart';
 
 class ResultCard extends StatelessWidget {
@@ -52,6 +53,7 @@ class ResultCard extends StatelessWidget {
     final platform = findPlatform(result.platform);
     final colour = platform?.colour ?? const Color(0xFFE5E5E5);
     const onColour = Colors.black;
+    final date = shortDate(result.createdAt);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -82,34 +84,44 @@ class ResultCard extends StatelessWidget {
           if (result.artist != null || result.title != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: MarqueeText(
-                key: ValueKey('${result.artist}|${result.title}'),
-                child: Text.rich(
-                  TextSpan(children: [
-                    if (result.artist != null)
-                      TextSpan(
-                        text: result.artist,
-                        style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: MarqueeText(
+                      key: ValueKey('${result.artist}|${result.title}'),
+                      child: Text.rich(
+                        TextSpan(children: [
+                          if (result.artist != null)
+                            TextSpan(
+                              text: result.artist,
+                              style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
+                            ),
+                          if (result.artist != null && result.title != null)
+                            const TextSpan(
+                              text: ' - ',
+                              style: TextStyle(color: Color(0xFF888888), fontSize: 14),
+                            ),
+                          if (result.title != null)
+                            TextSpan(
+                              text: result.title,
+                              style: const TextStyle(
+                                color: Color(0xFFE5E5E5),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ]),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
                       ),
-                    if (result.artist != null && result.title != null)
-                      const TextSpan(
-                        text: ' - ',
-                        style: TextStyle(color: Color(0xFF888888), fontSize: 14),
-                      ),
-                    if (result.title != null)
-                      TextSpan(
-                        text: result.title,
-                        style: const TextStyle(
-                          color: Color(0xFFE5E5E5),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                  ]),
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.visible,
-                ),
+                    ),
+                  ),
+                  if (date != null) ...[
+                    const SizedBox(width: 8),
+                    Text(date, style: const TextStyle(color: Color(0xFF888888), fontSize: 12)),
+                  ],
+                ],
               ),
             ),
           Row(
