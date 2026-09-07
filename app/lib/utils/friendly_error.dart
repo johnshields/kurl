@@ -5,8 +5,8 @@ import 'package:kurl/services/api_exception.dart';
 
 const _codeMessages = <String, String>{
   'TRACK_NOT_FOUND': "Couldn't find this track. Try a different link.",
-  'PLATFORM_NOT_FOUND': "That platform isn't supported yet.",
-  'UNKNOWN_PLATFORM': "That platform isn't supported yet.",
+  'PLATFORM_NOT_FOUND': "That service isn't supported yet.",
+  'UNKNOWN_PLATFORM': "That service isn't supported yet.",
   'SEARCH_URL': "That's a search page — paste a link to a specific track.",
   'INVALID_REQUEST': "Something's off with that link. Try copying it again.",
   'AUTH_REQUIRED': "Session expired. Refresh and retry.",

@@ -369,6 +369,94 @@ class _AddEmailDialogState extends State<_AddEmailDialog> {
   }
 }
 
+class _EditUsernameDialog extends StatefulWidget {
+  final String currentUsername;
+  final ValueChanged<KurlUser> onUpdated;
+
+  const _EditUsernameDialog({required this.currentUsername, required this.onUpdated});
+
+  @override
+  State<_EditUsernameDialog> createState() => _EditUsernameDialogState();
+}
+
+class _EditUsernameDialogState extends State<_EditUsernameDialog> {
+  late final _usernameController = TextEditingController(text: widget.currentUsername);
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _save() async {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty || username == widget.currentUsername) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final updated = await AuthService.updateProfile(username: username);
+      if (mounted) {
+        widget.onUpdated(updated);
+        Navigator.of(context).pop();
+        _showToast(context, 'Username updated');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF141414),
+      title: const Text('Edit username', style: TextStyle(color: Color(0xFFE5E5E5))),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _usernameController,
+            enabled: !_saving,
+            onSubmitted: (_) => _save(),
+            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+            decoration: InputDecoration(
+              hintText: 'Username',
+              hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFF0A0A0A),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
+        ),
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -746,7 +834,7 @@ class _AuthFormState extends State<_AuthForm> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Save your kurls and set a preferred platform.',
+                  'Save your kurls and set a preferred service.',
                   style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
                 ),
                 const SizedBox(height: 20),
@@ -937,10 +1025,7 @@ class _ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<_ProfileView> {
-  late final TextEditingController _usernameController;
-  bool _savingUsername = false;
   bool _savingPlatform = false;
-  String? _usernameError;
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
@@ -956,7 +1041,6 @@ class _ProfileViewState extends State<_ProfileView> {
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.user.username);
     _loadSpotifyStatus();
     _loadSoundcloudStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
@@ -1088,38 +1172,6 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
-  @override
-  void didUpdateWidget(covariant _ProfileView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.user.username != widget.user.username) {
-      _usernameController.text = widget.user.username;
-    }
-  }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveUsername() async {
-    final username = _usernameController.text.trim();
-    if (username.isEmpty || username == widget.user.username) return;
-
-    setState(() {
-      _savingUsername = true;
-      _usernameError = null;
-    });
-    try {
-      final updated = await AuthService.updateProfile(username: username);
-      if (mounted) widget.onUpdated(updated);
-    } catch (e) {
-      if (mounted) setState(() => _usernameError = e is ApiException ? e.message : friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _savingUsername = false);
-    }
-  }
-
   Future<void> _selectPlatform(String id) async {
     setState(() => _savingPlatform = true);
     try {
@@ -1146,62 +1198,92 @@ class _ProfileViewState extends State<_ProfileView> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
   }
 
-  Widget _connectedServiceRow({
+  Widget _serviceChip({
+    required BuildContext context,
     required String name,
+    required IconData? icon,
     required Color? colour,
     required bool loading,
     required bool connected,
-    required String? connectedLabel,
     required bool busy,
-    required VoidCallback onConnect,
-    required VoidCallback onDisconnect,
+    required VoidCallback? onTap,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5))),
-        const SizedBox(height: 8),
-        if (loading)
-          const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
-          )
-        else if (connected)
-          Row(
-            children: [
-              Icon(Icons.check_circle, size: 16, color: colour),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Connected as $connectedLabel',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+    const onColour = Colors.black;
+    final fontSize = MediaQuery.of(context).size.width < 420 ? 11.0 : 13.0;
+    return Opacity(
+      opacity: busy ? 0.5 : 1,
+      child: Material(
+        color: connected ? colour : const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: (loading || busy) ? null : onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            clipBehavior: Clip.hardEdge,
+            decoration: BoxDecoration(
+              border: Border.all(color: connected ? colour! : const Color(0xFF333333)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (loading)
+                  const SizedBox(
+                    height: 14,
+                    width: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF555555)),
+                  )
+                else
+                  Icon(icon, size: 16, color: connected ? onColour : colour),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w500,
+                        color: connected ? onColour : const Color(0xFFE5E5E5),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: busy ? null : onDisconnect,
-                child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
-              ),
-            ],
-          )
-        else
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: busy ? null : onConnect,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFE5E5E5),
-                side: BorderSide(color: colour ?? _borderIdle),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-              child: Text(busy ? 'Connecting...' : 'Connect $name'),
+                if (connected) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.check, size: 14, color: onColour),
+                ],
+              ],
             ),
           ),
-      ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _confirmDisconnect(String name, Future<void> Function() onDisconnect) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: Text('Disconnect $name?', style: const TextStyle(color: Color(0xFFE5E5E5))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Disconnect', style: TextStyle(color: _errorRed)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await onDisconnect();
   }
 
   @override
@@ -1249,25 +1331,63 @@ class _ProfileViewState extends State<_ProfileView> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: widget.user.email.isNotEmpty
-                          ? Text(
-                              widget.user.email,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
-                            )
-                          : TextButton(
-                              onPressed: () => showDialog(
-                                context: context,
-                                builder: (_) => _AddEmailDialog(onUpdated: widget.onUpdated),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          widget.user.email.isNotEmpty
+                              ? Text(
+                                  widget.user.email,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                                )
+                              : TextButton(
+                                  onPressed: () => showDialog(
+                                    context: context,
+                                    builder: (_) => _AddEmailDialog(onUpdated: widget.onUpdated),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    alignment: Alignment.centerLeft,
+                                    minimumSize: const Size(0, 0),
+                                  ),
+                                  child: const Text('Add email', style: TextStyle(fontSize: 14, color: Color(0xFF888888))),
+                                ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.user.username,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFE5E5E5),
+                                  ),
+                                ),
                               ),
-                              style: TextButton.styleFrom(
+                              const SizedBox(width: 4),
+                              IconButton(
+                                onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (_) => _EditUsernameDialog(
+                                    currentUsername: widget.user.username,
+                                    onUpdated: widget.onUpdated,
+                                  ),
+                                ),
+                                icon: const Icon(Icons.edit_outlined, size: 14),
+                                color: const Color(0xFF888888),
                                 padding: EdgeInsets.zero,
-                                alignment: Alignment.centerLeft,
-                                minimumSize: const Size(0, 0),
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                                tooltip: 'Edit username',
                               ),
-                              child: const Text('Add email', style: TextStyle(fontSize: 14, color: Color(0xFF888888))),
-                            ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       onPressed: widget.onLogout,
@@ -1299,65 +1419,6 @@ class _ProfileViewState extends State<_ProfileView> {
                   ),
                 ],
                 const SizedBox(height: 28),
-                _card(
-                  children: [
-                    const Text(
-                      'Username',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _usernameController,
-                            enabled: !_savingUsername,
-                            onSubmitted: (_) => _saveUsername(),
-                            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: const Color(0xFF141414),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: _borderIdle),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: _borderIdle),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: _borderFocused),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: _usernameController,
-                          builder: (context, value, _) {
-                            final unchanged = value.text.trim() == widget.user.username;
-                            return Opacity(
-                              opacity: unchanged ? 0.3 : 1,
-                              child: IconButton(
-                                onPressed: (_savingUsername || unchanged) ? null : _saveUsername,
-                                icon: const Icon(Icons.check),
-                                color: const Color(0xFF888888),
-                                tooltip: 'Save username',
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    if (_usernameError != null) ...[
-                      const SizedBox(height: 6),
-                      Text(_usernameError!, style: const TextStyle(color: _errorRed, fontSize: 12)),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 24),
                 _card(
                   children: [
                     const Text(
@@ -1402,40 +1463,56 @@ class _ProfileViewState extends State<_ProfileView> {
                       'Connected services',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
-                    const SizedBox(height: 16),
-                    _connectedServiceRow(
-                      name: 'Spotify',
-                      colour: findPlatform('spotify')?.colour,
-                      loading: _loadingSpotify,
-                      connected: _spotify.connected,
-                      connectedLabel: _spotify.displayName ?? _spotify.spotifyUserId,
-                      busy: _connectingSpotify,
-                      onConnect: _connectSpotify,
-                      onDisconnect: _disconnectSpotify,
-                    ),
-                    /* Deezer app registration is closed -- re-enable once available.
-                    const SizedBox(height: 20),
-                    _connectedServiceRow(
-                      name: 'Deezer',
-                      colour: findPlatform('deezer')?.colour,
-                      loading: _loadingDeezer,
-                      connected: _deezer.connected,
-                      connectedLabel: _deezer.displayName ?? _deezer.deezerUserId,
-                      busy: _connectingDeezer,
-                      onConnect: _connectDeezer,
-                      onDisconnect: _disconnectDeezer,
-                    ),
-                    */
-                    const SizedBox(height: 20),
-                    _connectedServiceRow(
-                      name: 'SoundCloud',
-                      colour: findPlatform('soundcloud')?.colour,
-                      loading: _loadingSoundcloud,
-                      connected: _soundcloud.connected,
-                      connectedLabel: _soundcloud.displayName ?? _soundcloud.soundcloudUserId,
-                      busy: _connectingSoundcloud,
-                      onConnect: _connectSoundcloud,
-                      onDisconnect: _disconnectSoundcloud,
+                    const SizedBox(height: 8),
+                    GridView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        mainAxisExtent: 48,
+                      ),
+                      children: [
+                        _serviceChip(
+                          context: context,
+                          name: 'Spotify',
+                          icon: findPlatform('spotify')?.icon,
+                          colour: findPlatform('spotify')?.colour,
+                          loading: _loadingSpotify,
+                          connected: _spotify.connected,
+                          busy: _connectingSpotify,
+                          onTap: _spotify.connected
+                              ? () => _confirmDisconnect('Spotify', _disconnectSpotify)
+                              : _connectSpotify,
+                        ),
+                        /* Deezer app registration is closed -- re-enable once available.
+                        _serviceChip(
+                          context: context,
+                          name: 'Deezer',
+                          icon: findPlatform('deezer')?.icon,
+                          colour: findPlatform('deezer')?.colour,
+                          loading: _loadingDeezer,
+                          connected: _deezer.connected,
+                          busy: _connectingDeezer,
+                          onTap: _deezer.connected
+                              ? () => _confirmDisconnect('Deezer', _disconnectDeezer)
+                              : _connectDeezer,
+                        ),
+                        */
+                        _serviceChip(
+                          context: context,
+                          name: 'SoundCloud',
+                          icon: findPlatform('soundcloud')?.icon,
+                          colour: findPlatform('soundcloud')?.colour,
+                          loading: _loadingSoundcloud,
+                          connected: _soundcloud.connected,
+                          busy: _connectingSoundcloud,
+                          onTap: _soundcloud.connected
+                              ? () => _confirmDisconnect('SoundCloud', _disconnectSoundcloud)
+                              : _connectSoundcloud,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1443,7 +1520,7 @@ class _ProfileViewState extends State<_ProfileView> {
                 _card(
                   children: [
                     const Text(
-                      'Preferred platform',
+                      'Preferred service',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
                     const SizedBox(height: 8),
