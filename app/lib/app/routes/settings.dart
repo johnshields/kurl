@@ -552,25 +552,6 @@ class _ProfileViewState extends State<_ProfileView> {
                 _card(
                   children: [
                     const Text(
-                      'Preferred platform',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
-                    ),
-                    const SizedBox(height: 8),
-                    Opacity(
-                      opacity: _savingPlatform ? 0.5 : 1,
-                      child: PlatformPicker(
-                        selected: widget.user.preferredPlatform,
-                        onSelect: _selectPlatform,
-                        onDeselect: _deselectPlatform,
-                        disabled: _savingPlatform,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _card(
-                  children: [
-                    const Text(
                       'Spotify',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
@@ -614,6 +595,25 @@ class _ProfileViewState extends State<_ProfileView> {
                           child: Text(_connectingSpotify ? 'Connecting...' : 'Connect Spotify'),
                         ),
                       ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _card(
+                  children: [
+                    const Text(
+                      'Preferred platform',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    Opacity(
+                      opacity: _savingPlatform ? 0.5 : 1,
+                      child: PlatformPicker(
+                        selected: widget.user.preferredPlatform,
+                        onSelect: _selectPlatform,
+                        onDeselect: _deselectPlatform,
+                        disabled: _savingPlatform,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 32),
