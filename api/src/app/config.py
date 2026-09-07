@@ -132,6 +132,17 @@ class Settings:
     def SOUNDCLOUD_CLIENT_SECRET(self) -> str | None:
         return self._get("SOUNDCLOUD_CLIENT_SECRET")
 
+    # SoundCloud (OAuth 2.1 authorization_code + PKCE -- Sign in with SoundCloud)
+    @property
+    def SOUNDCLOUD_REDIRECT_URI(self) -> str | None:
+        """Must exactly match a redirect URI registered in the SoundCloud app dashboard."""
+        return self._get("SOUNDCLOUD_REDIRECT_URI")
+
+    @property
+    def SOUNDCLOUD_APP_REDIRECT_URL(self) -> str:
+        """Frontend URL the callback bounces the browser back to once done."""
+        return self._get("SOUNDCLOUD_APP_REDIRECT_URL", "https://kurl.online/settings")
+
     # User accounts (session JWT signing key -- distinct from KURL_API_KEY)
     @property
     def SESSION_SECRET(self) -> str | None:

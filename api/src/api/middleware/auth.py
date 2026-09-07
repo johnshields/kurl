@@ -28,6 +28,9 @@ PUBLIC_PATHS = {
     "/api/auth/deezer",
     "/api/auth/deezer/start",
     "/api/auth/deezer/callback",
+    "/api/auth/soundcloud",
+    "/api/auth/soundcloud/start",
+    "/api/auth/soundcloud/callback",
 }
 
 # Static-asset prefixes served by the Worker's [assets] handler.

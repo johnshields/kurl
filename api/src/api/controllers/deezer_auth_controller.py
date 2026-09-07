@@ -48,7 +48,7 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
         logger.warning("Deezer callback missing code/state or carrying an error: %s", error)
         return _app_redirect("error")
 
-    valid, linked_user_uid = verify_oauth_state(state, settings.SESSION_SECRET)
+    valid, linked_user_uid, _ = verify_oauth_state(state, settings.SESSION_SECRET)
     if not valid:
         logger.warning("Deezer callback state failed verification (expired or tampered)")
         return _app_redirect("error")

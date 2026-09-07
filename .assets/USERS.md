@@ -345,3 +345,56 @@ Frontend (edited):
 - Set Worker secrets: `DEEZER_APP_ID`, `DEEZER_APP_SECRET`, `DEEZER_REDIRECT_URI`, optionally `DEEZER_APP_REDIRECT_URL` if not using the `kurl.online/settings` default.
 - Confirm the app's Deezer dashboard quota/review status before relying on this for real users -- not checked, no Deezer app has been registered yet.
 - Not visually verified end-to-end (no real Deezer app registered yet, so the actual OAuth roundtrip hasn't been run) -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through hasn't happened.
+
+## 2026-09-07 (later): Deezer disabled, then Sign in with SoundCloud
+
+Deezer's `developers.deezer.com/myapps` returned "We're not accepting new application creation at this time" -- confirmed live, not a docs claim. `DEEZER_APP_ID`/`SECRET` can't be obtained right now, so the flagged redirect-URI risk above is moot. UI disabled (button, profile card, and their state/handlers/import block-commented in `settings.dart` with a re-enable marker); backend stays committed as-is.
+
+Researched SoundCloud before building, specifically to avoid a second Deezer-shaped wall:
+
+- New app registration is also closed (needs an Artist Pro subscription + a manual approval form) -- irrelevant here, since kurl already has a registered app (`SOUNDCLOUD_CLIENT_ID`/`SECRET` already live for catalog search via `clients/platforms/soundcloud.py`). No new registration needed.
+- SoundCloud's OAuth 2.1 migration (mandatory since October 2024, no exceptions) requires PKCE on the authorization_code grant -- a code-level requirement, not a re-approval step. Confirmed via `python-social-auth`/`PHPoAuthLib` source and SoundCloud's own migration blog post.
+- Redirect URI is set in the existing app's dashboard at `soundcloud.com/you/apps`, editable at any time -- not locked in at a now-closed registration step like Deezer's.
+- Token exchange takes `client_id`/`client_secret` in the form body, not HTTP Basic auth like Spotify -- a different dialect, confirmed via SoundCloud's docs and cross-checked against `python-social-auth`'s backend.
+- `GET /me` has no email field (only `primary_email_confirmed`, with no value alongside it) -- confirmed via the OpenAPI schema. Sign-in here can only match an existing account by `soundcloud_user_id`, never by email.
+
+### Decisions made (built)
+
+- **PKCE state carrier**: `utils/oauth_state.py` generalised to also carry an optional `verifier` claim (`create_oauth_state(secret, user_uid=None, verifier=None)`, `verify_oauth_state` now returns a 3-tuple) rather than building a parallel state mechanism -- SoundCloud's `state` param is standard OAuth2.1 and does round-trip, but PKCE's `code_verifier` is never handed back by the provider, so the server has to remember it itself between `/start` and `/callback`; the signed state token already does exactly that job for `user_uid`. Both existing callers (Spotify, Deezer) updated to the 3-tuple, ignoring the third field.
+- **Token exchange**: does not reuse `clients/platforms/_oauth.py`'s `fetch_authorization_code_token` (Basic-auth dialect) -- `clients/soundcloud_oauth_client.py` posts the form body directly, same reasoning as Deezer's standalone client.
+- **Identity resolution**: no match-by-email path (impossible, no email available) -- `_resolve_user()` only checks `soundcloud_user_id`, else creates a fresh no-email account, same as any Spotify/Deezer-created identity-only account.
+- **Storage**: `soundcloud_accounts` table, mirrors `spotify_accounts` including a `refresh_token` column (SoundCloud does issue one, ~1h access token lifetime).
+
+### Touch points (as built)
+
+Backend (new):
+- `api/src/db/schemas/soundcloud_accounts.sql`, `api/src/db/queries/soundcloud_accounts.py`, `api/src/models/soundcloud_account.py`
+- `api/src/clients/soundcloud_oauth_client.py` -- PKCE pair generation, authorize URL, code exchange, `/me` fetch
+- `api/src/api/controllers/soundcloud_auth_controller.py`, `api/src/api/routes/soundcloud_auth.py`
+- `api/src/__tests__/unit/test_soundcloud_auth_controller.py`
+
+Backend (edited):
+- `api/src/utils/oauth_state.py` -- optional PKCE `verifier` claim; `api/src/__tests__/unit/test_oauth_state.py` updated for the 3-tuple return, new `TestPkceVerifier` cases
+- `api/src/api/controllers/spotify_auth_controller.py`, `api/src/api/controllers/deezer_auth_controller.py` -- 1-line adaptation to the 3-tuple `verify_oauth_state` return
+- `api/src/app/constants/apis.py` -- `SOUNDCLOUD_AUTHORIZE_URL`, `SOUNDCLOUD_OAUTH_TOKEN_URL` (distinct from the existing `SOUNDCLOUD_TOKEN_URL`, which is the older `api.soundcloud.com` client_credentials endpoint used by the catalog client)
+- `api/src/app/config.py` -- `SOUNDCLOUD_REDIRECT_URI`, `SOUNDCLOUD_APP_REDIRECT_URL`
+- `api/src/api/router.py` -- `GET /api/auth/soundcloud`, `GET /api/auth/soundcloud/start`, `GET /api/auth/soundcloud/callback`, `DELETE /api/auth/soundcloud`
+- `api/src/api/middleware/auth.py` -- all four paths added to `PUBLIC_PATHS`
+- `api/src/entry.py` -- `SOUNDCLOUD_REDIRECT_URI`/`SOUNDCLOUD_APP_REDIRECT_URL` added to `_SECRET_KEYS` (`SOUNDCLOUD_CLIENT_ID`/`SECRET` were already present)
+
+Frontend (new):
+- `app/lib/models/soundcloud_account.dart`
+
+Frontend (edited):
+- `app/lib/services/auth_service.dart` -- `getSoundcloudStatus`, `startSoundcloudAuth`, `disconnectSoundcloud`
+- `app/lib/app/routes/settings.dart` -- "Continue with SoundCloud" button on the sign-in form; SoundCloud card (Connect / Connected as X + Disconnect) in the profile view, between Preferred platform and the (disabled) Deezer card; reads `?soundcloud=connected|error` on return, same toast pattern as Spotify
+
+300 backend tests pass (added 18), `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+### Before deploying
+
+- Add the redirect URI to the existing app at `soundcloud.com/you/apps` -- must exactly match `SOUNDCLOUD_REDIRECT_URI` (e.g. `https://api.kurl.online/api/auth/soundcloud/callback`).
+- Set Worker secrets: `SOUNDCLOUD_REDIRECT_URI`, optionally `SOUNDCLOUD_APP_REDIRECT_URL` if not using the `kurl.online/settings` default (`SOUNDCLOUD_CLIENT_ID`/`SECRET` already set from the catalog integration).
+- Apply `api/src/db/schemas/soundcloud_accounts.sql` to D1 by hand.
+- **Real unknown, flagged honestly**: whether kurl's already-approved SoundCloud app has the authorization_code/user sign-in grant enabled, as distinct from the client_credentials catalog-search grant it's used for so far. Nothing found suggests SoundCloud tiers this separately, but it hasn't been confirmed against the real app. If `/start` or the callback fails, check `wrangler tail` on a real attempt.
+- Not visually verified end-to-end -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through hasn't happened.

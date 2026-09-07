@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 // import 'package:kurl/models/deezer_account.dart'; -- Deezer app registration is closed, re-enable once available.
 import 'package:kurl/models/platform.dart';
+import 'package:kurl/models/soundcloud_account.dart';
 import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_exception.dart';
@@ -31,6 +32,12 @@ Future<String?> _launchDeezerAuth() async {
   return url;
 }
 */
+
+Future<String?> _launchSoundcloudAuth() async {
+  final url = await AuthService.startSoundcloudAuth();
+  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+  return url;
+}
 
 void _showToast(BuildContext context, String message) {
   final overlay = Overlay.of(context);
@@ -516,6 +523,7 @@ class _AuthFormState extends State<_AuthForm> {
   bool _obscureConfirmPassword = true;
   bool _spotifyLoading = false;
   // bool _deezerLoading = false; -- Deezer app registration is closed, re-enable once available.
+  bool _soundcloudLoading = false;
   String? _error;
 
   Future<void> _signInWithSpotify() async {
@@ -549,6 +557,21 @@ class _AuthFormState extends State<_AuthForm> {
     }
   }
   */
+
+  Future<void> _signInWithSoundcloud() async {
+    setState(() {
+      _soundcloudLoading = true;
+      _error = null;
+    });
+    try {
+      final url = await _launchSoundcloudAuth();
+      if (url == null && mounted) {
+        setState(() => _error = 'SoundCloud sign-in is not available right now.');
+      }
+    } finally {
+      if (mounted) setState(() => _soundcloudLoading = false);
+    }
+  }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
@@ -613,6 +636,7 @@ class _AuthFormState extends State<_AuthForm> {
   @override
   Widget build(BuildContext context) {
     final spotify = findPlatform('spotify');
+    final soundcloud = findPlatform('soundcloud');
 
     return SingleChildScrollView(
       child: Center(
@@ -681,6 +705,27 @@ class _AuthFormState extends State<_AuthForm> {
                   ),
                 ),
                 */
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: (_loading || _soundcloudLoading) ? null : _signInWithSoundcloud,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFE5E5E5),
+                      side: BorderSide(color: soundcloud?.colour ?? _borderIdle),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(soundcloud?.icon, size: 18, color: soundcloud?.colour),
+                        const SizedBox(width: 8),
+                        Text(_soundcloudLoading ? 'Connecting...' : 'Continue with SoundCloud'),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -815,6 +860,9 @@ class _ProfileViewState extends State<_ProfileView> {
   // DeezerAccount _deezer = DeezerAccount.disconnected;
   // bool _loadingDeezer = true;
   // bool _connectingDeezer = false;
+  SoundcloudAccount _soundcloud = SoundcloudAccount.disconnected;
+  bool _loadingSoundcloud = true;
+  bool _connectingSoundcloud = false;
   bool _resendingVerification = false;
 
   @override
@@ -822,7 +870,9 @@ class _ProfileViewState extends State<_ProfileView> {
     super.initState();
     _usernameController = TextEditingController(text: widget.user.username);
     _loadSpotifyStatus();
+    _loadSoundcloudStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showSoundcloudReturnMessage());
     WidgetsBinding.instance.addPostFrameCallback((_) => _showVerifyEmailMessage());
   }
 
@@ -830,6 +880,12 @@ class _ProfileViewState extends State<_ProfileView> {
     final spotifyParam = Uri.base.queryParameters['spotify'];
     if (spotifyParam == null || !mounted) return;
     _showToast(context, spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed');
+  }
+
+  void _showSoundcloudReturnMessage() {
+    final soundcloudParam = Uri.base.queryParameters['soundcloud'];
+    if (soundcloudParam == null || !mounted) return;
+    _showToast(context, soundcloudParam == 'connected' ? 'SoundCloud connected' : 'SoundCloud connection failed');
   }
 
   void _showVerifyEmailMessage() {
@@ -878,6 +934,25 @@ class _ProfileViewState extends State<_ProfileView> {
   }
   */
 
+  Future<void> _loadSoundcloudStatus() async {
+    final status = await AuthService.getSoundcloudStatus();
+    if (mounted) {
+      setState(() {
+        _soundcloud = status;
+        _loadingSoundcloud = false;
+      });
+    }
+  }
+
+  Future<void> _connectSoundcloud() async {
+    setState(() => _connectingSoundcloud = true);
+    try {
+      await _launchSoundcloudAuth();
+    } finally {
+      if (mounted) setState(() => _connectingSoundcloud = false);
+    }
+  }
+
   Future<void> _resendVerification() async {
     setState(() => _resendingVerification = true);
     try {
@@ -915,6 +990,17 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
   */
+
+  Future<void> _disconnectSoundcloud() async {
+    setState(() => _connectingSoundcloud = true);
+    try {
+      await AuthService.disconnectSoundcloud();
+      if (mounted) setState(() => _soundcloud = SoundcloudAccount.disconnected);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _connectingSoundcloud = false);
+    }
+  }
 
   @override
   void didUpdateWidget(covariant _ProfileView oldWidget) {
@@ -1250,6 +1336,55 @@ class _ProfileViewState extends State<_ProfileView> {
                   ],
                 ),
                 */
+                const SizedBox(height: 24),
+                _card(
+                  children: [
+                    const Text(
+                      'SoundCloud',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_loadingSoundcloud)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
+                      )
+                    else if (_soundcloud.connected)
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle, size: 16, color: findPlatform('soundcloud')?.colour),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connected as ${_soundcloud.displayName ?? _soundcloud.soundcloudUserId}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _connectingSoundcloud ? null : _disconnectSoundcloud,
+                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _connectingSoundcloud ? null : _connectSoundcloud,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE5E5E5),
+                            side: const BorderSide(color: _borderIdle),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          child: Text(_connectingSoundcloud ? 'Connecting...' : 'Connect SoundCloud'),
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 _card(
                   children: [

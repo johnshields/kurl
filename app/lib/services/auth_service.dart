@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kurl/models/deezer_account.dart';
 import 'package:kurl/models/kurl_history_item.dart';
+import 'package:kurl/models/soundcloud_account.dart';
 import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_base.dart';
@@ -183,6 +184,39 @@ class AuthService {
     final base = await resolveApiBase();
     final response = await http.delete(
       Uri.parse('$base/api/auth/deezer'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    _throwIfError(jsonDecode(response.body), response.statusCode);
+  }
+
+  static Future<SoundcloudAccount> getSoundcloudStatus() async {
+    final data = await _authedGet('/api/auth/soundcloud');
+    return data == null ? SoundcloudAccount.disconnected : SoundcloudAccount.fromJson(data);
+  }
+
+  /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
+  /// (link mode) or signed-out (full sign-in).
+  static Future<String?> startSoundcloudAuth() async {
+    final results = await Future.wait([getToken(), resolveApiBase()]);
+    final token = results[0];
+    final base = results[1]!;
+    final response = await http.get(
+      Uri.parse('$base/api/auth/soundcloud/start'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    final json = jsonDecode(response.body);
+    if (json['status'] == 'error') return null;
+    return json['data']?['url'];
+  }
+
+  static Future<void> disconnectSoundcloud() async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final response = await http.delete(
+      Uri.parse('$base/api/auth/soundcloud'),
       headers: {'Authorization': 'Bearer $token'},
     );
     _throwIfError(jsonDecode(response.body), response.statusCode);

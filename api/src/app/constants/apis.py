@@ -14,6 +14,8 @@ YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed?url=https://www.youtube.com
 
 SOUNDCLOUD_API_BASE = "https://api.soundcloud.com"
 SOUNDCLOUD_TOKEN_URL = "https://api.soundcloud.com/oauth2/token"
+SOUNDCLOUD_AUTHORIZE_URL = "https://secure.soundcloud.com/authorize"
+SOUNDCLOUD_OAUTH_TOKEN_URL = "https://secure.soundcloud.com/oauth/token"
 
 TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
 TIDAL_API_BASE = "https://openapi.tidal.com/v2"
