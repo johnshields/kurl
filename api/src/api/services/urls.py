@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from api.controllers import kurls_controller
 from app.constants import PLATFORMS
 from clients import cache, metadata
+from clients.platforms import deezer
 from clients.resolvers import itunes, odesli
 from utils.http.errors import ApiError
 from utils.http.response import json_error, json_success
@@ -36,6 +37,23 @@ async def _record_if_signed_in(db, user_uid: str | None, url: str, result: dict)
         title=result.get("title"),
         artist=result.get("artist"),
     )
+
+
+async def _fetch_artwork(title: str | None, artist: str | None) -> str | None:
+    """Hi-res artwork -- iTunes first, Deezer as fallback when iTunes misses
+    (rate-limited or no match), since Deezer's public API isn't subject to
+    Apple's shared-pool rate limit."""
+    artwork = await itunes.fetch_artwork(title, artist)
+    if artwork:
+        return artwork
+    if not title or not artist:
+        return None
+    try:
+        track = await deezer.search_track(title, artist)
+    except Exception as e:
+        logger.warning("Deezer artwork search failed: %s", e)
+        return None
+    return deezer.extract_artwork(track) if track else None
 
 
 async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=None, user_uid: str | None = None):
@@ -83,7 +101,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
             match = await kurl_direct(parsed_full, target_platform)
             if match:
                 logger.info("Direct kurl: %s - %s -> %s (via %s)", match.artist, match.title, match.url, match.via)
-                artwork = await itunes.fetch_artwork(match.title, match.artist)
+                artwork = await _fetch_artwork(match.title, match.artist)
                 result = {
                     "title": match.title,
                     "artist": match.artist,
@@ -171,7 +189,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
 
-    artwork = await itunes.fetch_artwork(title, artist)
+    artwork = await _fetch_artwork(title, artist)
     result = {
         "title": title,
         "artist": artist,

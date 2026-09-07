@@ -85,6 +85,10 @@ def extract_artist_url(artist: dict) -> str | None:
     return artist.get("link")
 
 
+def extract_artwork(track: dict) -> str | None:
+    return track.get("album", {}).get("cover_xl")
+
+
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     title = track.get("title")
     artist = track.get("artist", {}).get("name")
