@@ -18,7 +18,7 @@ class KurlUser {
   factory KurlUser.fromJson(Map<String, dynamic> json) {
     return KurlUser(
       uid: json['uid'],
-      email: json['email'],
+      email: json['email'] ?? '',
       username: json['username'],
       preferredPlatform: json['preferredPlatform'],
       emailVerified: json['emailVerified'] ?? false,
