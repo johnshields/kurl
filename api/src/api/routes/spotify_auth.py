@@ -1,9 +1,8 @@
 """
 Spotify Auth Routes
-HTTP endpoints for linking/unlinking a Spotify account (Sign in with
-Spotify). The callback is hit directly by Spotify's browser redirect, so
-it carries no session header -- see spotify_auth_controller for how it
-authenticates via the state param instead.
+HTTP endpoints for Sign in with Spotify. The callback carries no session
+header (Spotify's own redirect) -- see spotify_auth_controller for the
+state-based auth instead.
 """
 
 from urllib.parse import parse_qs, urlparse
@@ -22,9 +21,7 @@ async def status(db, request):
 
 
 async def start(db, request):
-    # No session required -- this doubles as full sign-in for a visitor with
-    # no kurl account yet. A valid session (if present) switches it to link
-    # mode instead, tying Spotify to that account -- see oauth_state.py.
+    # No session required -- full sign-in when absent, link mode when present.
     user_uid = get_session_user_uid(request)
     url = spotify_auth_controller.build_authorize_url(user_uid)
     if not url:

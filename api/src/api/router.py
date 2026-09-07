@@ -134,7 +134,7 @@ async def _auth_update_profile(db, request, **kwargs):
     return await auth.update_profile(db, request)
 
 
-# Sign in with Spotify (linking an existing kurl account to Spotify)
+# Sign in with Spotify (sign-in for a new visitor, or linking an existing account)
 
 
 @route("GET", "/api/auth/spotify")

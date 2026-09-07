@@ -120,7 +120,8 @@ class TestHandleCallback:
                 url = await spotify_auth_controller.handle_callback(
                     db=object(), code="a-code", state=state, error=None
                 )
-        assert url.startswith("https://kurl.online/settings?spotify=connected&token=")
+        # Already had a session -- no new token minted or handed back.
+        assert url == "https://kurl.online/settings?spotify=connected"
         execute_mock.assert_awaited_once()
         args = execute_mock.await_args.args
         assert args[-7] == "USR_LINKED"
@@ -183,7 +184,7 @@ class TestHandleCallback:
             ), patch(
                 "api.controllers.spotify_auth_controller.fetch_one", _fetch_one_stub()
             ), patch(
-                "api.controllers.auth_controller.unique_username", AsyncMock(return_value="brave-otter")
+                "api.controllers.spotify_auth_controller.unique_username", AsyncMock(return_value="brave-otter")
             ), patch("api.controllers.spotify_auth_controller.execute", execute_mock):
                 url = await spotify_auth_controller.handle_callback(
                     db=object(), code="a-code", state=state, error=None

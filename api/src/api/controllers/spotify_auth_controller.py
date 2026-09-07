@@ -1,18 +1,13 @@
 """
 Spotify Auth Controller
-Sign in with Spotify. Two modes through the same authorize/callback flow:
-
-- Anonymous (no session at /start) -- full sign-in. The callback finds an
-  existing kurl account for this Spotify identity (by prior link, then by
-  matching email), or creates a brand-new one, then issues a session token.
-- Linked (a valid session at /start) -- "Connect Spotify" from Settings,
-  ties Spotify to that already-signed-in account instead.
-
-Phase A scope: identity only, no library/playlist scopes.
+Sign in with Spotify -- one flow, two modes: anonymous (find/create an
+account) or linked (tie Spotify to an already-signed-in session). Phase A:
+identity only, no library/playlist scopes.
 """
 
 from datetime import UTC, datetime, timedelta
 
+from api.controllers.auth_controller import unique_username
 from app.config import settings
 from clients import spotify_oauth_client
 from db.db import execute, fetch_one
@@ -46,11 +41,9 @@ def build_authorize_url(user_uid: str | None) -> str | None:
 
 
 async def handle_callback(db, code: str | None, state: str | None, error: str | None) -> str:
-    """Exchanges the code, links/creates the account, and returns the URL to
-    send the browser to -- this is a browser redirect, so errors never
-    become an API error response, only a different query param on the same
-    redirect. On success the redirect also carries a session token so a
-    brand-new (anonymous sign-in) session is picked up by the app."""
+    """Returns the URL to redirect the browser to -- errors become a query
+    param on the redirect, not an API error response. Success also carries
+    a session token so a new anonymous sign-in is picked up by the app."""
     if error or not code or not state:
         logger.warning("Spotify callback missing code/state or carrying an error: %s", error)
         return _app_redirect("error")
@@ -100,7 +93,8 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
     )
     logger.info("Linked Spotify account %s for %s", spotify_user_id, user_uid)
 
-    session_token = create_session_token(user_uid, settings.SESSION_SECRET)
+    # Already had a session (link mode) -- no need to mint or hand back a new one.
+    session_token = None if linked_user_uid else create_session_token(user_uid, settings.SESSION_SECRET)
     return _app_redirect("connected", session_token)
 
 
@@ -110,14 +104,11 @@ async def _resolve_user(db, spotify_user_id: str, email: str | None) -> str:
     if linked:
         return linked["user_uid"]
 
-    if email:
-        existing = await fetch_one(db, user_queries.GET_BY_EMAIL, email)
-        if existing:
-            return existing["uid"]
+    async def _by_email():
+        return await fetch_one(db, user_queries.GET_BY_EMAIL, email) if email else None
 
-    # Deferred import -- avoids a hard dependency cycle between the two
-    # controllers; auth_controller doesn't otherwise need to know about Spotify.
-    from api.controllers.auth_controller import unique_username
+    if existing := await _by_email():
+        return existing["uid"]
 
     uid = gen_uid("USR")
     username = await unique_username(db)
@@ -125,10 +116,8 @@ async def _resolve_user(db, spotify_user_id: str, email: str | None) -> str:
         await execute(db, user_queries.INSERT, *to_user_db_params(uid, email, username, None))
     except Exception as e:
         # Rare race: another request just took this email -- use that account.
-        if email:
-            existing = await fetch_one(db, user_queries.GET_BY_EMAIL, email)
-            if existing:
-                return existing["uid"]
+        if existing := await _by_email():
+            return existing["uid"]
         logger.warning("Failed to create account for Spotify sign-in: %s", e)
         raise
     logger.info("Created account %s (%s) via Spotify sign-in", uid, username)

@@ -13,6 +13,15 @@ const _errorRed = Color(0xFFEF4444);
 const _borderIdle = Color(0xFF333333);
 const _borderFocused = Color(0xFF555555);
 
+/// Shared by both the sign-in screen and the profile view's Connect button --
+/// starts the Spotify OAuth flow and navigates there. Returns the URL that
+/// was opened, or null if Spotify sign-in isn't available right now.
+Future<String?> _launchSpotifyAuth() async {
+  final url = await AuthService.startSpotifyAuth();
+  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+  return url;
+}
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -31,9 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadProfile() async {
-    // A brand-new session from Sign in with Spotify arrives as a URL param
-    // rather than already-stored, since the redirect can't set anything
-    // beyond the URL itself.
+    // Sign in with Spotify hands back the token via the redirect URL, not storage.
     final redirectToken = Uri.base.queryParameters['token'];
     if (redirectToken != null) await AuthService.adoptSessionToken(redirectToken);
 
@@ -98,12 +105,10 @@ class _AuthFormState extends State<_AuthForm> {
       _error = null;
     });
     try {
-      final url = await AuthService.startSpotifyAuth();
-      if (url == null) {
-        if (mounted) setState(() => _error = 'Spotify sign-in is not available right now.');
-        return;
+      final url = await _launchSpotifyAuth();
+      if (url == null && mounted) {
+        setState(() => _error = 'Spotify sign-in is not available right now.');
       }
-      await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
     } finally {
       if (mounted) setState(() => _spotifyLoading = false);
     }
@@ -171,6 +176,8 @@ class _AuthFormState extends State<_AuthForm> {
 
   @override
   Widget build(BuildContext context) {
+    final spotify = findPlatform('spotify');
+
     return SingleChildScrollView(
       child: Center(
         child: ConstrainedBox(
@@ -201,14 +208,14 @@ class _AuthFormState extends State<_AuthForm> {
                     onPressed: (_loading || _spotifyLoading) ? null : _signInWithSpotify,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFE5E5E5),
-                      side: BorderSide(color: findPlatform('spotify')?.colour ?? _borderIdle),
+                      side: BorderSide(color: spotify?.colour ?? _borderIdle),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(findPlatform('spotify')?.icon, size: 18, color: findPlatform('spotify')?.colour),
+                        Icon(spotify?.icon, size: 18, color: spotify?.colour),
                         const SizedBox(width: 8),
                         Text(_spotifyLoading ? 'Connecting...' : 'Continue with Spotify'),
                       ],
@@ -221,7 +228,7 @@ class _AuthFormState extends State<_AuthForm> {
                     const Expanded(child: Divider(color: _borderIdle)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('or', style: const TextStyle(color: Color(0xFF555555), fontSize: 12)),
+                      child: const Text('or', style: TextStyle(color: Color(0xFF555555), fontSize: 12)),
                     ),
                     const Expanded(child: Divider(color: _borderIdle)),
                   ],
@@ -361,8 +368,7 @@ class _ProfileViewState extends State<_ProfileView> {
   Future<void> _connectSpotify() async {
     setState(() => _connectingSpotify = true);
     try {
-      final url = await AuthService.startSpotifyAuth();
-      if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+      await _launchSpotifyAuth();
     } finally {
       if (mounted) setState(() => _connectingSpotify = false);
     }

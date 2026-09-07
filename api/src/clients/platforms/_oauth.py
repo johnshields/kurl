@@ -1,13 +1,8 @@
 """
 OAuth helpers
-TokenCache holds a token + expiry with a 60s safety window. Works for both
-client-credentials OAuth (Spotify, Tidal) and locally-signed JWTs
-(Apple Music) via get_cached/store.
-
-fetch_authorization_code_token/refresh_authorization_token are a separate
-grant type -- user-authorised (Sign in with Spotify), not app-only. They
-don't use TokenCache: those tokens are per-user and persisted in D1, not
-cached in-process.
+TokenCache holds a token + expiry with a 60s safety window (client_credentials
+and locally-signed JWTs). The authorization_code/refresh_token functions
+below are per-user (Sign in with Spotify) -- persisted in D1, not cached here.
 """
 
 import base64
@@ -57,13 +52,15 @@ class TokenCache:
         return self.store(token, expires_in)
 
 
-async def fetch_client_credentials_token(
+async def _request_token(
     http_client: httpx.AsyncClient,
     token_url: str,
     client_id: str,
     client_secret: str,
-) -> tuple[str, int]:
-    """Fetch an OAuth token via client_credentials grant. Returns (token, expires_in)."""
+    data: dict,
+) -> dict:
+    """POST a token request with HTTP Basic auth (client_id:client_secret).
+    Shared by every grant type below -- only the form body differs."""
     credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
     response = await http_client.post(
         token_url,
@@ -71,10 +68,22 @@ async def fetch_client_credentials_token(
             "Authorization": f"Basic {credentials}",
             "Content-Type": "application/x-www-form-urlencoded",
         },
-        data={"grant_type": "client_credentials"},
+        data=data,
     )
     response.raise_for_status()
-    data = response.json()
+    return response.json()
+
+
+async def fetch_client_credentials_token(
+    http_client: httpx.AsyncClient,
+    token_url: str,
+    client_id: str,
+    client_secret: str,
+) -> tuple[str, int]:
+    """Fetch an OAuth token via client_credentials grant. Returns (token, expires_in)."""
+    data = await _request_token(
+        http_client, token_url, client_id, client_secret, {"grant_type": "client_credentials"}
+    )
     return data["access_token"], data.get("expires_in", 3600)
 
 
@@ -92,39 +101,10 @@ async def fetch_authorization_code_token(
     payload -- unlike fetch_client_credentials_token, callers need more than
     just the access token here.
     """
-    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-    response = await http_client.post(
+    return await _request_token(
+        http_client,
         token_url,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri},
+        client_id,
+        client_secret,
+        {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri},
     )
-    response.raise_for_status()
-    return response.json()
-
-
-async def refresh_authorization_token(
-    http_client: httpx.AsyncClient,
-    token_url: str,
-    client_id: str,
-    client_secret: str,
-    refresh_token: str,
-) -> dict:
-    """Exchange a refresh token for a new access token (refresh_token grant).
-
-    Spotify may or may not return a new refresh_token in the response --
-    callers should keep the old one when it's absent.
-    """
-    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-    response = await http_client.post(
-        token_url,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
-    )
-    response.raise_for_status()
-    return response.json()

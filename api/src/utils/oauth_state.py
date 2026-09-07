@@ -1,14 +1,8 @@
 """
 OAuth State Token
-Short-lived, signed state param for a Spotify OAuth roundtrip. Separate from
-session.py's 30-day session tokens -- different lifetime and purpose, same
-signing secret.
-
-Carries an optional subject (user_uid):
-- Present -- the request came from an already-signed-in session that wants
-  to link Spotify to its own account ("Connect Spotify" from Settings).
-- Absent -- an anonymous "Sign in with Spotify" attempt; the callback finds
-  or creates the account instead of assuming one already exists.
+Short-lived, signed state param for a Spotify OAuth roundtrip -- separate
+from session.py's 30-day session tokens. An optional subject (user_uid)
+present means link mode; absent means anonymous sign-in.
 """
 
 import time

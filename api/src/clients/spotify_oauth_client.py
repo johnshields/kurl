@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 from app.constants import SPOTIFY_API_BASE, SPOTIFY_AUTHORIZE_URL, SPOTIFY_TOKEN_URL
 from clients._http import get_client
-from clients.platforms._oauth import fetch_authorization_code_token, refresh_authorization_token
+from clients.platforms._oauth import fetch_authorization_code_token
 
 # Identity only -- no library/playlist scopes requested in phase A.
 SCOPES = "user-read-email"
@@ -35,17 +35,6 @@ async def exchange_code(client_id: str, client_secret: str, code: str, redirect_
         client_secret,
         code,
         redirect_uri,
-    )
-
-
-async def refresh(client_id: str, client_secret: str, refresh_token: str) -> dict:
-    """Returns {access_token, expires_in, ...} -- refresh_token only present if Spotify rotated it."""
-    return await refresh_authorization_token(
-        get_client("spotify_oauth"),
-        SPOTIFY_TOKEN_URL,
-        client_id,
-        client_secret,
-        refresh_token,
     )
 
 

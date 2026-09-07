@@ -65,13 +65,7 @@ class AuthService {
       }),
     );
     final json = jsonDecode(response.body);
-    if (json['status'] == 'error') {
-      throw ApiException(
-        code: json['code'] as String? ?? 'INTERNAL_ERROR',
-        message: json['message'] as String? ?? 'Request failed',
-        status: response.statusCode,
-      );
-    }
+    _throwIfError(json, response.statusCode);
     return KurlUser.fromJson(json['data']);
   }
 
@@ -91,14 +85,7 @@ class AuthService {
       Uri.parse('$base/api/kurls/$uid'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    final json = jsonDecode(response.body);
-    if (json['status'] == 'error') {
-      throw ApiException(
-        code: json['code'] as String? ?? 'INTERNAL_ERROR',
-        message: json['message'] as String? ?? 'Request failed',
-        status: response.statusCode,
-      );
-    }
+    _throwIfError(jsonDecode(response.body), response.statusCode);
   }
 
   static Future<SpotifyAccount> getSpotifyStatus() async {
@@ -106,14 +93,12 @@ class AuthService {
     return data == null ? SpotifyAccount.disconnected : SpotifyAccount.fromJson(data);
   }
 
-  /// Returns the Spotify authorize URL to open, or null if not configured
-  /// or the request fails. Works whether or not the caller is signed in --
-  /// no session = full sign-in (find or create an account); a session
-  /// present = link Spotify to that account instead. See the API's
-  /// oauth_state.py for how the two modes are distinguished server-side.
+  /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
+  /// (link mode) or signed-out (full sign-in).
   static Future<String?> startSpotifyAuth() async {
-    final token = await getToken();
-    final base = await resolveApiBase();
+    final results = await Future.wait([getToken(), resolveApiBase()]);
+    final token = results[0];
+    final base = results[1]!;
     final response = await http.get(
       Uri.parse('$base/api/auth/spotify/start'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
@@ -137,14 +122,7 @@ class AuthService {
       Uri.parse('$base/api/auth/spotify'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    final json = jsonDecode(response.body);
-    if (json['status'] == 'error') {
-      throw ApiException(
-        code: json['code'] as String? ?? 'INTERNAL_ERROR',
-        message: json['message'] as String? ?? 'Request failed',
-        status: response.statusCode,
-      );
-    }
+    _throwIfError(jsonDecode(response.body), response.statusCode);
   }
 
   static Future<void> _saveToken(String token) async {
@@ -161,14 +139,17 @@ class AuthService {
       body: jsonEncode(body),
     );
     final json = jsonDecode(response.body);
-    if (json['status'] == 'error') {
-      throw ApiException(
-        code: json['code'] as String? ?? 'INTERNAL_ERROR',
-        message: json['message'] as String? ?? 'Request failed',
-        status: response.statusCode,
-      );
-    }
+    _throwIfError(json, response.statusCode);
     return json['data'];
+  }
+
+  static void _throwIfError(Map<String, dynamic> json, int statusCode) {
+    if (json['status'] != 'error') return;
+    throw ApiException(
+      code: json['code'] as String? ?? 'INTERNAL_ERROR',
+      message: json['message'] as String? ?? 'Request failed',
+      status: statusCode,
+    );
   }
 
   /// Null on logged-out, no session, or an invalid/expired token -- clears

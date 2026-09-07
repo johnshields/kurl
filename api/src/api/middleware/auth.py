@@ -20,9 +20,8 @@ PUBLIC_PATHS = {
     "/api/auth/login",
     "/api/auth/profile",
     "/api/kurls",
-    # Sign in with Spotify -- start/status/disconnect are session-gated same
-    # as the rest of /api/auth/*; callback carries no session header at all
-    # (it's Spotify's own browser redirect), authenticated via state instead.
+    # Sign in with Spotify -- start works with or without a session (sign-in
+    # vs link mode); callback is state-authenticated, not session-gated.
     "/api/auth/spotify",
     "/api/auth/spotify/start",
     "/api/auth/spotify/callback",
