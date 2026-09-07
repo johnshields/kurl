@@ -138,7 +138,7 @@ class _KurlsList extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Kurls',
+                  'kurls',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,

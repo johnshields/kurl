@@ -23,6 +23,34 @@ Future<String?> _launchSpotifyAuth() async {
   return url;
 }
 
+void _showToast(BuildContext context, String message) {
+  final overlay = Overlay.of(context);
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (context) => Positioned(
+      left: 24,
+      right: 24,
+      bottom: 96,
+      child: Center(
+        child: Material(
+          color: const Color(0xFF222222),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: _borderIdle),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(message, style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 13)),
+          ),
+        ),
+      ),
+    ),
+  );
+  overlay.insert(entry);
+  Future.delayed(const Duration(seconds: 2), entry.remove);
+}
+
 class _ForgotPasswordDialog extends StatefulWidget {
   const _ForgotPasswordDialog();
 
@@ -148,7 +176,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       if (mounted) {
         widget.onUpdated(updated);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+        _showToast(context, 'Password updated');
       }
     } catch (e) {
       if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
@@ -747,16 +775,13 @@ class _ProfileViewState extends State<_ProfileView> {
   void _showSpotifyReturnMessage() {
     final spotifyParam = Uri.base.queryParameters['spotify'];
     if (spotifyParam == null || !mounted) return;
-    final message = spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    _showToast(context, spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed');
   }
 
   void _showVerifyEmailMessage() {
     if (Uri.base.queryParameters['verify'] == null || !mounted) return;
     updateUrlState();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(widget.user.emailVerified ? 'Email verified' : 'Verification link invalid or expired')),
-    );
+    _showToast(context, widget.user.emailVerified ? 'Email verified' : 'Verification link invalid or expired');
   }
 
   Future<void> _loadSpotifyStatus() async {
@@ -782,9 +807,7 @@ class _ProfileViewState extends State<_ProfileView> {
     setState(() => _resendingVerification = true);
     try {
       await AuthService.resendVerification();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Verification email sent')));
-      }
+      if (mounted) _showToast(context, 'Verification email sent');
     } catch (_) {
       // Best-effort -- no feedback needed beyond the button re-enabling.
     } finally {
@@ -878,7 +901,7 @@ class _ProfileViewState extends State<_ProfileView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Settings',
+                  'settings',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -904,7 +927,19 @@ class _ProfileViewState extends State<_ProfileView> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(widget.user.email, style: const TextStyle(fontSize: 14, color: Color(0xFF888888))),
+                    Expanded(
+                      child: Text(
+                        widget.user.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: widget.onLogout,
+                      icon: const Icon(Icons.logout_rounded, size: 20, color: _errorRed),
+                      tooltip: 'Log out',
+                    ),
                   ],
                 ),
                 if (widget.user.email.isNotEmpty && !widget.user.emailVerified) ...[
@@ -929,7 +964,7 @@ class _ProfileViewState extends State<_ProfileView> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 _card(
                   children: [
                     const Text(
@@ -988,7 +1023,7 @@ class _ProfileViewState extends State<_ProfileView> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _card(
                   children: [
                     const Text(
@@ -996,25 +1031,37 @@ class _ProfileViewState extends State<_ProfileView> {
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (_) => _ChangePasswordDialog(onUpdated: widget.onUpdated),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF141414),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: _borderIdle),
+                            ),
+                            child: const Text(
+                              '••••••••',
+                              style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5), letterSpacing: 2),
+                            ),
+                          ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFE5E5E5),
-                          side: const BorderSide(color: _borderIdle),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => _ChangePasswordDialog(onUpdated: widget.onUpdated),
+                          ),
+                          icon: const Icon(Icons.edit_outlined),
+                          color: const Color(0xFF888888),
+                          tooltip: 'Change password',
                         ),
-                        child: const Text('Change password'),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _card(
                   children: [
                     const Text(
@@ -1063,7 +1110,7 @@ class _ProfileViewState extends State<_ProfileView> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _card(
                   children: [
                     const Text(
@@ -1081,31 +1128,6 @@ class _ProfileViewState extends State<_ProfileView> {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: widget.onLogout,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _errorRed,
-                      foregroundColor: const Color(0xFF0A0A0A),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.logout_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Log out',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),

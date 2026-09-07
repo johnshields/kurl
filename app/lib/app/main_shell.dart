@@ -20,9 +20,9 @@ class _MainShellState extends State<MainShell> {
   late int _selectedIndex = _tabs.indexWhere((t) => t.path == currentTabPath()).clamp(0, _tabs.length - 1);
 
   late final _tabs = <_TabEntry>[
-    (tab: const NavTab(icon: Icons.home_rounded, label: 'Home'), screen: const KurlScreen(), path: '/'),
-    (tab: const NavTab(icon: Icons.link_rounded, label: 'Kurls'), screen: KurlsScreen(key: _kurlsKey), path: '/kurls'),
-    (tab: const NavTab(icon: Icons.settings_rounded, label: 'Settings'), screen: const SettingsScreen(), path: '/settings'),
+    (tab: const NavTab(icon: Icons.home_rounded, label: 'home'), screen: const KurlScreen(), path: '/'),
+    (tab: const NavTab(icon: Icons.link_rounded, label: 'kurls'), screen: KurlsScreen(key: _kurlsKey), path: '/kurls'),
+    (tab: const NavTab(icon: Icons.settings_rounded, label: 'settings'), screen: const SettingsScreen(), path: '/settings'),
   ];
 
   @override
