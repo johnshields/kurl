@@ -51,6 +51,20 @@ async def reset_password(db, request):
     return _respond(result)
 
 
+async def verify_email(db, request):
+    body = await parse_json_body(request)
+    result = await auth_controller.verify_email(db, body)
+    return _respond(result)
+
+
+async def resend_verification(db, request):
+    user_uid, error = require_session(request)
+    if error:
+        return error
+    result = await auth_controller.resend_verification(db, user_uid)
+    return _respond(result)
+
+
 async def get_profile(db, request):
     user_uid, error = require_session(request)
     if error:

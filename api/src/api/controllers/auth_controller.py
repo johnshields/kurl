@@ -9,6 +9,7 @@ from clients import email as email_client
 from db.db import execute, fetch_one
 from db.queries import users as queries
 from models.user import public_user, to_db_params
+from utils.email_verification import create_verification_token, decode_verification_token
 from utils.logging import get_logger
 from utils.password import hash_password, verify_password
 from utils.password_reset import create_reset_token, decode_reset_token, matches_current_password
@@ -32,6 +33,19 @@ async def unique_username(db) -> str:
     return generate_username_with_suffix()
 
 
+async def _send_verification_email(uid: str, email: str) -> None:
+    token = create_verification_token(uid, settings.SESSION_SECRET)
+    link = f"{APP_BASE_URL}/settings?verify={token}"
+    await email_client.send(
+        to=email,
+        from_address=EMAIL_FROM,
+        subject="Verify your kurl email",
+        html=f'<p>Verify your kurl email:</p><p><a href="{link}">{link}</a></p><p>This link expires in 24 hours.</p>',
+        text=f"Verify your kurl email: {link}\n\nThis link expires in 24 hours.",
+    )
+    logger.info("Sent verification email to %s", uid)
+
+
 async def signup(db, data: dict) -> dict:
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -48,6 +62,7 @@ async def signup(db, data: dict) -> dict:
     uid = gen_uid("USR")
     username = await unique_username(db)
     await execute(db, queries.INSERT, *to_db_params(uid, email, username, hash_password(password)))
+    await _send_verification_email(uid, email)
 
     token = create_session_token(uid, settings.SESSION_SECRET)
     logger.info("Signed up: %s (%s)", uid, username)
@@ -56,7 +71,13 @@ async def signup(db, data: dict) -> dict:
         "message": "Account created.",
         "data": {
             "token": token,
-            "user": {"uid": uid, "email": email, "username": username, "preferredPlatform": None},
+            "user": {
+                "uid": uid,
+                "email": email,
+                "username": username,
+                "preferredPlatform": None,
+                "emailVerified": False,
+            },
         },
     }
 
@@ -123,6 +144,32 @@ async def reset_password(db, data: dict) -> dict:
         "message": "Password updated.",
         "data": {"token": token, "user": public_user(row)},
     }
+
+
+async def verify_email(db, data: dict) -> dict:
+    uid = decode_verification_token(data.get("token") or "", settings.SESSION_SECRET)
+    if not uid:
+        return {"status": "error", "code": "INVALID_TOKEN", "message": "Verification link is invalid or expired."}
+
+    row = await fetch_one(db, queries.GET_BY_UID, uid)
+    if not row:
+        return {"status": "error", "code": "NOT_FOUND", "message": "Account not found."}
+
+    if not row.get("email_verified_at"):
+        await execute(db, queries.UPDATE_EMAIL_VERIFIED, uid)
+        logger.info("Verified email for %s", uid)
+    return {"status": "success", "message": "Email verified."}
+
+
+async def resend_verification(db, user_uid: str) -> dict:
+    row = await fetch_one(db, queries.GET_BY_UID, user_uid)
+    if not row or not row["email"]:
+        return {"status": "error", "code": "NOT_FOUND", "message": "Account not found."}
+    if row.get("email_verified_at"):
+        return {"status": "success", "message": "Email already verified."}
+
+    await _send_verification_email(user_uid, row["email"])
+    return {"status": "success", "message": "Verification email sent."}
 
 
 async def get_me(db, user_uid: str) -> dict:

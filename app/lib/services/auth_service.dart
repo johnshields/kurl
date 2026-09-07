@@ -81,6 +81,23 @@ class AuthService {
     return KurlUser.fromJson(data['user']);
   }
 
+  static Future<void> verifyEmail(String token) async {
+    await _post('/api/auth/verify-email', {'token': token});
+  }
+
+  static Future<void> resendVerification() async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final response = await http.post(
+      Uri.parse('$base/api/auth/resend-verification'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    _throwIfError(jsonDecode(response.body), response.statusCode);
+  }
+
   static Future<List<KurlHistoryItem>> getKurls() async {
     final data = await _authedGet('/api/kurls');
     if (data == null) return [];

@@ -252,3 +252,42 @@ Frontend (edited):
 - Confirm `EMAIL_FROM` (`noreply@kurl.online`) doesn't need a specific mailbox to exist -- Email Sending sends *from* any address on an onboarded domain, no inbox required unless also using Email Routing.
 - **Real unknown, flagged honestly**: calling `env.EMAIL.send()` from Python Workers hasn't been done anywhere in this codebase before. The kwargs -> JS-object calling convention is proven for `_kv.put(key, value, expirationTtl=seconds)` in `clients/cache.py`, and `clients/email.py`'s `send()` follows that exact same shape, but it's reasoned from precedent, not verified against the real `send_email` binding. If it doesn't work as expected, check `wrangler tail` after a real `forgot-password` call -- `email.send()` already catches and logs any exception rather than raising, so a failure there won't break the request, just silently not send the email.
 - Not visually verified end-to-end (no real email has been sent) -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through (request reset -> receive email -> click link -> set password) hasn't happened yet.
+
+## 2026-09-07 (later): Email verification on signup
+
+Soft verification -- user confirmed nothing should be blocked. Signup sends a verification email; unverified accounts can still log in, kurl, and do everything else. Just a badge + resend button until clicked.
+
+### Decisions made (built)
+
+- **Token**: stateless signed JWT (`utils/email_verification.py`), 24h expiry, no fingerprint mechanism like `password_reset.py` -- re-verifying an already-verified account is a harmless no-op, so there's nothing that needs to self-invalidate.
+- **Schema**: `users.email_verified_at TEXT` (nullable, `NULL` = unverified) added via plain `ALTER TABLE ... ADD COLUMN` -- unlike the earlier nullable-column change, SQLite allows adding a column without a table rebuild, so no destructive migration needed this time.
+- **Verify link**: `https://kurl.online/settings?verify=<token>`. Calling `verify-email` needs no session (someone might click it on a different device) -- if the browser happens to be signed in as that account, the profile view picks up the change on next load.
+- **Resend**: session-gated (`POST /api/auth/resend-verification`, uses the caller's own session, not a token) -- short-circuits with a success response if already verified, otherwise re-sends via the same `_send_verification_email` helper signup uses.
+
+### Touch points (as built)
+
+Backend (new):
+- `api/src/utils/email_verification.py`
+- `api/src/__tests__/unit/test_email_verification.py`
+
+Backend (edited):
+- `api/src/db/schemas/users.sql` -- `email_verified_at` column (fresh DBs only; live D1 needs the `ALTER TABLE` below)
+- `api/src/db/queries/users.py` -- `UPDATE_EMAIL_VERIFIED`
+- `api/src/models/user.py` -- `public_user()` now returns `emailVerified`
+- `api/src/api/controllers/auth_controller.py` -- `_send_verification_email` (shared by signup and resend), `verify_email`, `resend_verification`; `signup()` now sends the email and returns `emailVerified: false`
+- `api/src/api/routes/auth.py`, `api/src/api/router.py` -- `POST /api/auth/verify-email` (public), `POST /api/auth/resend-verification` (session-gated)
+- `api/src/api/middleware/auth.py` -- both new paths added to `PUBLIC_PATHS`
+- `api/src/__tests__/unit/test_auth_controller.py` -- `TestVerifyEmail`, `TestResendVerification`
+
+Frontend (edited):
+- `app/lib/models/user.dart` -- `emailVerified` field
+- `app/lib/services/auth_service.dart` -- `verifyEmail`, `resendVerification`
+- `app/lib/app/routes/settings.dart` -- `SettingsScreen._loadProfile()` calls `verifyEmail` when `?verify=` is present (best-effort, falls through either way); profile view shows an "Email not verified" row with a Resend button under the email when `!emailVerified`; a snackbar + `updateUrlState()` on return confirms success/failure and clears the query param, mirroring the existing Spotify-return-message pattern
+
+265 backend tests pass (added 12), `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+### Before deploying
+
+- Apply the schema change to the live D1 database by hand: `ALTER TABLE users ADD COLUMN email_verified_at TEXT;` (safe, additive -- no table rebuild, no data loss, unlike the earlier nullable-column migration).
+- Everything else (Email Sending domain, `send_email` binding) is already set up from the forgot-password work above -- no new secrets or bindings needed.
+- Not visually verified end-to-end -- same caveat as forgot-password: unit-tested and analyze-clean, but no real signup-then-click-the-link run has happened yet.

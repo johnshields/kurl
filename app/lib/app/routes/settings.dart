@@ -135,6 +135,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final redirectToken = Uri.base.queryParameters['token'];
     if (redirectToken != null) await AuthService.adoptSessionToken(redirectToken);
 
+    final verifyToken = Uri.base.queryParameters['verify'];
+    if (verifyToken != null) {
+      try {
+        await AuthService.verifyEmail(verifyToken);
+      } catch (_) {
+        // Best-effort -- a stale/invalid link just falls through to the profile as-is.
+      }
+    }
+
     final user = await AuthService.getProfile();
     if (mounted) {
       setState(() {
@@ -607,6 +616,7 @@ class _ProfileViewState extends State<_ProfileView> {
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
+  bool _resendingVerification = false;
 
   @override
   void initState() {
@@ -614,6 +624,7 @@ class _ProfileViewState extends State<_ProfileView> {
     _usernameController = TextEditingController(text: widget.user.username);
     _loadSpotifyStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showVerifyEmailMessage());
   }
 
   void _showSpotifyReturnMessage() {
@@ -621,6 +632,14 @@ class _ProfileViewState extends State<_ProfileView> {
     if (spotifyParam == null || !mounted) return;
     final message = spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _showVerifyEmailMessage() {
+    if (Uri.base.queryParameters['verify'] == null || !mounted) return;
+    updateUrlState();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(widget.user.emailVerified ? 'Email verified' : 'Verification link invalid or expired')),
+    );
   }
 
   Future<void> _loadSpotifyStatus() async {
@@ -639,6 +658,20 @@ class _ProfileViewState extends State<_ProfileView> {
       await _launchSpotifyAuth();
     } finally {
       if (mounted) setState(() => _connectingSpotify = false);
+    }
+  }
+
+  Future<void> _resendVerification() async {
+    setState(() => _resendingVerification = true);
+    try {
+      await AuthService.resendVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Verification email sent')));
+      }
+    } catch (_) {
+      // Best-effort -- no feedback needed beyond the button re-enabling.
+    } finally {
+      if (mounted) setState(() => _resendingVerification = false);
     }
   }
 
@@ -787,6 +820,28 @@ class _ProfileViewState extends State<_ProfileView> {
                     Text(widget.user.email, style: const TextStyle(fontSize: 14, color: Color(0xFF888888))),
                   ],
                 ),
+                if (widget.user.email.isNotEmpty && !widget.user.emailVerified) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, size: 14, color: Color(0xFF888888)),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Email not verified',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _resendingVerification ? null : _resendVerification,
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                        child: Text(
+                          _resendingVerification ? 'Sending...' : 'Resend',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFFE5E5E5)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
                 _card(
                   children: [

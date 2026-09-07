@@ -14,5 +14,6 @@ def public_user(row) -> dict:
         "email": row["email"],
         "username": row["username"],
         "preferredPlatform": row["preferred_platform"],
+        "emailVerified": bool(row.get("email_verified_at")),
         "createdAt": row["created_at"],
     }

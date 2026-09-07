@@ -277,3 +277,83 @@ class TestResetPassword:
         assert result["data"]["token"]
         assert result["data"]["user"]["uid"] == "USR_X"
         execute_mock.assert_awaited_once()
+
+
+class TestVerifyEmail:
+    async def test_rejects_invalid_token(self):
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await auth_controller.verify_email(db=object(), data={"token": "garbage"})
+        assert result["status"] == "error"
+        assert result["code"] == "INVALID_TOKEN"
+
+    async def test_rejects_unknown_account(self):
+        from utils.email_verification import create_verification_token
+
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_verification_token("USR_X", "test-secret")
+            with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=None)):
+                result = await auth_controller.verify_email(db=object(), data={"token": token})
+        assert result["status"] == "error"
+        assert result["code"] == "NOT_FOUND"
+
+    async def test_marks_the_account_verified(self):
+        from utils.email_verification import create_verification_token
+
+        execute_mock = AsyncMock()
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_verification_token("USR_X", "test-secret")
+            row = {"uid": "USR_X", "email_verified_at": None}
+            with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)), patch(
+                "api.controllers.auth_controller.execute", execute_mock
+            ):
+                result = await auth_controller.verify_email(db=object(), data={"token": token})
+        assert result["status"] == "success"
+        execute_mock.assert_awaited_once()
+
+    async def test_is_idempotent_when_already_verified(self):
+        from utils.email_verification import create_verification_token
+
+        execute_mock = AsyncMock()
+        with patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_verification_token("USR_X", "test-secret")
+            row = {"uid": "USR_X", "email_verified_at": "2026-01-01T00:00:00.000Z"}
+            with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)), patch(
+                "api.controllers.auth_controller.execute", execute_mock
+            ):
+                result = await auth_controller.verify_email(db=object(), data={"token": token})
+        assert result["status"] == "success"
+        execute_mock.assert_not_awaited()
+
+
+class TestResendVerification:
+    async def test_rejects_unknown_account(self):
+        with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=None)):
+            result = await auth_controller.resend_verification(db=object(), user_uid="USR_X")
+        assert result["status"] == "error"
+        assert result["code"] == "NOT_FOUND"
+
+    async def test_short_circuits_when_already_verified(self):
+        row = {"uid": "USR_X", "email": "a@b.com", "email_verified_at": "2026-01-01T00:00:00.000Z"}
+        send_mock = AsyncMock()
+        with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)), patch(
+            "api.controllers.auth_controller.email_client.send", send_mock
+        ):
+            result = await auth_controller.resend_verification(db=object(), user_uid="USR_X")
+        assert result["status"] == "success"
+        send_mock.assert_not_awaited()
+
+    async def test_resends_when_unverified(self):
+        row = {"uid": "USR_X", "email": "a@b.com", "email_verified_at": None}
+        send_mock = AsyncMock(return_value=True)
+        with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_uid=row)), patch(
+            "api.controllers.auth_controller.email_client.send", send_mock
+        ), patch("api.controllers.auth_controller.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await auth_controller.resend_verification(db=object(), user_uid="USR_X")
+        assert result["status"] == "success"
+        send_mock.assert_awaited_once()
+        assert send_mock.await_args.kwargs["to"] == "a@b.com"

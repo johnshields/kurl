@@ -20,6 +20,8 @@ PUBLIC_PATHS = {
     "/api/auth/login",
     "/api/auth/forgot-password",
     "/api/auth/reset-password",
+    "/api/auth/verify-email",
+    "/api/auth/resend-verification",
     "/api/auth/profile",
     "/api/kurls",
     # Sign in with Spotify -- start works with or without a session (sign-in

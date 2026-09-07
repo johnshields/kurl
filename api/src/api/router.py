@@ -134,6 +134,16 @@ async def _auth_reset_password(db, request, **kwargs):
     return await auth.reset_password(db, request)
 
 
+@route("POST", "/api/auth/verify-email")
+async def _auth_verify_email(db, request, **kwargs):
+    return await auth.verify_email(db, request)
+
+
+@route("POST", "/api/auth/resend-verification")
+async def _auth_resend_verification(db, request, **kwargs):
+    return await auth.resend_verification(db, request)
+
+
 @route("GET", "/api/auth/profile")
 async def _auth_get_profile(db, request, **kwargs):
     return await auth.get_profile(db, request)
