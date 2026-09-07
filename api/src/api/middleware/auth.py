@@ -20,6 +20,12 @@ PUBLIC_PATHS = {
     "/api/auth/login",
     "/api/auth/profile",
     "/api/kurls",
+    # Sign in with Spotify -- start/status/disconnect are session-gated same
+    # as the rest of /api/auth/*; callback carries no session header at all
+    # (it's Spotify's own browser redirect), authenticated via state instead.
+    "/api/auth/spotify",
+    "/api/auth/spotify/start",
+    "/api/auth/spotify/callback",
 }
 
 # Static-asset prefixes served by the Worker's [assets] handler.

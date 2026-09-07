@@ -85,7 +85,7 @@ Session auth = `Authorization: Bearer <JWT>`, verified by `api/src/api/middlewar
 
 Not done: no automated tests written for the new screens/services beyond the pre-existing smoke test. Not visually verified in a running app this session (`pywrangler dev` was blocked by the Node/wasm-flag issue noted earlier; web preview was declined) -- `flutter analyze` and `flutter test` are clean, but a real run-through hasn't happened yet.
 
-## 2026-09-07: Sign in with Spotify (recon, not built)
+## 2026-09-07: Sign in with Spotify
 
 Goal: let a signed-in kurl user (existing email/password account) link their Spotify account. Phase A scope is identity only -- know which Spotify user this is. Reading their library / creating playlists is phase B, not scoped here.
 
@@ -145,3 +145,66 @@ Frontend (new):
 - **Scopes**: phase A (identity only) needs no scopes beyond none/`user-read-email`. Do not request library/playlist scopes until phase B is actually scoped -- requesting more than needed also triggers Spotify's app review for restricted scopes.
 - **Token refresh**: refresh tokens need a background or on-demand refresh path before expiry (typically 1 hour access token lifetime) -- where this runs (per-request lazy refresh vs a scheduled job) is not yet decided.
 - **Existing client_credentials flow untouched**: this plan adds a second, separate OAuth grant type alongside the existing app-only one in `_oauth.py` -- must not disturb the existing catalog-search token cache (`TokenCache("Spotify")` in `spotify.py:6`).
+
+### Decisions made (built)
+
+- **Redirect origin**: Worker-first. Spotify redirects to `GET /api/auth/spotify/callback` on `api.kurl.online`; the Worker exchanges the code server-side (`client_secret` never leaves it), then 302s the browser to `settings.SPOTIFY_APP_REDIRECT_URL` (defaults to `https://kurl.online/settings`) with `?spotify=connected` or `?spotify=error`.
+- **Callback authentication**: a dedicated short-lived (10 min) signed JWT `state` param, separate from session tokens -- `api/src/utils/oauth_state.py`, signed with the same `SESSION_SECRET`. No server-side pending-auth table needed; verified statelessly on callback.
+- **Storage**: separate `spotify_accounts` table (`api/src/db/schemas/spotify_accounts.sql`), one row per `user_uid` (`UNIQUE`), upserted on reconnect. Tokens never exposed in API responses -- `public_spotify_account()` only returns `spotifyUserId`/`displayName`.
+- **Scopes**: `user-read-email` only, per the identity-only phase A scope.
+- **`SPOTIFY_API_ENABLED` flag**: removed entirely this session (separate from this feature) -- `is_configured()` now checks only client id/secret.
+- **Token refresh**: not built yet -- tokens are stored (`access_token`, `refresh_token`, `expires_at`) but nothing refreshes them. Fine for phase A (identity only, tokens unused after linking); required before any phase B feature that calls the Spotify API as the user.
+
+### Touch points (actual, as built)
+
+Backend (new):
+- `api/src/db/schemas/spotify_accounts.sql`, `api/src/db/queries/spotify_accounts.py`, `api/src/models/spotify_account.py`
+- `api/src/utils/oauth_state.py` -- state token create/verify
+- `api/src/clients/spotify_oauth_client.py` -- authorize URL, code exchange, refresh, `/v1/me` fetch
+- `api/src/clients/platforms/_oauth.py` -- added `fetch_authorization_code_token`, `refresh_authorization_token` alongside the existing `fetch_client_credentials_token`
+- `api/src/api/controllers/spotify_auth_controller.py`, `api/src/api/routes/spotify_auth.py`
+
+Backend (edited):
+- `api/src/app/constants/apis.py` -- `SPOTIFY_AUTHORIZE_URL`
+- `api/src/app/config.py` -- `SPOTIFY_REDIRECT_URI`, `SPOTIFY_APP_REDIRECT_URL`
+- `api/src/api/router.py` -- `GET /api/auth/spotify`, `GET /api/auth/spotify/start`, `GET /api/auth/spotify/callback`, `DELETE /api/auth/spotify`
+- `api/src/api/middleware/auth.py` -- all four paths added to `PUBLIC_PATHS` (session-gated or, for `/callback`, state-gated -- not the shared admin key)
+- `api/src/utils/http/response.py` -- added `redirect()` helper
+
+Frontend (new):
+- `app/lib/models/spotify_account.dart`
+
+Frontend (edited):
+- `app/lib/services/auth_service.dart` -- `getSpotifyStatus`, `startSpotifyAuth`, `disconnectSpotify`
+- `app/lib/app/routes/settings.dart` -- Spotify card (Connect / Connected as X + Disconnect), same-tab redirect via `launchUrl(..., webOnlyWindowName: '_self')`, reads `?spotify=connected|error` on return to show a SnackBar
+
+Tests: `api/src/__tests__/unit/test_oauth_state.py`, `api/src/__tests__/unit/test_spotify_auth_controller.py`. 232 backend tests pass, `ruff check` clean, `flutter analyze`/`flutter test` clean.
+
+### Before deploying
+
+- Register the redirect URI in the Spotify Developer Dashboard -- must exactly match whatever `SPOTIFY_REDIRECT_URI` is set to (e.g. `https://api.kurl.online/api/auth/spotify/callback`).
+- Set Worker secrets: `SPOTIFY_REDIRECT_URI`, optionally `SPOTIFY_APP_REDIRECT_URL` if not using the `kurl.online/settings` default.
+- Apply `api/src/db/schemas/spotify_accounts.sql` to D1 by hand (same manual step every other schema file has needed).
+- **`users` table schema change**: `email` and `password_hash` are now nullable (a Spotify-only account has neither). If `users.sql` was already applied to the real D1 database, SQLite can't drop a `NOT NULL` constraint in place -- needs a manual rebuild:
+  ```sql
+  ALTER TABLE users RENAME TO users_old;
+  -- then re-run the new CREATE TABLE from users.sql --
+  INSERT INTO users SELECT id, uid, email, username, password_hash, preferred_platform, created_at FROM users_old;
+  DROP TABLE users_old;
+  ```
+  Not yet run against the real database -- confirm this is safe against whatever's actually in there first.
+- Confirm the app's Spotify dashboard quota mode before relying on this for real users -- Development Mode caps at 25 authorized users (each added by email in the dashboard). Not yet confirmed which mode this app is in.
+- Not visually verified end-to-end (no real Spotify dashboard redirect URI registered yet, so the actual OAuth roundtrip hasn't been run) -- backend logic is unit-tested, frontend is `flutter analyze`/`flutter test` clean, but a real click-through hasn't happened.
+
+### 2026-09-07 (later): redesigned as full sign-in, not just linking
+
+Original build above only let an **already-signed-in** kurl user link Spotify (session required at `/start`). User clarified this was supposed to be full "Sign in with Spotify" from the start -- a visitor with no kurl account can tap it and get one, no email/password. Both modes now share one flow:
+
+- **`/api/auth/spotify/start`** is no longer session-gated. `get_session_user_uid()` (never errors) checks for an existing session: present -> link mode, absent -> anonymous sign-in mode. Which mode is baked into the `state` param (see below), not into a second code path.
+- **`oauth_state.py`** redesigned: `create_oauth_state(secret, user_uid=None)` / `verify_oauth_state(state, secret) -> (valid, user_uid_or_None)`. A present `user_uid` in the decoded state means link mode; absent means anonymous sign-in.
+- **`handle_callback`**: link mode uses the state's `user_uid` directly. Anonymous mode calls `_resolve_user()`: look up `spotify_accounts` by `spotify_user_id` (returning user) -> else look up `users` by the email Spotify returned (matches an existing email/password account, links it) -> else create a brand-new account (`gen_uid`, `unique_username` reused from `auth_controller`, no password). Either way a session token is minted and appended to the redirect as `&token=<jwt>`, since the app has no other way to receive it.
+- **`users` schema**: `email`/`password_hash` made nullable to allow Spotify-only accounts -- see the migration note above. `utils/password.py`'s `verify_password` now guards a `None` stored hash (returns `False`) instead of crashing.
+- **`auth_controller.unique_username`**: unrelated existing username-generation retry loop, made public (was `_unique_username`) so the Spotify controller can reuse it rather than duplicating the collision-retry logic. Nothing about email/password signup or login changed -- both still work exactly as before; this only adds a second way to get an account.
+- **Frontend**: `AuthService.startSpotifyAuth()` now sends the session token only if one exists (works signed-out too); new `AuthService.adoptSessionToken()` stores a token handed back via `?token=` on redirect. `SettingsScreen._loadProfile()` checks for that param before loading the profile. `_AuthForm` (the actual sign-in/signup screen) gained a "Continue with Spotify" button above the email/password fields, with an "or" divider.
+
+Tests rewritten for the new signatures/flow (`test_oauth_state.py`, `test_spotify_auth_controller.py`). 238 backend tests pass, `ruff check` clean, `flutter analyze`/`flutter test` clean.

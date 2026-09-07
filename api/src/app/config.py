@@ -66,6 +66,17 @@ class Settings:
     def SPOTIFY_CLIENT_SECRET(self) -> str | None:
         return self._get("SPOTIFY_CLIENT_SECRET")
 
+    # Spotify (OAuth authorization_code -- Sign in with Spotify)
+    @property
+    def SPOTIFY_REDIRECT_URI(self) -> str | None:
+        """Must exactly match a redirect URI registered in the Spotify app dashboard."""
+        return self._get("SPOTIFY_REDIRECT_URI")
+
+    @property
+    def SPOTIFY_APP_REDIRECT_URL(self) -> str:
+        """Frontend URL the callback bounces the browser back to once done."""
+        return self._get("SPOTIFY_APP_REDIRECT_URL", "https://kurl.online/settings")
+
     # Apple Music (JWT via MusicKit)
     @property
     def APPLE_TEAM_ID(self) -> str | None:

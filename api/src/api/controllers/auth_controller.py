@@ -21,7 +21,7 @@ logger = get_logger()
 _USERNAME_GEN_ATTEMPTS = 10
 
 
-async def _unique_username(db) -> str:
+async def unique_username(db) -> str:
     for _ in range(_USERNAME_GEN_ATTEMPTS):
         candidate = generate_username()
         if not await fetch_one(db, queries.GET_BY_USERNAME, candidate):
@@ -44,7 +44,7 @@ async def signup(db, data: dict) -> dict:
         return {"status": "error", "code": "EMAIL_TAKEN", "message": "Email already registered."}
 
     uid = gen_uid("USR")
-    username = await _unique_username(db)
+    username = await unique_username(db)
     await execute(db, queries.INSERT, *to_db_params(uid, email, username, hash_password(password)))
 
     token = create_session_token(uid, settings.SESSION_SECRET)

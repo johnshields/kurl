@@ -4,7 +4,7 @@ Field mapping between DB row and client response for the users table.
 """
 
 
-def to_db_params(uid: str, email: str, username: str, password_hash: str) -> tuple:
+def to_db_params(uid: str, email: str | None, username: str, password_hash: str | None) -> tuple:
     return (uid, email, username, password_hash)
 
 

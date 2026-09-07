@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kurl/models/kurl_history_item.dart';
+import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_base.dart';
 import 'package:kurl/services/api_exception.dart';
@@ -88,6 +89,52 @@ class AuthService {
     final base = await resolveApiBase();
     final response = await http.delete(
       Uri.parse('$base/api/kurls/$uid'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final json = jsonDecode(response.body);
+    if (json['status'] == 'error') {
+      throw ApiException(
+        code: json['code'] as String? ?? 'INTERNAL_ERROR',
+        message: json['message'] as String? ?? 'Request failed',
+        status: response.statusCode,
+      );
+    }
+  }
+
+  static Future<SpotifyAccount> getSpotifyStatus() async {
+    final data = await _authedGet('/api/auth/spotify');
+    return data == null ? SpotifyAccount.disconnected : SpotifyAccount.fromJson(data);
+  }
+
+  /// Returns the Spotify authorize URL to open, or null if not configured
+  /// or the request fails. Works whether or not the caller is signed in --
+  /// no session = full sign-in (find or create an account); a session
+  /// present = link Spotify to that account instead. See the API's
+  /// oauth_state.py for how the two modes are distinguished server-side.
+  static Future<String?> startSpotifyAuth() async {
+    final token = await getToken();
+    final base = await resolveApiBase();
+    final response = await http.get(
+      Uri.parse('$base/api/auth/spotify/start'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    final json = jsonDecode(response.body);
+    if (json['status'] == 'error') return null;
+    return json['data']?['url'];
+  }
+
+  /// Adopts a session token handed back on the Spotify sign-in redirect
+  /// (?token=...) -- same storage path as signup/login.
+  static Future<void> adoptSessionToken(String token) => _saveToken(token);
+
+  static Future<void> disconnectSpotify() async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final response = await http.delete(
+      Uri.parse('$base/api/auth/spotify'),
       headers: {'Authorization': 'Bearer $token'},
     );
     final json = jsonDecode(response.body);

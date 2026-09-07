@@ -2,6 +2,7 @@
 
 # Streaming platform APIs.
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_API_BASE = "https://api.spotify.com/v1"
 SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/track/{id}"
 

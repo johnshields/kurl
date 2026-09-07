@@ -3,6 +3,11 @@ OAuth helpers
 TokenCache holds a token + expiry with a 60s safety window. Works for both
 client-credentials OAuth (Spotify, Tidal) and locally-signed JWTs
 (Apple Music) via get_cached/store.
+
+fetch_authorization_code_token/refresh_authorization_token are a separate
+grant type -- user-authorised (Sign in with Spotify), not app-only. They
+don't use TokenCache: those tokens are per-user and persisted in D1, not
+cached in-process.
 """
 
 import base64
@@ -71,3 +76,55 @@ async def fetch_client_credentials_token(
     response.raise_for_status()
     data = response.json()
     return data["access_token"], data.get("expires_in", 3600)
+
+
+async def fetch_authorization_code_token(
+    http_client: httpx.AsyncClient,
+    token_url: str,
+    client_id: str,
+    client_secret: str,
+    code: str,
+    redirect_uri: str,
+) -> dict:
+    """Exchange a user-authorised code for tokens (authorization_code grant).
+
+    Returns the raw {access_token, refresh_token, expires_in, scope, ...}
+    payload -- unlike fetch_client_credentials_token, callers need more than
+    just the access token here.
+    """
+    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    response = await http_client.post(
+        token_url,
+        headers={
+            "Authorization": f"Basic {credentials}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data={"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def refresh_authorization_token(
+    http_client: httpx.AsyncClient,
+    token_url: str,
+    client_id: str,
+    client_secret: str,
+    refresh_token: str,
+) -> dict:
+    """Exchange a refresh token for a new access token (refresh_token grant).
+
+    Spotify may or may not return a new refresh_token in the response --
+    callers should keep the old one when it's absent.
+    """
+    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    response = await http_client.post(
+        token_url,
+        headers={
+            "Authorization": f"Basic {credentials}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
+    )
+    response.raise_for_status()
+    return response.json()

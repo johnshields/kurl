@@ -21,7 +21,10 @@ def hash_password(password: str) -> str:
     return f"{salt}${digest.hex()}"
 
 
-def verify_password(password: str, stored: str) -> bool:
+def verify_password(password: str, stored: str | None) -> bool:
+    # No stored hash -- a Spotify-only account with no password set.
+    if not stored:
+        return False
     try:
         salt, digest_hex = stored.split("$", 1)
     except ValueError:

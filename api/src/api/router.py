@@ -10,6 +10,7 @@ import time
 from api.middleware.session_auth import get_session_user_uid
 from api.routes import auth, events
 from api.routes import kurls as kurls_routes
+from api.routes import spotify_auth as spotify_auth_routes
 from api.services import urls as kurl_service
 from app.config import DESCRIPTION, NAME, VERSION
 from clients import cache
@@ -131,6 +132,29 @@ async def _auth_get_profile(db, request, **kwargs):
 @route("PATCH", "/api/auth/profile")
 async def _auth_update_profile(db, request, **kwargs):
     return await auth.update_profile(db, request)
+
+
+# Sign in with Spotify (linking an existing kurl account to Spotify)
+
+
+@route("GET", "/api/auth/spotify")
+async def _spotify_status(db, request, **kwargs):
+    return await spotify_auth_routes.status(db, request)
+
+
+@route("GET", "/api/auth/spotify/start")
+async def _spotify_start(db, request, **kwargs):
+    return await spotify_auth_routes.start(db, request)
+
+
+@route("GET", "/api/auth/spotify/callback")
+async def _spotify_callback(db, request, **kwargs):
+    return await spotify_auth_routes.callback(db, request)
+
+
+@route("DELETE", "/api/auth/spotify")
+async def _spotify_disconnect(db, request, **kwargs):
+    return await spotify_auth_routes.disconnect(db, request)
 
 
 # Kurl history (signed-in users only)

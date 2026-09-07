@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:kurl/models/platform.dart';
+import 'package:kurl/models/spotify_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/auth_service.dart';
@@ -28,6 +31,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadProfile() async {
+    // A brand-new session from Sign in with Spotify arrives as a URL param
+    // rather than already-stored, since the redirect can't set anything
+    // beyond the URL itself.
+    final redirectToken = Uri.base.queryParameters['token'];
+    if (redirectToken != null) await AuthService.adoptSessionToken(redirectToken);
+
     final user = await AuthService.getProfile();
     if (mounted) {
       setState(() {
@@ -80,7 +89,25 @@ class _AuthFormState extends State<_AuthForm> {
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _spotifyLoading = false;
   String? _error;
+
+  Future<void> _signInWithSpotify() async {
+    setState(() {
+      _spotifyLoading = true;
+      _error = null;
+    });
+    try {
+      final url = await AuthService.startSpotifyAuth();
+      if (url == null) {
+        if (mounted) setState(() => _error = 'Spotify sign-in is not available right now.');
+        return;
+      }
+      await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+    } finally {
+      if (mounted) setState(() => _spotifyLoading = false);
+    }
+  }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
@@ -166,6 +193,38 @@ class _AuthFormState extends State<_AuthForm> {
                 const Text(
                   'Save your kurls and set a preferred platform.',
                   style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: (_loading || _spotifyLoading) ? null : _signInWithSpotify,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFE5E5E5),
+                      side: BorderSide(color: findPlatform('spotify')?.colour ?? _borderIdle),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(findPlatform('spotify')?.icon, size: 18, color: findPlatform('spotify')?.colour),
+                        const SizedBox(width: 8),
+                        Text(_spotifyLoading ? 'Connecting...' : 'Continue with Spotify'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: _borderIdle)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('or', style: const TextStyle(color: Color(0xFF555555), fontSize: 12)),
+                    ),
+                    const Expanded(child: Divider(color: _borderIdle)),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -270,11 +329,55 @@ class _ProfileViewState extends State<_ProfileView> {
   bool _savingUsername = false;
   bool _savingPlatform = false;
   String? _usernameError;
+  SpotifyAccount _spotify = SpotifyAccount.disconnected;
+  bool _loadingSpotify = true;
+  bool _connectingSpotify = false;
 
   @override
   void initState() {
     super.initState();
     _usernameController = TextEditingController(text: widget.user.username);
+    _loadSpotifyStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
+  }
+
+  void _showSpotifyReturnMessage() {
+    final spotifyParam = Uri.base.queryParameters['spotify'];
+    if (spotifyParam == null || !mounted) return;
+    final message = spotifyParam == 'connected' ? 'Spotify connected' : 'Spotify connection failed';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _loadSpotifyStatus() async {
+    final status = await AuthService.getSpotifyStatus();
+    if (mounted) {
+      setState(() {
+        _spotify = status;
+        _loadingSpotify = false;
+      });
+    }
+  }
+
+  Future<void> _connectSpotify() async {
+    setState(() => _connectingSpotify = true);
+    try {
+      final url = await AuthService.startSpotifyAuth();
+      if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+    } finally {
+      if (mounted) setState(() => _connectingSpotify = false);
+    }
+  }
+
+  Future<void> _disconnectSpotify() async {
+    setState(() => _connectingSpotify = true);
+    try {
+      await AuthService.disconnectSpotify();
+      if (mounted) setState(() => _spotify = SpotifyAccount.disconnected);
+    } catch (_) {
+      // Best-effort -- the card simply won't reflect the change on failure.
+    } finally {
+      if (mounted) setState(() => _connectingSpotify = false);
+    }
   }
 
   @override
@@ -456,6 +559,55 @@ class _ProfileViewState extends State<_ProfileView> {
                         disabled: _savingPlatform,
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _card(
+                  children: [
+                    const Text(
+                      'Spotify',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_loadingSpotify)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
+                      )
+                    else if (_spotify.connected)
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle, size: 16, color: Color(0xFF1DB954)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connected as ${_spotify.displayName ?? _spotify.spotifyUserId}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _connectingSpotify ? null : _disconnectSpotify,
+                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _connectingSpotify ? null : _connectSpotify,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE5E5E5),
+                            side: const BorderSide(color: _borderIdle),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          child: Text(_connectingSpotify ? 'Connecting...' : 'Connect Spotify'),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 32),

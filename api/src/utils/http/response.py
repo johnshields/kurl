@@ -35,6 +35,10 @@ def preflight() -> Response:
     return Response(None, status=204, headers=CORS_HEADERS)
 
 
+def redirect(url: str, status: int = 302) -> Response:
+    return Response(None, status=status, headers={"Location": url, **CORS_HEADERS})
+
+
 def parse_path(url: str) -> str:
     return urlparse(url).path.rstrip("/") or "/"
 

@@ -1,0 +1,41 @@
+"""
+Tests for utils.oauth_state -- short-lived signed OAuth state tokens.
+"""
+
+from unittest.mock import patch
+
+from utils.oauth_state import create_oauth_state, verify_oauth_state
+
+
+class TestAnonymousState:
+    def test_round_trip_has_no_subject(self):
+        state = create_oauth_state("test-secret")
+        assert verify_oauth_state(state, "test-secret") == (True, None)
+
+    def test_wrong_secret_fails(self):
+        state = create_oauth_state("test-secret")
+        assert verify_oauth_state(state, "wrong-secret") == (False, None)
+
+    def test_tampered_token_fails(self):
+        state = create_oauth_state("test-secret")
+        assert verify_oauth_state(state + "x", "test-secret") == (False, None)
+
+    def test_garbage_token_fails(self):
+        assert verify_oauth_state("not-a-jwt", "test-secret") == (False, None)
+
+    def test_expired_token_fails(self):
+        with patch("utils.oauth_state.time") as mock_time:
+            mock_time.time.return_value = 0.0
+            state = create_oauth_state("test-secret")
+
+        assert verify_oauth_state(state, "test-secret") == (False, None)
+
+
+class TestLinkedState:
+    def test_round_trip_returns_the_user_uid(self):
+        state = create_oauth_state("test-secret", user_uid="USR_ABC123")
+        assert verify_oauth_state(state, "test-secret") == (True, "USR_ABC123")
+
+    def test_wrong_secret_fails(self):
+        state = create_oauth_state("test-secret", user_uid="USR_ABC123")
+        assert verify_oauth_state(state, "wrong-secret") == (False, None)
