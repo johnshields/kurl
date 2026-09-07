@@ -84,3 +84,64 @@ Session auth = `Authorization: Bearer <JWT>`, verified by `api/src/api/middlewar
 - `app/lib/services/api_service.dart` -- attaches `Authorization: Bearer <token>` when a session exists; still fully functional with no session, unchanged
 
 Not done: no automated tests written for the new screens/services beyond the pre-existing smoke test. Not visually verified in a running app this session (`pywrangler dev` was blocked by the Node/wasm-flag issue noted earlier; web preview was declined) -- `flutter analyze` and `flutter test` are clean, but a real run-through hasn't happened yet.
+
+## 2026-09-07: Sign in with Spotify (recon, not built)
+
+Goal: let a signed-in kurl user (existing email/password account) link their Spotify account. Phase A scope is identity only -- know which Spotify user this is. Reading their library / creating playlists is phase B, not scoped here.
+
+### Stack confirmed from source
+
+- Two separate origins: app served from `kurl.online` (Cloudflare Pages), api from `api.kurl.online` (Worker) -- `app/lib/app/config.dart:3`. A Spotify OAuth redirect must land on one of these; which one is an open question below.
+- Spotify already has an app registered: `settings.SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` exist as Worker secrets (`api/src/clients/platforms/spotify.py:13-14`), currently used only for the **client_credentials** (app-only, no user) grant via `api/src/clients/platforms/_oauth.py:55-73`.
+- `spotify.is_configured()` (`api/src/clients/platforms/spotify.py:29-36`) gates on a `SPOTIFY_API_ENABLED` flag that defaults to `false` (`api/src/app/config.py:62-63`) -- Spotify calls are currently a feature flag, off unless explicitly enabled. Reason not found in source; open question below.
+- `_oauth.py`'s `TokenCache`/`fetch_client_credentials_token` (`api/src/clients/platforms/_oauth.py:18-73`) is client_credentials-only -- a user token flow (authorization_code grant + refresh_token) is a different grant type, needs new functions, not a reuse of `fetch_via_oauth` as-is.
+- Session auth is stateless JWT, `Authorization: Bearer <token>`, verified by `api/src/api/middleware/session_auth.py`, separate from the shared-API-key check in `api/src/api/middleware/auth.py`. A new Spotify-callback route needs the same session-gated treatment as `/api/kurls/:uid` -- see `SESSION_GATED_PREFIXES` (`api/src/api/middleware/auth.py:30`).
+- `users` table (`api/src/db/schemas/users.sql:4-12`) has no columns for a linked third-party account yet.
+- Router uses a custom `@route(method, pattern)` decorator supporting `:param` path segments (`api/src/api/router.py:23-24`), same mechanism used for `DELETE /api/kurls/:uid`.
+- Profile view where a "Connect Spotify" control would live: `app/lib/app/routes/settings.dart:443-460` (the existing "Preferred platform" `_card` block, same pattern).
+
+### Touch points
+
+Backend (new):
+- `api/src/db/schemas/users.sql` or a new `spotify_accounts` table -- store `spotify_user_id`, `access_token`, `refresh_token`, `expires_at`, `scope`, linked to `users.uid`. Separate table is closer to the existing one-table-per-concern style (`kurls` is already split out from `users`).
+- `api/src/db/queries/spotify_accounts.py` -- SQL strings, matching `api/src/db/queries/users.py` style.
+- `api/src/clients/platforms/_oauth.py` -- add an authorization_code / refresh_token pair of functions alongside the existing `fetch_client_credentials_token`, or a new `_user_oauth.py` if mixing grant types in one file feels wrong (open question).
+- `api/src/api/controllers/spotify_auth_controller.py` (or fold into `auth_controller.py`) -- build the Spotify authorize URL (with `state` tied to the signed-in session), handle the callback (exchange `code` for tokens, store them), disconnect (delete the row).
+- `api/src/api/routes/spotify_auth.py` -- thin HTTP layer: `GET /api/auth/spotify/start`, `GET /api/auth/spotify/callback`, `DELETE /api/auth/spotify`.
+- `api/src/api/router.py` -- register the three routes above, same pattern as the existing `@route(...)` blocks (e.g. `api/src/api/router.py:139-141` for the `DELETE /api/kurls/:uid` precedent).
+- `api/src/api/middleware/auth.py` -- `/api/auth/spotify/start` and `/api/auth/spotify` (disconnect) need session gating like the rest of `/api/auth/*`; `/api/auth/spotify/callback` is hit directly by Spotify's redirect (no `Authorization` header available), so it must authenticate via the `state` param instead -- open question on exact mechanism below.
+
+Backend (existing files to edit):
+- `api/src/models/user.py` -- if storing on `users` directly rather than a new table, add the mapped field to `public_user()`.
+
+Frontend (existing):
+- `app/lib/app/routes/settings.dart:443-460` -- add a "Connect Spotify" / "Connected as {spotify display name}" row inside the existing Preferred platform `_card`, or a new `_card` block just for it.
+- `app/lib/services/auth_service.dart` -- add calls for start/disconnect, matching the existing `_authedGet`/`_post` helpers.
+
+Frontend (new):
+- Nothing structurally new needed for the redirect itself -- Flutter web is same-origin already, no custom URL scheme required (unlike native iOS/Android, out of scope for phase A per the app's current web-first usage).
+
+### Plan (once approved)
+
+1. Register the redirect URI in the Spotify Developer Dashboard for this app (exact URI depends on the origin decision below).
+2. Add `spotify_accounts` table + queries.
+3. Add authorization_code + refresh_token functions to the Spotify OAuth client.
+4. Add the three routes (start, callback, disconnect) + controller.
+5. Add the "Connect Spotify" UI in `settings.dart` + `auth_service.dart` calls.
+6. Apply the new schema to D1 by hand (same manual `wrangler d1 execute --file=...` step every other schema file has needed -- no migration runner exists, per the phase 1 note above).
+7. Set the redirect URI + confirm scopes in the Spotify dashboard before first real test.
+
+### Verify
+
+- Manual: sign in to kurl, tap Connect Spotify, complete Spotify's consent screen, land back on kurl signed in with both, profile shows the linked Spotify identity.
+- `GET /api/auth/profile` reflects the linked account.
+- Disconnect removes the row and the UI reverts to "not connected".
+
+### Risks / open questions
+
+- **Redirect origin**: does Spotify redirect to `api.kurl.online/api/auth/spotify/callback` (Worker exchanges the code directly, then 302s the browser to `kurl.online`) or to a route on `kurl.online` that then calls the Worker? The Worker-first path is simpler and keeps `client_secret` server-side only; recommend that, but confirm before building.
+- **Callback authentication**: the callback request comes from Spotify's redirect, not from the kurl app, so it carries no session `Authorization` header. The `state` param must encode (or look up) which kurl session initiated the flow -- exact mechanism (signed state token vs a short-lived server-side pending-auth row) not yet decided.
+- **`SPOTIFY_API_ENABLED` reason**: currently defaults off; unclear from source whether this is because Spotify restricted API access for this app (Nov 2024 policy changes affected several endpoints for apps not in Extended Quota Mode) or an unrelated reason. Confirm the app's current Spotify dashboard quota mode before relying on it for user-facing login -- Development Mode caps at 25 authorized users (each must be added by email in the dashboard), which would silently block any user beyond the first 25.
+- **Scopes**: phase A (identity only) needs no scopes beyond none/`user-read-email`. Do not request library/playlist scopes until phase B is actually scoped -- requesting more than needed also triggers Spotify's app review for restricted scopes.
+- **Token refresh**: refresh tokens need a background or on-demand refresh path before expiry (typically 1 hour access token lifetime) -- where this runs (per-request lazy refresh vs a scheduled job) is not yet decided.
+- **Existing client_credentials flow untouched**: this plan adds a second, separate OAuth grant type alongside the existing app-only one in `_oauth.py` -- must not disturb the existing catalog-search token cache (`TokenCache("Spotify")` in `spotify.py:6`).

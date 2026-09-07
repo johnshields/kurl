@@ -27,13 +27,7 @@ async def _api_get(path: str, params: dict | None = None) -> dict:
 
 
 def is_configured() -> bool:
-    # Skip Spotify API calls unless SPOTIFY_API_ENABLED=true. Client code
-    # stays intact for when access is restored.
-    return bool(
-        settings.SPOTIFY_API_ENABLED
-        and settings.SPOTIFY_CLIENT_ID
-        and settings.SPOTIFY_CLIENT_SECRET
-    )
+    return bool(settings.SPOTIFY_CLIENT_ID and settings.SPOTIFY_CLIENT_SECRET)
 
 
 async def get_track(track_id: str) -> dict:
