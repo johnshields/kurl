@@ -180,7 +180,24 @@ async def get_me(db, user_uid: str) -> dict:
 
 
 async def update_profile(db, user_uid: str, data: dict) -> dict:
-    """Partial update -- applies whichever of username/preferredPlatform/password are present."""
+    """Partial update -- applies whichever of email/username/preferredPlatform/password are present."""
+    if "email" in data:
+        email = (data.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            return {"status": "error", "code": "INVALID_EMAIL", "message": "Valid email required."}
+
+        current = await fetch_one(db, queries.GET_BY_UID, user_uid)
+        if current and current["email"]:
+            return {"status": "error", "code": "EMAIL_ALREADY_SET", "message": "Email already set."}
+
+        existing = await fetch_one(db, queries.GET_BY_EMAIL, email)
+        if existing:
+            return {"status": "error", "code": "EMAIL_TAKEN", "message": "Email already registered."}
+
+        await execute(db, queries.UPDATE_EMAIL, email, user_uid)
+        await _send_verification_email(user_uid, email)
+        logger.info("Added email for %s", user_uid)
+
     if "password" in data:
         password = data.get("password") or ""
         if len(password) < 8:

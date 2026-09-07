@@ -201,6 +201,48 @@ class TestUpdateProfile:
         assert result["status"] == "success"
         execute_mock.assert_awaited_once()
 
+    async def test_rejects_invalid_email(self):
+        result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"email": "not-an-email"})
+        assert result["status"] == "error"
+        assert result["code"] == "INVALID_EMAIL"
+
+    async def test_rejects_when_email_already_set(self):
+        stub = _fetch_one_stub(by_uid={"uid": "USR_X", "email": "already@set.com"})
+        with patch("api.controllers.auth_controller.fetch_one", stub):
+            result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"email": "new@b.com"})
+        assert result["status"] == "error"
+        assert result["code"] == "EMAIL_ALREADY_SET"
+
+    async def test_rejects_email_taken_by_someone_else(self):
+        stub = _fetch_one_stub(by_uid={"uid": "USR_X", "email": None}, by_email={"uid": "USR_OTHER"})
+        with patch("api.controllers.auth_controller.fetch_one", stub):
+            result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"email": "taken@b.com"})
+        assert result["status"] == "error"
+        assert result["code"] == "EMAIL_TAKEN"
+
+    async def test_adds_email_and_sends_verification(self):
+        execute_mock = AsyncMock()
+        send_mock = AsyncMock()
+        stub = _fetch_one_stub(
+            by_uid={
+                "uid": "USR_X",
+                "email": None,
+                "username": "my-name",
+                "preferred_platform": None,
+                "created_at": "2026-01-01T00:00:00.000Z",
+            }
+        )
+        with patch("api.controllers.auth_controller.execute", execute_mock), patch(
+            "api.controllers.auth_controller.fetch_one", stub
+        ), patch("api.controllers.auth_controller.email_client.send", send_mock), patch(
+            "api.controllers.auth_controller.settings"
+        ) as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"email": "new@b.com"})
+        assert result["status"] == "success"
+        execute_mock.assert_awaited_once()
+        send_mock.assert_awaited_once()
+
 
 class TestForgotPassword:
     async def test_always_succeeds_even_for_unknown_email(self):

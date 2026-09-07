@@ -32,6 +32,10 @@ UPDATE_PASSWORD = """
     UPDATE users SET password_hash = ? WHERE uid = ?
 """
 
+UPDATE_EMAIL = """
+    UPDATE users SET email = ? WHERE uid = ?
+"""
+
 UPDATE_EMAIL_VERIFIED = """
     UPDATE users SET email_verified_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE uid = ?
 """

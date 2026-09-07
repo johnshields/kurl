@@ -19,7 +19,7 @@ Password hashing: `hashlib.pbkdf2_hmac("sha256", ...)`, 120,000 iterations.
 | `POST /api/auth/verify-email` | Public | `{token}` |
 | `POST /api/auth/resend-verification` | Session | |
 | `GET /api/auth/profile` | Session | |
-| `PATCH /api/auth/profile` | Session | `{username?, preferredPlatform?, password?}` |
+| `PATCH /api/auth/profile` | Session | `{email?, username?, preferredPlatform?, password?}`. `email` only settable once (accounts with no email, e.g. SoundCloud sign-in) |
 | `GET/DELETE /api/auth/spotify` | Session | Status / disconnect |
 | `GET /api/auth/spotify/start` | Optional | Session present -> link mode, absent -> sign-in |
 | `GET /api/auth/spotify/callback` | State token | Spotify's own redirect |

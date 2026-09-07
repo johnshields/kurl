@@ -280,6 +280,95 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   }
 }
 
+class _AddEmailDialog extends StatefulWidget {
+  final ValueChanged<KurlUser> onUpdated;
+
+  const _AddEmailDialog({required this.onUpdated});
+
+  @override
+  State<_AddEmailDialog> createState() => _AddEmailDialogState();
+}
+
+class _AddEmailDialogState extends State<_AddEmailDialog> {
+  final _emailController = TextEditingController();
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _save() async {
+    final email = _emailController.text.trim();
+    final validationError = validateEmail(email);
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final updated = await AuthService.updateProfile(email: email);
+      if (mounted) {
+        widget.onUpdated(updated);
+        Navigator.of(context).pop();
+        _showToast(context, 'Email added');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e is ApiException ? e.message : friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF141414),
+      title: const Text('Add email', style: TextStyle(color: Color(0xFFE5E5E5))),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _emailController,
+            enabled: !_saving,
+            keyboardType: TextInputType.emailAddress,
+            onSubmitted: (_) => _save(),
+            style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+            decoration: InputDecoration(
+              hintText: 'Email',
+              hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFF0A0A0A),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _borderIdle)),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: _errorRed, fontSize: 12)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
+        ),
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -1057,9 +1146,71 @@ class _ProfileViewState extends State<_ProfileView> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
   }
 
+  Widget _connectedServiceRow({
+    required String name,
+    required Color? colour,
+    required bool loading,
+    required bool connected,
+    required String? connectedLabel,
+    required bool busy,
+    required VoidCallback onConnect,
+    required VoidCallback onDisconnect,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5))),
+        const SizedBox(height: 8),
+        if (loading)
+          const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
+          )
+        else if (connected)
+          Row(
+            children: [
+              Icon(Icons.check_circle, size: 16, color: colour),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Connected as $connectedLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
+                ),
+              ),
+              TextButton(
+                onPressed: busy ? null : onDisconnect,
+                child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
+              ),
+            ],
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: busy ? null : onConnect,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE5E5E5),
+                side: BorderSide(color: colour ?? _borderIdle),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              child: Text(busy ? 'Connecting...' : 'Connect $name'),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final initial = widget.user.email.isNotEmpty ? widget.user.email[0].toUpperCase() : '?';
+    final initial = widget.user.email.isNotEmpty
+        ? widget.user.email[0].toUpperCase()
+        : widget.user.username.isNotEmpty
+            ? widget.user.username[0].toUpperCase()
+            : '?';
 
     return SingleChildScrollView(
       child: Center(
@@ -1098,12 +1249,25 @@ class _ProfileViewState extends State<_ProfileView> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        widget.user.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
-                      ),
+                      child: widget.user.email.isNotEmpty
+                          ? Text(
+                              widget.user.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                            )
+                          : TextButton(
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (_) => _AddEmailDialog(onUpdated: widget.onUpdated),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                alignment: Alignment.centerLeft,
+                                minimumSize: const Size(0, 0),
+                              ),
+                              child: const Text('Add email', style: TextStyle(fontSize: 14, color: Color(0xFF888888))),
+                            ),
                     ),
                     IconButton(
                       onPressed: widget.onLogout,
@@ -1235,149 +1399,44 @@ class _ProfileViewState extends State<_ProfileView> {
                 _card(
                   children: [
                     const Text(
-                      'Spotify',
+                      'Connected services',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
                     ),
-                    const SizedBox(height: 8),
-                    if (_loadingSpotify)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
-                      )
-                    else if (_spotify.connected)
-                      Row(
-                        children: [
-                          const Icon(Icons.check_circle, size: 16, color: Color(0xFF1DB954)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Connected as ${_spotify.displayName ?? _spotify.spotifyUserId}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _connectingSpotify ? null : _disconnectSpotify,
-                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
-                          ),
-                        ],
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _connectingSpotify ? null : _connectSpotify,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE5E5E5),
-                            side: const BorderSide(color: _borderIdle),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          child: Text(_connectingSpotify ? 'Connecting...' : 'Connect Spotify'),
-                        ),
-                      ),
-                  ],
-                ),
-                /* Deezer app registration is closed -- re-enable once available.
-                const SizedBox(height: 24),
-                _card(
-                  children: [
-                    const Text(
-                      'Deezer',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    const SizedBox(height: 16),
+                    _connectedServiceRow(
+                      name: 'Spotify',
+                      colour: findPlatform('spotify')?.colour,
+                      loading: _loadingSpotify,
+                      connected: _spotify.connected,
+                      connectedLabel: _spotify.displayName ?? _spotify.spotifyUserId,
+                      busy: _connectingSpotify,
+                      onConnect: _connectSpotify,
+                      onDisconnect: _disconnectSpotify,
                     ),
-                    const SizedBox(height: 8),
-                    if (_loadingDeezer)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
-                      )
-                    else if (_deezer.connected)
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle, size: 16, color: findPlatform('deezer')?.colour),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Connected as ${_deezer.displayName ?? _deezer.deezerUserId}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _connectingDeezer ? null : _disconnectDeezer,
-                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
-                          ),
-                        ],
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _connectingDeezer ? null : _connectDeezer,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE5E5E5),
-                            side: const BorderSide(color: _borderIdle),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          child: Text(_connectingDeezer ? 'Connecting...' : 'Connect Deezer'),
-                        ),
-                      ),
-                  ],
-                ),
-                */
-                const SizedBox(height: 24),
-                _card(
-                  children: [
-                    const Text(
-                      'SoundCloud',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                    /* Deezer app registration is closed -- re-enable once available.
+                    const SizedBox(height: 20),
+                    _connectedServiceRow(
+                      name: 'Deezer',
+                      colour: findPlatform('deezer')?.colour,
+                      loading: _loadingDeezer,
+                      connected: _deezer.connected,
+                      connectedLabel: _deezer.displayName ?? _deezer.deezerUserId,
+                      busy: _connectingDeezer,
+                      onConnect: _connectDeezer,
+                      onDisconnect: _disconnectDeezer,
                     ),
-                    const SizedBox(height: 8),
-                    if (_loadingSoundcloud)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
-                      )
-                    else if (_soundcloud.connected)
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle, size: 16, color: findPlatform('soundcloud')?.colour),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Connected as ${_soundcloud.displayName ?? _soundcloud.soundcloudUserId}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Color(0xFFE5E5E5)),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _connectingSoundcloud ? null : _disconnectSoundcloud,
-                            child: const Text('Disconnect', style: TextStyle(color: _errorRed, fontSize: 13)),
-                          ),
-                        ],
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _connectingSoundcloud ? null : _connectSoundcloud,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFE5E5E5),
-                            side: const BorderSide(color: _borderIdle),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          child: Text(_connectingSoundcloud ? 'Connecting...' : 'Connect SoundCloud'),
-                        ),
-                      ),
+                    */
+                    const SizedBox(height: 20),
+                    _connectedServiceRow(
+                      name: 'SoundCloud',
+                      colour: findPlatform('soundcloud')?.colour,
+                      loading: _loadingSoundcloud,
+                      connected: _soundcloud.connected,
+                      connectedLabel: _soundcloud.displayName ?? _soundcloud.soundcloudUserId,
+                      busy: _connectingSoundcloud,
+                      onConnect: _connectSoundcloud,
+                      onDisconnect: _disconnectSoundcloud,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),

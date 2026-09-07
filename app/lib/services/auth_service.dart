@@ -49,6 +49,7 @@ class AuthService {
   }
 
   static Future<KurlUser> updateProfile({
+    String? email,
     String? username,
     String? preferredPlatform,
     bool clearPreferredPlatform = false,
@@ -63,6 +64,7 @@ class AuthService {
       Uri.parse('$base/api/auth/profile'),
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       body: jsonEncode({
+        'email': ?email,
         'username': ?username,
         'password': ?password,
         if (clearPreferredPlatform) 'preferredPlatform': null else 'preferredPlatform': ?preferredPlatform,
