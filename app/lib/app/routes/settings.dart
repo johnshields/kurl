@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 // import 'package:kurl/models/deezer_account.dart'; -- Deezer app registration is closed, re-enable once available.
+import 'package:kurl/models/google_account.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/soundcloud_account.dart';
 import 'package:kurl/models/spotify_account.dart';
@@ -35,6 +36,12 @@ Future<String?> _launchDeezerAuth() async {
 
 Future<String?> _launchSoundcloudAuth() async {
   final url = await AuthService.startSoundcloudAuth();
+  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+  return url;
+}
+
+Future<String?> _launchGoogleAuth() async {
+  final url = await AuthService.startGoogleAuth();
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
 }
@@ -700,6 +707,7 @@ class _AuthFormState extends State<_AuthForm> {
   bool _spotifyLoading = false;
   // bool _deezerLoading = false; -- Deezer app registration is closed, re-enable once available.
   bool _soundcloudLoading = false;
+  bool _googleLoading = false;
   String? _error;
 
   Future<void> _signInWithSpotify() async {
@@ -746,6 +754,21 @@ class _AuthFormState extends State<_AuthForm> {
       }
     } finally {
       if (mounted) setState(() => _soundcloudLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _googleLoading = true;
+      _error = null;
+    });
+    try {
+      final url = await _launchGoogleAuth();
+      if (url == null && mounted) {
+        setState(() => _error = 'YouTube sign-in is not available right now.');
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
     }
   }
 
@@ -813,6 +836,7 @@ class _AuthFormState extends State<_AuthForm> {
   Widget build(BuildContext context) {
     final spotify = findPlatform('spotify');
     final soundcloud = findPlatform('soundcloud');
+    final google = findPlatform('youtubeMusic');
 
     return SingleChildScrollView(
       child: Center(
@@ -898,6 +922,27 @@ class _AuthFormState extends State<_AuthForm> {
                         Icon(soundcloud?.icon, size: 18, color: soundcloud?.colour),
                         const SizedBox(width: 8),
                         Text(_soundcloudLoading ? 'Connecting...' : 'Continue with SoundCloud'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: (_loading || _googleLoading) ? null : _signInWithGoogle,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFE5E5E5),
+                      side: BorderSide(color: google?.colour ?? _borderIdle),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(google?.icon, size: 18, color: google?.colour),
+                        const SizedBox(width: 8),
+                        Text(_googleLoading ? 'Connecting...' : 'Continue with YouTube'),
                       ],
                     ),
                   ),
@@ -1036,6 +1081,9 @@ class _ProfileViewState extends State<_ProfileView> {
   SoundcloudAccount _soundcloud = SoundcloudAccount.disconnected;
   bool _loadingSoundcloud = true;
   bool _connectingSoundcloud = false;
+  GoogleAccount _google = GoogleAccount.disconnected;
+  bool _loadingGoogle = true;
+  bool _connectingGoogle = false;
   bool _resendingVerification = false;
 
   @override
@@ -1043,8 +1091,10 @@ class _ProfileViewState extends State<_ProfileView> {
     super.initState();
     _loadSpotifyStatus();
     _loadSoundcloudStatus();
+    _loadGoogleStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSpotifyReturnMessage());
     WidgetsBinding.instance.addPostFrameCallback((_) => _showSoundcloudReturnMessage());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showGoogleReturnMessage());
     WidgetsBinding.instance.addPostFrameCallback((_) => _showVerifyEmailMessage());
   }
 
@@ -1058,6 +1108,12 @@ class _ProfileViewState extends State<_ProfileView> {
     final soundcloudParam = Uri.base.queryParameters['soundcloud'];
     if (soundcloudParam == null || !mounted) return;
     _showToast(context, soundcloudParam == 'connected' ? 'SoundCloud connected' : 'SoundCloud connection failed');
+  }
+
+  void _showGoogleReturnMessage() {
+    final googleParam = Uri.base.queryParameters['google'];
+    if (googleParam == null || !mounted) return;
+    _showToast(context, googleParam == 'connected' ? 'YouTube connected' : 'YouTube connection failed');
   }
 
   void _showVerifyEmailMessage() {
@@ -1125,6 +1181,25 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
+  Future<void> _loadGoogleStatus() async {
+    final status = await AuthService.getGoogleStatus();
+    if (mounted) {
+      setState(() {
+        _google = status;
+        _loadingGoogle = false;
+      });
+    }
+  }
+
+  Future<void> _connectGoogle() async {
+    setState(() => _connectingGoogle = true);
+    try {
+      await _launchGoogleAuth();
+    } finally {
+      if (mounted) setState(() => _connectingGoogle = false);
+    }
+  }
+
   Future<void> _resendVerification() async {
     setState(() => _resendingVerification = true);
     try {
@@ -1169,6 +1244,17 @@ class _ProfileViewState extends State<_ProfileView> {
     } catch (_) {
     } finally {
       if (mounted) setState(() => _connectingSoundcloud = false);
+    }
+  }
+
+  Future<void> _disconnectGoogle() async {
+    setState(() => _connectingGoogle = true);
+    try {
+      await AuthService.disconnectGoogle();
+      if (mounted) setState(() => _google = GoogleAccount.disconnected);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _connectingGoogle = false);
     }
   }
 
@@ -1511,6 +1597,18 @@ class _ProfileViewState extends State<_ProfileView> {
                           onTap: _soundcloud.connected
                               ? () => _confirmDisconnect('SoundCloud', _disconnectSoundcloud)
                               : _connectSoundcloud,
+                        ),
+                        _serviceChip(
+                          context: context,
+                          name: 'YouTube',
+                          icon: findPlatform('youtubeMusic')?.icon,
+                          colour: findPlatform('youtubeMusic')?.colour,
+                          loading: _loadingGoogle,
+                          connected: _google.connected,
+                          busy: _connectingGoogle,
+                          onTap: _google.connected
+                              ? () => _confirmDisconnect('YouTube', _disconnectGoogle)
+                              : _connectGoogle,
                         ),
                       ],
                     ),

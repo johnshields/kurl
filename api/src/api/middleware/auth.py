@@ -31,6 +31,9 @@ PUBLIC_PATHS = {
     "/api/auth/soundcloud",
     "/api/auth/soundcloud/start",
     "/api/auth/soundcloud/callback",
+    "/api/auth/google",
+    "/api/auth/google/start",
+    "/api/auth/google/callback",
 }
 
 # Static-asset prefixes served by the Worker's [assets] handler.

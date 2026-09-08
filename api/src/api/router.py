@@ -10,6 +10,7 @@ import time
 from api.middleware.session_auth import get_session_user_uid
 from api.routes import auth, events
 from api.routes import deezer_auth as deezer_auth_routes
+from api.routes import google_auth as google_auth_routes
 from api.routes import kurls as kurls_routes
 from api.routes import soundcloud_auth as soundcloud_auth_routes
 from api.routes import spotify_auth as spotify_auth_routes
@@ -223,6 +224,29 @@ async def _soundcloud_callback(db, request, **kwargs):
 @route("DELETE", "/api/auth/soundcloud")
 async def _soundcloud_disconnect(db, request, **kwargs):
     return await soundcloud_auth_routes.disconnect(db, request)
+
+
+# Sign in with YouTube (sign-in for a new visitor, or linking an existing account)
+
+
+@route("GET", "/api/auth/google")
+async def _google_status(db, request, **kwargs):
+    return await google_auth_routes.status(db, request)
+
+
+@route("GET", "/api/auth/google/start")
+async def _google_start(db, request, **kwargs):
+    return await google_auth_routes.start(db, request)
+
+
+@route("GET", "/api/auth/google/callback")
+async def _google_callback(db, request, **kwargs):
+    return await google_auth_routes.callback(db, request)
+
+
+@route("DELETE", "/api/auth/google")
+async def _google_disconnect(db, request, **kwargs):
+    return await google_auth_routes.disconnect(db, request)
 
 
 # Kurl history (signed-in users only)

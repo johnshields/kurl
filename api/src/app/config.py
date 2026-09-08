@@ -143,6 +143,26 @@ class Settings:
         """Frontend URL the callback bounces the browser back to once done."""
         return self._get("SOUNDCLOUD_APP_REDIRECT_URL", "https://kurl.online/settings")
 
+    # Google (OAuth authorization_code -- Sign in with YouTube). Separate
+    # from YOUTUBE_API_KEY above, which is an unrelated Data API v3 key.
+    @property
+    def GOOGLE_CLIENT_ID(self) -> str | None:
+        return self._get("GOOGLE_CLIENT_ID")
+
+    @property
+    def GOOGLE_CLIENT_SECRET(self) -> str | None:
+        return self._get("GOOGLE_CLIENT_SECRET")
+
+    @property
+    def GOOGLE_REDIRECT_URI(self) -> str | None:
+        """Must exactly match a redirect URI registered in the Google Cloud OAuth client."""
+        return self._get("GOOGLE_REDIRECT_URI")
+
+    @property
+    def GOOGLE_APP_REDIRECT_URL(self) -> str:
+        """Frontend URL the callback bounces the browser back to once done."""
+        return self._get("GOOGLE_APP_REDIRECT_URL", "https://kurl.online/settings")
+
     # User accounts (session JWT signing key -- distinct from KURL_API_KEY)
     @property
     def SESSION_SECRET(self) -> str | None:

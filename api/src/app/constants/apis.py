@@ -25,6 +25,10 @@ DEEZER_API_BASE = "https://api.deezer.com"
 DEEZER_AUTHORIZE_URL = "https://connect.deezer.com/oauth/auth.php"
 DEEZER_TOKEN_URL = "https://connect.deezer.com/oauth/access_token.php"
 
+GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+
 # Resolver endpoints (rescue path).
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 LASTFM_TRACK_URL = "https://www.last.fm/music/{artist}/_/{title}"
