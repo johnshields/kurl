@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:kurl/models/google_account.dart';
 import 'package:kurl/models/platform.dart';
-import 'package:kurl/models/soundcloud_account.dart';
-import 'package:kurl/models/spotify_account.dart';
+import 'package:kurl/models/streaming_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/auth_service.dart';
@@ -16,23 +14,17 @@ const _errorRed = Color(0xFFEF4444);
 const _borderIdle = Color(0xFF333333);
 const _borderFocused = Color(0xFF555555);
 
+Future<String?> _launchSpotifyAuth() => _launchStreamingAuth('spotify');
+
+Future<String?> _launchSoundcloudAuth() => _launchStreamingAuth('soundcloud');
+
+Future<String?> _launchGoogleAuth() => _launchStreamingAuth('google');
+
 /// Shared by both the sign-in screen and the profile view's Connect button --
-/// starts the Spotify OAuth flow and navigates there. Returns the URL that
-/// was opened, or null if Spotify sign-in isn't available right now.
-Future<String?> _launchSpotifyAuth() async {
-  final url = await AuthService.startSpotifyAuth();
-  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
-  return url;
-}
-
-Future<String?> _launchSoundcloudAuth() async {
-  final url = await AuthService.startSoundcloudAuth();
-  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
-  return url;
-}
-
-Future<String?> _launchGoogleAuth() async {
-  final url = await AuthService.startGoogleAuth();
+/// starts the OAuth flow and navigates there. Returns the URL that was
+/// opened, or null if that sign-in isn't available right now.
+Future<String?> _launchStreamingAuth(String provider) async {
+  final url = await AuthService.startStreamingAuth(provider);
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
 }
@@ -1021,13 +1013,13 @@ class _ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<_ProfileView> {
   bool _savingPlatform = false;
-  SpotifyAccount _spotify = SpotifyAccount.disconnected;
+  StreamingAccount _spotify = StreamingAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
-  SoundcloudAccount _soundcloud = SoundcloudAccount.disconnected;
+  StreamingAccount _soundcloud = StreamingAccount.disconnected;
   bool _loadingSoundcloud = true;
   bool _connectingSoundcloud = false;
-  GoogleAccount _google = GoogleAccount.disconnected;
+  StreamingAccount _google = StreamingAccount.disconnected;
   bool _loadingGoogle = true;
   bool _connectingGoogle = false;
   bool _resendingVerification = false;
@@ -1069,7 +1061,7 @@ class _ProfileViewState extends State<_ProfileView> {
   }
 
   Future<void> _loadSpotifyStatus() async {
-    final status = await AuthService.getSpotifyStatus();
+    final status = await AuthService.streamingStatus('spotify');
     if (mounted) {
       setState(() {
         _spotify = status;
@@ -1089,7 +1081,7 @@ class _ProfileViewState extends State<_ProfileView> {
 
 
   Future<void> _loadSoundcloudStatus() async {
-    final status = await AuthService.getSoundcloudStatus();
+    final status = await AuthService.streamingStatus('soundcloud');
     if (mounted) {
       setState(() {
         _soundcloud = status;
@@ -1108,7 +1100,7 @@ class _ProfileViewState extends State<_ProfileView> {
   }
 
   Future<void> _loadGoogleStatus() async {
-    final status = await AuthService.getGoogleStatus();
+    final status = await AuthService.streamingStatus('google');
     if (mounted) {
       setState(() {
         _google = status;
@@ -1140,8 +1132,8 @@ class _ProfileViewState extends State<_ProfileView> {
   Future<void> _disconnectSpotify() async {
     setState(() => _connectingSpotify = true);
     try {
-      await AuthService.disconnectSpotify();
-      if (mounted) setState(() => _spotify = SpotifyAccount.disconnected);
+      await AuthService.disconnectStreaming('spotify');
+      if (mounted) setState(() => _spotify = StreamingAccount.disconnected);
     } catch (_) {
     } finally {
       if (mounted) setState(() => _connectingSpotify = false);
@@ -1151,8 +1143,8 @@ class _ProfileViewState extends State<_ProfileView> {
   Future<void> _disconnectSoundcloud() async {
     setState(() => _connectingSoundcloud = true);
     try {
-      await AuthService.disconnectSoundcloud();
-      if (mounted) setState(() => _soundcloud = SoundcloudAccount.disconnected);
+      await AuthService.disconnectStreaming('soundcloud');
+      if (mounted) setState(() => _soundcloud = StreamingAccount.disconnected);
     } catch (_) {
     } finally {
       if (mounted) setState(() => _connectingSoundcloud = false);
@@ -1162,8 +1154,8 @@ class _ProfileViewState extends State<_ProfileView> {
   Future<void> _disconnectGoogle() async {
     setState(() => _connectingGoogle = true);
     try {
-      await AuthService.disconnectGoogle();
-      if (mounted) setState(() => _google = GoogleAccount.disconnected);
+      await AuthService.disconnectStreaming('google');
+      if (mounted) setState(() => _google = StreamingAccount.disconnected);
     } catch (_) {
     } finally {
       if (mounted) setState(() => _connectingGoogle = false);

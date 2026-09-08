@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kurl/models/google_account.dart';
 import 'package:kurl/models/kurl_history_item.dart';
-import 'package:kurl/models/soundcloud_account.dart';
-import 'package:kurl/models/spotify_account.dart';
+import 'package:kurl/models/streaming_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_base.dart';
 import 'package:kurl/services/api_exception.dart';
@@ -90,16 +88,7 @@ class AuthService {
   }
 
   static Future<void> resendVerification() async {
-    final token = await getToken();
-    if (token == null) {
-      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
-    }
-    final base = await resolveApiBase();
-    final response = await http.post(
-      Uri.parse('$base/api/auth/resend-verification'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    _throwIfError(jsonDecode(response.body), response.statusCode);
+    await _authedSend('POST', '/api/auth/resend-verification');
   }
 
   static Future<List<KurlHistoryItem>> getKurls() async {
@@ -109,68 +98,27 @@ class AuthService {
   }
 
   static Future<void> deleteKurl(String uid) async {
-    final token = await getToken();
-    if (token == null) {
-      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
-    }
-    final base = await resolveApiBase();
-    final response = await http.delete(
-      Uri.parse('$base/api/kurls/$uid'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    _throwIfError(jsonDecode(response.body), response.statusCode);
+    await _authedSend('DELETE', '/api/kurls/$uid');
   }
 
-  static Future<SpotifyAccount> getSpotifyStatus() async {
-    final data = await _authedGet('/api/auth/spotify');
-    return data == null ? SpotifyAccount.disconnected : SpotifyAccount.fromJson(data);
-  }
-
-  /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
-  /// (link mode) or signed-out (full sign-in).
-  static Future<String?> startSpotifyAuth() async {
-    final results = await Future.wait([getToken(), resolveApiBase()]);
-    final token = results[0];
-    final base = results[1]!;
-    final response = await http.get(
-      Uri.parse('$base/api/auth/spotify/start'),
-      headers: {if (token != null) 'Authorization': 'Bearer $token'},
-    );
-    final json = jsonDecode(response.body);
-    if (json['status'] == 'error') return null;
-    return json['data']?['url'];
-  }
-
-  /// Adopts a session token handed back on the Spotify sign-in redirect
+  /// Adopts a session token handed back on a streaming sign-in redirect
   /// (?token=...) -- same storage path as signup/login.
   static Future<void> adoptSessionToken(String token) => _saveToken(token);
 
-  static Future<void> disconnectSpotify() async {
-    final token = await getToken();
-    if (token == null) {
-      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
-    }
-    final base = await resolveApiBase();
-    final response = await http.delete(
-      Uri.parse('$base/api/auth/spotify'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    _throwIfError(jsonDecode(response.body), response.statusCode);
-  }
-
-  static Future<SoundcloudAccount> getSoundcloudStatus() async {
-    final data = await _authedGet('/api/auth/soundcloud');
-    return data == null ? SoundcloudAccount.disconnected : SoundcloudAccount.fromJson(data);
+  /// [provider] is the URL segment (spotify, soundcloud, google).
+  static Future<StreamingAccount> streamingStatus(String provider) async {
+    final data = await _authedGet('/api/auth/$provider');
+    return data == null ? StreamingAccount.disconnected : StreamingAccount.fromJson(data);
   }
 
   /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
   /// (link mode) or signed-out (full sign-in).
-  static Future<String?> startSoundcloudAuth() async {
+  static Future<String?> startStreamingAuth(String provider) async {
     final results = await Future.wait([getToken(), resolveApiBase()]);
     final token = results[0];
     final base = results[1]!;
     final response = await http.get(
-      Uri.parse('$base/api/auth/soundcloud/start'),
+      Uri.parse('$base/api/auth/$provider/start'),
       headers: {if (token != null) 'Authorization': 'Bearer $token'},
     );
     final json = jsonDecode(response.body);
@@ -178,50 +126,8 @@ class AuthService {
     return json['data']?['url'];
   }
 
-  static Future<void> disconnectSoundcloud() async {
-    final token = await getToken();
-    if (token == null) {
-      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
-    }
-    final base = await resolveApiBase();
-    final response = await http.delete(
-      Uri.parse('$base/api/auth/soundcloud'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    _throwIfError(jsonDecode(response.body), response.statusCode);
-  }
-
-  static Future<GoogleAccount> getGoogleStatus() async {
-    final data = await _authedGet('/api/auth/google');
-    return data == null ? GoogleAccount.disconnected : GoogleAccount.fromJson(data);
-  }
-
-  /// Authorize URL to open, or null if unconfigured/failed. Works signed-in
-  /// (link mode) or signed-out (full sign-in).
-  static Future<String?> startGoogleAuth() async {
-    final results = await Future.wait([getToken(), resolveApiBase()]);
-    final token = results[0];
-    final base = results[1]!;
-    final response = await http.get(
-      Uri.parse('$base/api/auth/google/start'),
-      headers: {if (token != null) 'Authorization': 'Bearer $token'},
-    );
-    final json = jsonDecode(response.body);
-    if (json['status'] == 'error') return null;
-    return json['data']?['url'];
-  }
-
-  static Future<void> disconnectGoogle() async {
-    final token = await getToken();
-    if (token == null) {
-      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
-    }
-    final base = await resolveApiBase();
-    final response = await http.delete(
-      Uri.parse('$base/api/auth/google'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    _throwIfError(jsonDecode(response.body), response.statusCode);
+  static Future<void> disconnectStreaming(String provider) async {
+    await _authedSend('DELETE', '/api/auth/$provider');
   }
 
   static Future<void> _saveToken(String token) async {
@@ -240,6 +146,24 @@ class AuthService {
     final json = jsonDecode(response.body);
     _throwIfError(json, response.statusCode);
     return json['data'] ?? {};
+  }
+
+  /// Token-required request with no meaningful response body -- throws
+  /// AUTH_REQUIRED when signed out, otherwise surfaces backend errors.
+  static Future<void> _authedSend(String method, String path) async {
+    final token = await getToken();
+    if (token == null) {
+      throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
+    }
+    final base = await resolveApiBase();
+    final uri = Uri.parse('$base$path');
+    final headers = {'Authorization': 'Bearer $token'};
+    final response = switch (method) {
+      'DELETE' => await http.delete(uri, headers: headers),
+      'POST' => await http.post(uri, headers: headers),
+      _ => throw ArgumentError('unsupported method: $method'),
+    };
+    _throwIfError(jsonDecode(response.body), response.statusCode);
   }
 
   static void _throwIfError(Map<String, dynamic> json, int statusCode) {
