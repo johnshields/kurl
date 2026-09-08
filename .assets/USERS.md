@@ -54,6 +54,8 @@ SoundCloud and Google's OAuth clients don't reuse `clients/platforms/_oauth.py`'
 
 Google's identity client (`clients/google_oauth_client.py`, `GOOGLE_CLIENT_ID`/`SECRET`) is entirely separate from `settings.YOUTUBE_API_KEY`, an unrelated Data API v3 key used for catalog search.
 
+`access_token`/`refresh_token` are encrypted before being written (`utils/token_crypto.py`, AES-256-GCM via `crypto.subtle`, key in `TOKEN_ENCRYPTION_KEY`). Encryption fails closed: no key configured, or the FFI call fails, and the row gets an empty string instead of plaintext. Untested outside a real deploy -- `crypto.subtle` doesn't exist under pytest's plain CPython.
+
 ## Schema
 
 | Table | Key columns |

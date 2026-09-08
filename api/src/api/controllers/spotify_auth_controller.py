@@ -16,6 +16,7 @@ from models.user import to_db_params as to_user_db_params
 from utils.logging import get_logger
 from utils.oauth_state import create_oauth_state, verify_oauth_state
 from utils.session import create_session_token
+from utils.token_crypto import encrypt_token
 from utils.uid import gen_uid
 
 logger = get_logger()
@@ -81,8 +82,8 @@ async def handle_callback(db, code: str | None, state: str | None, error: str | 
             user_uid,
             spotify_user_id,
             profile.get("display_name"),
-            tokens["access_token"],
-            tokens.get("refresh_token", ""),
+            await encrypt_token(tokens["access_token"]) or "",
+            await encrypt_token(tokens.get("refresh_token")) or "",
             expires_at,
             tokens.get("scope"),
         ),

@@ -149,5 +149,10 @@ class Settings:
     def SESSION_SECRET(self) -> str | None:
         return self._get("SESSION_SECRET")
 
+    # AES-256-GCM key for encrypting stored OAuth tokens (64 hex chars / 32 bytes).
+    @property
+    def TOKEN_ENCRYPTION_KEY(self) -> str | None:
+        return self._get("TOKEN_ENCRYPTION_KEY")
+
 
 settings = Settings()
