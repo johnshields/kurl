@@ -30,7 +30,7 @@ async def _import_key(crypto, Object, to_js):
     key_bytes = bytes.fromhex(settings.TOKEN_ENCRYPTION_KEY)
     return await crypto.subtle.importKey(
         "raw",
-        key_bytes,
+        to_js(key_bytes),
         to_js({"name": _ALGORITHM}, dict_converter=Object.fromEntries),
         False,
         to_js(["encrypt", "decrypt"]),
@@ -47,9 +47,9 @@ async def encrypt_token(plaintext: str | None) -> str | None:
         iv = secrets.token_bytes(_IV_BYTES)
         key = await _import_key(crypto, Object, to_js)
         ciphertext = await crypto.subtle.encrypt(
-            to_js({"name": _ALGORITHM, "iv": iv}, dict_converter=Object.fromEntries),
+            to_js({"name": _ALGORITHM, "iv": to_js(iv)}, dict_converter=Object.fromEntries),
             key,
-            plaintext.encode(),
+            to_js(plaintext.encode()),
         )
         ciphertext_bytes = bytes(ciphertext.to_py())
         return f"{base64.b64encode(iv).decode()}:{base64.b64encode(ciphertext_bytes).decode()}"
@@ -69,11 +69,11 @@ async def decrypt_token(stored: str | None) -> str | None:
         key = await _import_key(crypto, Object, to_js)
         plaintext = await crypto.subtle.decrypt(
             to_js(
-                {"name": _ALGORITHM, "iv": base64.b64decode(iv_b64)},
+                {"name": _ALGORITHM, "iv": to_js(base64.b64decode(iv_b64))},
                 dict_converter=Object.fromEntries,
             ),
             key,
-            base64.b64decode(ciphertext_b64),
+            to_js(base64.b64decode(ciphertext_b64)),
         )
         return bytes(plaintext.to_py()).decode()
     except Exception as e:
