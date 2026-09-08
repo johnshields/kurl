@@ -9,7 +9,6 @@ import time
 
 from api.middleware.session_auth import get_session_user_uid
 from api.routes import auth, events
-from api.routes import deezer_auth as deezer_auth_routes
 from api.routes import google_auth as google_auth_routes
 from api.routes import kurls as kurls_routes
 from api.routes import soundcloud_auth as soundcloud_auth_routes
@@ -178,29 +177,6 @@ async def _spotify_callback(db, request, **kwargs):
 @route("DELETE", "/api/auth/spotify")
 async def _spotify_disconnect(db, request, **kwargs):
     return await spotify_auth_routes.disconnect(db, request)
-
-
-# Sign in with Deezer (sign-in for a new visitor, or linking an existing account)
-
-
-@route("GET", "/api/auth/deezer")
-async def _deezer_status(db, request, **kwargs):
-    return await deezer_auth_routes.status(db, request)
-
-
-@route("GET", "/api/auth/deezer/start")
-async def _deezer_start(db, request, **kwargs):
-    return await deezer_auth_routes.start(db, request)
-
-
-@route("GET", "/api/auth/deezer/callback")
-async def _deezer_callback(db, request, **kwargs):
-    return await deezer_auth_routes.callback(db, request)
-
-
-@route("DELETE", "/api/auth/deezer")
-async def _deezer_disconnect(db, request, **kwargs):
-    return await deezer_auth_routes.disconnect(db, request)
 
 
 # Sign in with SoundCloud (sign-in for a new visitor, or linking an existing account)

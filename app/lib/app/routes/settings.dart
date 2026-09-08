@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-// import 'package:kurl/models/deezer_account.dart'; -- Deezer app registration is closed, re-enable once available.
 import 'package:kurl/models/google_account.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/models/soundcloud_account.dart';
@@ -25,14 +24,6 @@ Future<String?> _launchSpotifyAuth() async {
   if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
   return url;
 }
-
-/* Deezer app registration is closed -- re-enable once available.
-Future<String?> _launchDeezerAuth() async {
-  final url = await AuthService.startDeezerAuth();
-  if (url != null) await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
-  return url;
-}
-*/
 
 Future<String?> _launchSoundcloudAuth() async {
   final url = await AuthService.startSoundcloudAuth();
@@ -705,7 +696,6 @@ class _AuthFormState extends State<_AuthForm> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _spotifyLoading = false;
-  // bool _deezerLoading = false; -- Deezer app registration is closed, re-enable once available.
   bool _soundcloudLoading = false;
   bool _googleLoading = false;
   String? _error;
@@ -724,23 +714,6 @@ class _AuthFormState extends State<_AuthForm> {
       if (mounted) setState(() => _spotifyLoading = false);
     }
   }
-
-  /* Deezer app registration is closed -- re-enable once available.
-  Future<void> _signInWithDeezer() async {
-    setState(() {
-      _deezerLoading = true;
-      _error = null;
-    });
-    try {
-      final url = await _launchDeezerAuth();
-      if (url == null && mounted) {
-        setState(() => _error = 'Deezer sign-in is not available right now.');
-      }
-    } finally {
-      if (mounted) setState(() => _deezerLoading = false);
-    }
-  }
-  */
 
   Future<void> _signInWithSoundcloud() async {
     setState(() {
@@ -882,29 +855,6 @@ class _AuthFormState extends State<_AuthForm> {
                     ),
                   ),
                 ),
-                /* Deezer app registration is closed -- re-enable once available.
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: (_loading || _deezerLoading) ? null : _signInWithDeezer,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFE5E5E5),
-                      side: BorderSide(color: deezer?.colour ?? _borderIdle),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(deezer?.icon, size: 18, color: deezer?.colour),
-                        const SizedBox(width: 8),
-                        Text(_deezerLoading ? 'Connecting...' : 'Continue with Deezer'),
-                      ],
-                    ),
-                  ),
-                ),
-                */
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
@@ -1074,10 +1024,6 @@ class _ProfileViewState extends State<_ProfileView> {
   SpotifyAccount _spotify = SpotifyAccount.disconnected;
   bool _loadingSpotify = true;
   bool _connectingSpotify = false;
-  // Deezer app registration is closed -- re-enable once available.
-  // DeezerAccount _deezer = DeezerAccount.disconnected;
-  // bool _loadingDeezer = true;
-  // bool _connectingDeezer = false;
   SoundcloudAccount _soundcloud = SoundcloudAccount.disconnected;
   bool _loadingSoundcloud = true;
   bool _connectingSoundcloud = false;
@@ -1141,26 +1087,6 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
-  /* Deezer app registration is closed -- re-enable once available.
-  Future<void> _loadDeezerStatus() async {
-    final status = await AuthService.getDeezerStatus();
-    if (mounted) {
-      setState(() {
-        _deezer = status;
-        _loadingDeezer = false;
-      });
-    }
-  }
-
-  Future<void> _connectDeezer() async {
-    setState(() => _connectingDeezer = true);
-    try {
-      await _launchDeezerAuth();
-    } finally {
-      if (mounted) setState(() => _connectingDeezer = false);
-    }
-  }
-  */
 
   Future<void> _loadSoundcloudStatus() async {
     final status = await AuthService.getSoundcloudStatus();
@@ -1221,20 +1147,6 @@ class _ProfileViewState extends State<_ProfileView> {
       if (mounted) setState(() => _connectingSpotify = false);
     }
   }
-
-  /* Deezer app registration is closed -- re-enable once available.
-  Future<void> _disconnectDeezer() async {
-    setState(() => _connectingDeezer = true);
-    try {
-      await AuthService.disconnectDeezer();
-      if (mounted) setState(() => _deezer = DeezerAccount.disconnected);
-    } catch (_) {
-      // Best-effort -- the card simply won't reflect the change on failure.
-    } finally {
-      if (mounted) setState(() => _connectingDeezer = false);
-    }
-  }
-  */
 
   Future<void> _disconnectSoundcloud() async {
     setState(() => _connectingSoundcloud = true);
@@ -1339,10 +1251,6 @@ class _ProfileViewState extends State<_ProfileView> {
                     ),
                   ),
                 ),
-                if (connected) ...[
-                  const SizedBox(width: 4),
-                  const Icon(Icons.check, size: 14, color: onColour),
-                ],
               ],
             ),
           ),
@@ -1572,32 +1480,6 @@ class _ProfileViewState extends State<_ProfileView> {
                               ? () => _confirmDisconnect('Spotify', _disconnectSpotify)
                               : _connectSpotify,
                         ),
-                        /* Deezer app registration is closed -- re-enable once available.
-                        _serviceChip(
-                          context: context,
-                          name: 'Deezer',
-                          icon: findPlatform('deezer')?.icon,
-                          colour: findPlatform('deezer')?.colour,
-                          loading: _loadingDeezer,
-                          connected: _deezer.connected,
-                          busy: _connectingDeezer,
-                          onTap: _deezer.connected
-                              ? () => _confirmDisconnect('Deezer', _disconnectDeezer)
-                              : _connectDeezer,
-                        ),
-                        */
-                        _serviceChip(
-                          context: context,
-                          name: 'SoundCloud',
-                          icon: findPlatform('soundcloud')?.icon,
-                          colour: findPlatform('soundcloud')?.colour,
-                          loading: _loadingSoundcloud,
-                          connected: _soundcloud.connected,
-                          busy: _connectingSoundcloud,
-                          onTap: _soundcloud.connected
-                              ? () => _confirmDisconnect('SoundCloud', _disconnectSoundcloud)
-                              : _connectSoundcloud,
-                        ),
                         _serviceChip(
                           context: context,
                           name: 'YouTube',
@@ -1609,6 +1491,18 @@ class _ProfileViewState extends State<_ProfileView> {
                           onTap: _google.connected
                               ? () => _confirmDisconnect('YouTube', _disconnectGoogle)
                               : _connectGoogle,
+                        ),
+                        _serviceChip(
+                          context: context,
+                          name: 'SoundCloud',
+                          icon: findPlatform('soundcloud')?.icon,
+                          colour: findPlatform('soundcloud')?.colour,
+                          loading: _loadingSoundcloud,
+                          connected: _soundcloud.connected,
+                          busy: _connectingSoundcloud,
+                          onTap: _soundcloud.connected
+                              ? () => _confirmDisconnect('SoundCloud', _disconnectSoundcloud)
+                              : _connectSoundcloud,
                         ),
                       ],
                     ),

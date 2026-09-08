@@ -1,6 +1,8 @@
 # Accounts
 
-Optional account system: email/password or sign in with Spotify/Deezer/SoundCloud/YouTube, preferred platform, kurl history. Kurling itself stays fully anonymous by default. An account only adds history + a preferred platform.
+Optional account system: email/password or sign in with Spotify/SoundCloud/YouTube, preferred platform, kurl history. Kurling itself stays fully anonymous by default. An account only adds history + a preferred platform.
+
+Deezer sign-in was removed (Deezer closed new app registration, so it could never go live). Recoverable from git history if that changes.
 
 ## Auth
 
@@ -23,9 +25,6 @@ Password hashing: `hashlib.pbkdf2_hmac("sha256", ...)`, 120,000 iterations.
 | `GET/DELETE /api/auth/spotify` | Session | Status / disconnect |
 | `GET /api/auth/spotify/start` | Optional | Session present -> link mode, absent -> sign-in |
 | `GET /api/auth/spotify/callback` | State token | Spotify's own redirect |
-| `GET/DELETE /api/auth/deezer` | Session | Same shape as Spotify. **Disabled in the app UI**: Deezer closed new app registration |
-| `GET /api/auth/deezer/start` | Optional | |
-| `GET /api/auth/deezer/callback` | State token | |
 | `GET/DELETE /api/auth/soundcloud` | Session | Same shape as Spotify |
 | `GET /api/auth/soundcloud/start` | Optional | |
 | `GET /api/auth/soundcloud/callback` | State token | |
@@ -37,21 +36,21 @@ Password hashing: `hashlib.pbkdf2_hmac("sha256", ...)`, 120,000 iterations.
 
 ## Sign in with a platform
 
-One flow, two modes, shared across all four providers: an existing session on `/start` means link mode (tie the platform to that account), no session means anonymous sign-in (find or create an account for that identity). Mode is baked into the `state` param, not a second code path.
+One flow, two modes, shared across all three providers: an existing session on `/start` means link mode (tie the platform to that account), no session means anonymous sign-in (find or create an account for that identity). Mode is baked into the `state` param, not a second code path.
 
 State/CSRF token: `utils/oauth_state.py`, stateless signed JWT, 10 min expiry, signed with `SESSION_SECRET`. Optional `user_uid` claim = link mode. Optional `verifier` claim carries a PKCE code verifier for providers that need one back at token exchange (SoundCloud).
 
 Callback success mints a session token and appends it to the app redirect as `&token=`, since there's no other way to hand it to the app.
 
-| | Spotify | Deezer | SoundCloud | Google (YouTube) |
-|---|---|---|---|---|
-| Grant | authorization_code | authorization_code | authorization_code + PKCE | authorization_code |
-| Token exchange | POST, HTTP Basic auth, JSON response | GET, query-string response | POST, `client_id`/`secret` in body, JSON response | POST, `client_id`/`secret` in body, JSON response |
-| `state` param | Standard, echoed back | **Not echoed back**: embedded in the `redirect_uri` query string instead | Standard, echoed back | Standard, echoed back |
-| Refresh token | Yes | No (non-expiring `offline_access` token instead) | Yes | Only on first consent (or forced re-consent) |
-| Email available | Yes | Yes | **No**: match by provider user id only | Yes |
+| | Spotify | SoundCloud | Google (YouTube) |
+|---|---|---|---|
+| Grant | authorization_code | authorization_code + PKCE | authorization_code |
+| Token exchange | POST, HTTP Basic auth, JSON response | POST, `client_id`/`secret` in body, JSON response | POST, `client_id`/`secret` in body, JSON response |
+| `state` param | Standard, echoed back | Standard, echoed back | Standard, echoed back |
+| Refresh token | Yes | Yes | Only on first consent (or forced re-consent) |
+| Email available | Yes | **No**: match by provider user id only | Yes |
 
-Deezer, SoundCloud and Google's OAuth clients don't reuse `clients/platforms/_oauth.py`'s shared token-exchange helper (built for Spotify's Basic-auth dialect). Each is a standalone client matching its own provider's contract.
+SoundCloud and Google's OAuth clients don't reuse `clients/platforms/_oauth.py`'s shared token-exchange helper (built for Spotify's Basic-auth dialect). Each is a standalone client matching its own provider's contract.
 
 Google's identity client (`clients/google_oauth_client.py`, `GOOGLE_CLIENT_ID`/`SECRET`) is entirely separate from `settings.YOUTUBE_API_KEY`, an unrelated Data API v3 key used for catalog search.
 
@@ -62,7 +61,6 @@ Google's identity client (`clients/google_oauth_client.py`, `GOOGLE_CLIENT_ID`/`
 | `users` | `uid`, `email` (nullable), `username`, `password_hash` (nullable), `preferred_platform`, `email_verified_at` |
 | `kurls` | `uid`, `user_uid`, `source_url`, `target_url`, `platform`, `via`, `title`, `artist` |
 | `spotify_accounts` | `user_uid` (unique), `spotify_user_id`, `display_name`, `access_token`, `refresh_token`, `expires_at`, `scope` |
-| `deezer_accounts` | `user_uid` (unique), `deezer_user_id`, `display_name`, `access_token`, `expires_at` (nullable) |
 | `soundcloud_accounts` | `user_uid` (unique), `soundcloud_user_id`, `display_name`, `access_token`, `refresh_token`, `expires_at`, `scope` |
 | `google_accounts` | `user_uid` (unique), `google_user_id`, `display_name`, `access_token`, `refresh_token` (nullable), `expires_at`, `scope` |
 
@@ -70,8 +68,5 @@ No migration runner. Schema files are applied to D1 by hand (`wrangler d1 execut
 
 ## Known gaps
 
-- Deezer sign-in disabled in the app UI (registration closed). Backend stays live, ready to re-enable once a `DEEZER_APP_ID`/`SECRET` exist.
-- Not confirmed whether kurl's existing SoundCloud app has the sign-in grant enabled, distinct from the catalog-search client_credentials grant it already uses.
 - No token refresh implemented for any provider (tokens stored, unused after linking, identity only, no library/playlist scopes).
 - No rate limiting specific to signup/login beyond the generic per-IP limiter.
-- Google requires its own OAuth consent screen configured in Google Cloud Console (product name, support email, authorised domain) before `/start` will work -- not yet done, no app registered.
