@@ -1,8 +1,7 @@
 """
 Spotify Auth Routes
-HTTP endpoints for Sign in with Spotify. The callback carries no session
-header (Spotify's own redirect) -- see spotify_auth_controller for the
-state-based auth instead.
+HTTP endpoints for Sign in with Spotify. Callback is state-authenticated,
+not session-gated -- it's Spotify's own redirect.
 """
 
 from urllib.parse import parse_qs, urlparse

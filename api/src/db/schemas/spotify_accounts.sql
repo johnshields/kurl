@@ -1,7 +1,5 @@
 -- Spotify accounts table
 -- Links a kurl account to a connected Spotify account (Sign in with Spotify).
--- Phase A: identity only -- tokens are stored so a later phase can call the
--- Spotify API as the user, but nothing here uses them for that yet.
 
 CREATE TABLE IF NOT EXISTS spotify_accounts (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,

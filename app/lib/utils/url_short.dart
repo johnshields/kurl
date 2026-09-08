@@ -22,7 +22,7 @@ String compactEncode(String url) {
 }
 
 String compactDecode(String value) {
-  // Uri.decodeComponent handles all %xx -- safe for the small set we emit.
+  // Uri.decodeComponent handles all %xx -- safe for the small set emitted here.
   final decoded = Uri.decodeComponent(value);
   if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
     return decoded;

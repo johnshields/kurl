@@ -1,11 +1,7 @@
 """
 SoundCloud Auth Controller
-Sign in with SoundCloud -- one flow, two modes: anonymous (find/create an
-account) or linked (tie SoundCloud to an already-signed-in session).
-Identity only.
-
-No email from SoundCloud -- unlike Spotify/Deezer, matching is by
-soundcloud_user_id only, else create.
+Sign in with SoundCloud. No email available, so matching is by
+soundcloud_user_id only.
 """
 
 from datetime import UTC, datetime, timedelta

@@ -1,8 +1,7 @@
 """
 Spotify OAuth Client
-User-authorised Spotify access (Sign in with Spotify) -- authorization_code
-grant. Separate from clients/platforms/spotify.py, which is the app-only
-client_credentials client used for kurl's own catalog search.
+Authorization_code grant for Sign in with Spotify. Separate from the
+catalog client_credentials client in clients/platforms/spotify.py.
 """
 
 from urllib.parse import urlencode

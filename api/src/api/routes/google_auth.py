@@ -1,8 +1,7 @@
 """
 Google Auth Routes
-HTTP endpoints for Sign in with YouTube. The callback carries no session
-header (Google's own redirect) -- see google_auth_controller for the
-state-based auth instead.
+HTTP endpoints for Sign in with YouTube. Callback is state-authenticated,
+not session-gated -- it's Google's own redirect.
 """
 
 from urllib.parse import parse_qs, urlparse

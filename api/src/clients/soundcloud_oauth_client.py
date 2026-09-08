@@ -1,14 +1,10 @@
 """
 SoundCloud OAuth Client
-User-authorised SoundCloud access (Sign in with SoundCloud) --
-authorization_code + PKCE grant. Separate from
-clients/platforms/soundcloud.py, the app-only client_credentials client
-used for kurl's own catalog search.
+Authorization_code + PKCE grant for Sign in with SoundCloud. Separate
+from the catalog client_credentials client in clients/platforms/soundcloud.py.
 
-Token exchange takes client_id/client_secret in the form body, not HTTP
-Basic auth -- does not reuse clients/platforms/_oauth.py.
-
-GET /me has no email field -- identity here is id/username only.
+Token exchange sends client_id/secret in the body, not Basic auth.
+GET /me has no email field.
 """
 
 import base64

@@ -1,8 +1,6 @@
 """
 Spotify Auth Controller
-Sign in with Spotify -- one flow, two modes: anonymous (find/create an
-account) or linked (tie Spotify to an already-signed-in session). Phase A:
-identity only, no library/playlist scopes.
+Sign in with Spotify: identity only, anonymous or linked to an existing session.
 """
 
 from datetime import UTC, datetime, timedelta

@@ -1,11 +1,9 @@
 """
 Google OAuth Client
-User-authorised Google access (Sign in with YouTube) -- authorization_code
-grant. Separate from settings.YOUTUBE_API_KEY, which is an unrelated Data
-API v3 key used for kurl's own catalog search.
+Authorization_code grant for Sign in with YouTube. Separate from
+settings.YOUTUBE_API_KEY, an unrelated Data API v3 key.
 
-Token exchange takes client_id/client_secret in the form body, not HTTP
-Basic auth -- does not reuse clients/platforms/_oauth.py.
+Token exchange sends client_id/secret in the body, not Basic auth.
 """
 
 from urllib.parse import urlencode

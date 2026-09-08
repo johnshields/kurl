@@ -1,8 +1,6 @@
 """
 Google Auth Controller
-Sign in with YouTube -- one flow, two modes: anonymous (find/create an
-account) or linked (tie Google to an already-signed-in session). Identity
-only.
+Sign in with YouTube: identity only, anonymous or linked to an existing session.
 """
 
 from datetime import UTC, datetime, timedelta

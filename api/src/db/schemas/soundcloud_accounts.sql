@@ -1,8 +1,5 @@
 -- SoundCloud accounts table
--- Links a kurl account to a connected SoundCloud account (Sign in with
--- SoundCloud). Identity only -- the tokens are stored so a later phase can
--- call the SoundCloud API as the user, but nothing here uses them for that
--- yet.
+-- Links a kurl account to a connected SoundCloud account (Sign in with SoundCloud).
 
 CREATE TABLE IF NOT EXISTS soundcloud_accounts (
     id                 INTEGER PRIMARY KEY AUTOINCREMENT,

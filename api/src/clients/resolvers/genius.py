@@ -8,7 +8,7 @@ from utils.logging import get_logger
 
 logger = get_logger()
 
-# Genius media provider -> our platform id.
+# Genius media provider -> kurl platform id.
 _PROVIDER_MAP = {
     "spotify": "spotify",
     "apple_music": "appleMusic",

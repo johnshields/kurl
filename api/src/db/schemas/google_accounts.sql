@@ -1,12 +1,8 @@
 -- Google accounts table
--- Links a kurl account to a connected Google account (Sign in with
--- YouTube). Identity only -- the tokens are stored so a later phase can
--- call the YouTube API as the user, but nothing here uses them for that
--- yet.
+-- Links a kurl account to a connected Google account (Sign in with YouTube).
 --
--- Google only returns a refresh_token on the first consent for a given
--- user/client pair (or when re-consent is forced) -- expires_at is
--- recomputed on every relink either way, but refresh_token may stay empty.
+-- Google only issues a refresh_token on first consent (or forced
+-- re-consent), so refresh_token can stay empty even after a successful link.
 
 CREATE TABLE IF NOT EXISTS google_accounts (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,

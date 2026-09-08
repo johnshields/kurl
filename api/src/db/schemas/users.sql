@@ -1,7 +1,7 @@
 -- Users table
 -- Account records for the (optional) kurl account system.
--- email/password_hash are nullable -- an account created via Sign in with
--- Spotify has neither until/unless a password is set separately.
+-- email/password_hash are nullable: accounts created via Spotify/SoundCloud/
+-- Google sign-in have neither until a password is set separately.
 
 CREATE TABLE IF NOT EXISTS users (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,

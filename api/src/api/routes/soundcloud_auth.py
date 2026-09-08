@@ -1,8 +1,7 @@
 """
 SoundCloud Auth Routes
-HTTP endpoints for Sign in with SoundCloud. The callback carries no session
-header (SoundCloud's own redirect) -- see soundcloud_auth_controller for
-the state-based auth instead.
+HTTP endpoints for Sign in with SoundCloud. Callback is
+state-authenticated, not session-gated -- it's SoundCloud's own redirect.
 """
 
 from urllib.parse import parse_qs, urlparse

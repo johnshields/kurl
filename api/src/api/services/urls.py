@@ -137,7 +137,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
     if parsed:
         scrape_task = asyncio.create_task(metadata.fetch_metadata(parsed, url))
     elif parsed_full and parsed_full.entity_type == "album":
-        # Album URLs without ?i= still need a scrape so we can build a search
+        # Album URLs without ?i= still need a scrape to build a search
         # URL fallback instead of returning 404.
         scrape_task = asyncio.create_task(metadata.fetch_metadata(
             ParsedTrack(parsed_full.platform, parsed_full.id), url))
