@@ -24,7 +24,7 @@ class TestCreateAndDecode:
         assert decode_verification_token("not-a-jwt", "test-secret") is None
 
     def test_expired_token_fails(self):
-        with patch("utils.email_verification.time") as mock_time:
+        with patch("utils.jwt_token.time") as mock_time:
             mock_time.time.return_value = 0.0
             token = create_verification_token("USR_ABC123", "test-secret")
 

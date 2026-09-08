@@ -31,7 +31,6 @@ class OAuthProvider:
     queries: Any
     to_db_params: Callable
     public_account: Callable
-    get_by_provider_id_query: str
     profile_id_key: str
     display_name_keys: tuple[str, ...]
     uses_pkce: bool = False
@@ -137,7 +136,7 @@ async def handle_callback(
 
 async def _resolve_user(p: OAuthProvider, db, provider_user_id: str, email: str | None) -> str:
     """Find an existing kurl account for this provider identity, or create one."""
-    linked = await fetch_one(db, p.get_by_provider_id_query, provider_user_id)
+    linked = await fetch_one(db, p.queries.GET_BY_PROVIDER_ID, provider_user_id)
     if linked:
         return linked["user_uid"]
 

@@ -24,7 +24,7 @@ class TestAnonymousState:
         assert verify_oauth_state("not-a-jwt", "test-secret") == (False, None, None)
 
     def test_expired_token_fails(self):
-        with patch("utils.oauth_state.time") as mock_time:
+        with patch("utils.jwt_token.time") as mock_time:
             mock_time.time.return_value = 0.0
             state = create_oauth_state("test-secret")
 

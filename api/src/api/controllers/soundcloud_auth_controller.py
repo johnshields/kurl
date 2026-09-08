@@ -4,20 +4,21 @@ Sign in with SoundCloud. No email available, so matching is by
 soundcloud_user_id only.
 """
 
+from functools import partial
+
 from api.controllers import oauth_signin
 from clients import soundcloud_oauth_client
-from db.queries import soundcloud_accounts as soundcloud_queries
-from models.soundcloud_account import public_soundcloud_account, to_db_params
+from db.queries.streaming_accounts import account_queries
+from models.streaming_account import public_account, to_db_params
 
 PROVIDER = oauth_signin.OAuthProvider(
     key="soundcloud",
     label="SoundCloud",
     settings_prefix="SOUNDCLOUD",
     client=soundcloud_oauth_client,
-    queries=soundcloud_queries,
+    queries=account_queries("soundcloud_accounts", "soundcloud_user_id"),
     to_db_params=to_db_params,
-    public_account=public_soundcloud_account,
-    get_by_provider_id_query=soundcloud_queries.GET_BY_SOUNDCLOUD_USER_ID,
+    public_account=partial(public_account, id_column="soundcloud_user_id", id_key="soundcloudUserId"),
     profile_id_key="id",
     display_name_keys=("username", "full_name"),
     uses_pkce=True,

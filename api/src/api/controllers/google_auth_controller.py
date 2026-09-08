@@ -3,20 +3,21 @@ Google Auth Controller
 Sign in with YouTube: identity only, anonymous or linked to an existing session.
 """
 
+from functools import partial
+
 from api.controllers import oauth_signin
 from clients import google_oauth_client
-from db.queries import google_accounts as google_queries
-from models.google_account import public_google_account, to_db_params
+from db.queries.streaming_accounts import account_queries
+from models.streaming_account import public_account, to_db_params
 
 PROVIDER = oauth_signin.OAuthProvider(
     key="google",
     label="Google",
     settings_prefix="GOOGLE",
     client=google_oauth_client,
-    queries=google_queries,
+    queries=account_queries("google_accounts", "google_user_id"),
     to_db_params=to_db_params,
-    public_account=public_google_account,
-    get_by_provider_id_query=google_queries.GET_BY_GOOGLE_USER_ID,
+    public_account=partial(public_account, id_column="google_user_id", id_key="googleUserId"),
     profile_id_key="sub",
     display_name_keys=("name",),
 )
