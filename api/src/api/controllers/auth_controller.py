@@ -175,7 +175,9 @@ async def resend_verification(db, user_uid: str) -> dict:
 async def get_me(db, user_uid: str) -> dict:
     row = await fetch_one(db, queries.GET_BY_UID, user_uid)
     if not row:
-        return {"status": "error", "code": "NOT_FOUND", "message": "User not found."}
+        # Session token is valid but its user is gone -- treat as an invalid
+        # session so the client clears it, not a lookup miss.
+        return {"status": "error", "code": "AUTH_REQUIRED", "message": "Login required."}
     return {"status": "success", "data": public_user(row)}
 
 

@@ -112,19 +112,23 @@ async def handle_callback(
 
     display_name = next((profile.get(k) for k in p.display_name_keys if profile.get(k)), None)
 
-    await execute(
-        db,
-        p.queries.UPSERT,
-        *p.to_db_params(
-            user_uid,
-            provider_user_id,
-            display_name,
-            await encrypt_token(tokens["access_token"]) or "",
-            await encrypt_token(tokens.get("refresh_token")) or "",
-            expires_at,
-            tokens.get("scope"),
-        ),
-    )
+    try:
+        await execute(
+            db,
+            p.queries.UPSERT,
+            *p.to_db_params(
+                user_uid,
+                provider_user_id,
+                display_name,
+                await encrypt_token(tokens["access_token"]) or "",
+                await encrypt_token(tokens.get("refresh_token")) or "",
+                expires_at,
+                tokens.get("scope"),
+            ),
+        )
+    except Exception as e:
+        logger.warning("%s account upsert failed for %s: %s", p.label, user_uid, e)
+        return _app_redirect(p, "error")
     logger.info("Linked %s account %s for %s", p.label, provider_user_id, user_uid)
 
     session_token = None if linked_user_uid else create_session_token(user_uid, settings.SESSION_SECRET)
