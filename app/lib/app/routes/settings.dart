@@ -1293,7 +1293,7 @@ class _ProfileViewState extends State<_ProfileView> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
