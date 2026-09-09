@@ -108,9 +108,9 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     if (hasUrl) _populateUrl(compactDecode(encoded));
     if (validTarget) setState(() => _selectedPlatform = target);
 
-    // Both params present -> auto-fire conversion (deep-link / share open).
+    // Both params present -> auto-fire conversion (deep-link, share, or refresh restore).
     if (hasUrl && validTarget) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _handleKurl());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleKurl(trackAnalytics: false));
     }
   }
 
@@ -138,7 +138,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     updateUrlState();
   }
 
-  Future<void> _handleKurl() async {
+  Future<void> _handleKurl({bool trackAnalytics = true}) async {
     final url = _urlController.text.trim();
     if (url.isEmpty || _selectedPlatform == null) return;
 
@@ -148,14 +148,19 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _result = null;
     });
 
-    // Skip analytics when ?cache=false is used so admin debug runs don't
-    // pollute matchQuality with self-tests.
-    if (!_noCache) Analytics.trackKurl(url, _selectedPlatform!);
+    // Skip analytics for admin debug runs (?cache=false) and state restores.
+    final shouldTrack = trackAnalytics && !_noCache;
+    if (shouldTrack) Analytics.trackKurl(url, _selectedPlatform!);
     updateUrlState(url: url, target: _selectedPlatform);
 
     try {
-      final data = await ApiService.kurl(url, _selectedPlatform!, noCache: _noCache);
-      if (!_noCache) Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
+      final data = await ApiService.kurl(
+        url,
+        _selectedPlatform!,
+        noCache: _noCache,
+        saveHistory: trackAnalytics,
+      );
+      if (shouldTrack) Analytics.trackKurlSuccess(url, _selectedPlatform!, data.via);
       setState(() => _result = data);
     } catch (e) {
       setState(() => _error = friendlyError(e));

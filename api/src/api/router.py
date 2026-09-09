@@ -101,6 +101,7 @@ async def _post_kurl(db, request, **kwargs):
     url = body.get("url")
     target_platform = body.get("target_platform")
     no_cache = bool(body.get("no_cache"))
+    save_history = bool(body.get("save_history", True))
 
     if not url or not target_platform:
         return json_error(
@@ -110,7 +111,9 @@ async def _post_kurl(db, request, **kwargs):
     # Public endpoint regardless of login -- a session, if present, only
     # adds best-effort history recording on top of the same result.
     user_uid = get_session_user_uid(request)
-    return await kurl_service.kurl(str(url), target_platform, no_cache=no_cache, db=db, user_uid=user_uid)
+    return await kurl_service.kurl(
+        str(url), target_platform, no_cache=no_cache, db=db, user_uid=user_uid, save_history=save_history
+    )
 
 
 # Auth endpoints (accounts are optional -- kurling never requires one)

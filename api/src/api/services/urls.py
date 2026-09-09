@@ -22,10 +22,12 @@ from utils.url.url_parser import ParsedTrack, is_search_url, parse_music_url, pa
 logger = get_logger()
 
 
-async def _record_if_signed_in(db, user_uid: str | None, url: str, result: dict) -> None:
+async def _record_if_signed_in(
+    db, user_uid: str | None, url: str, result: dict, *, save_history: bool = True
+) -> None:
     """Best-effort: kurling stays fully anonymous by default, this never
     affects the response either way."""
-    if not user_uid or not db:
+    if not user_uid or not db or not save_history:
         return
     await kurls_controller.record_kurl(
         db,
@@ -56,7 +58,15 @@ async def _fetch_artwork(title: str | None, artist: str | None) -> str | None:
     return deezer.extract_artwork(track) if track else None
 
 
-async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=None, user_uid: str | None = None):
+async def kurl(
+    url: str,
+    target_platform: str,
+    *,
+    no_cache: bool = False,
+    db=None,
+    user_uid: str | None = None,
+    save_history: bool = True,
+):
     """Kurl a streaming URL to the target platform.
 
     Resolution order:
@@ -69,7 +79,8 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
 
     db/user_uid are optional -- kurl works exactly as before when omitted.
     When both are present (a signed-in user), the result is also saved to
-    their kurl history, best-effort.
+    their kurl history, best-effort. Pass save_history=False to resolve
+    without recording -- e.g. a page load restoring a previous result.
     """
     if target_platform not in PLATFORMS:
         return json_error(f"Unknown platform: {target_platform}", 400, code="UNKNOWN_PLATFORM")
@@ -90,7 +101,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
     if cached:
         data = json.loads(cached)
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
-        await _record_if_signed_in(db, user_uid, url, data)
+        await _record_if_signed_in(db, user_uid, url, data, save_history=save_history)
         return json_success("Kurled from cache", data)
 
     # Try direct ISRC/UPC resolution via platform APIs first.
@@ -111,7 +122,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
                     "artwork_url": artwork,
                 }
                 await cache.set(cache_key, json.dumps(result))
-                await _record_if_signed_in(db, user_uid, url, result)
+                await _record_if_signed_in(db, user_uid, url, result, save_history=save_history)
                 return json_success("Kurled", result)
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
@@ -203,7 +214,7 @@ async def kurl(url: str, target_platform: str, *, no_cache: bool = False, db=Non
     if is_exact(via):
         await cache.set(cache_key, json.dumps(result))
 
-    await _record_if_signed_in(db, user_uid, url, result)
+    await _record_if_signed_in(db, user_uid, url, result, save_history=save_history)
     return json_success("Kurled", result)
 
 

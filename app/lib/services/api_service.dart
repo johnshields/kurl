@@ -7,7 +7,12 @@ import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/auth_service.dart';
 
 class ApiService {
-  static Future<KurlResult> kurl(String url, String targetPlatform, {bool noCache = false}) async {
+  static Future<KurlResult> kurl(
+    String url,
+    String targetPlatform, {
+    bool noCache = false,
+    bool saveHistory = true,
+  }) async {
     final base = await resolveApiBase();
     final endpoint = '$base/api/kurl';
     developer.log('POST $endpoint [$targetPlatform] $url no_cache=$noCache', name: 'kurl.api');
@@ -26,6 +31,7 @@ class ApiService {
         'url': url,
         'target_platform': targetPlatform,
         if (noCache) 'no_cache': true,
+        if (!saveHistory) 'save_history': false,
       }),
     );
 
