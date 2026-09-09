@@ -1414,28 +1414,21 @@ class _ProfileViewState extends State<_ProfileView> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF141414),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: _borderIdle),
-                            ),
-                            child: const Text(
-                              '••••••••',
-                              style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5), letterSpacing: 2),
-                            ),
-                          ),
+                        const Text(
+                          '••••••••',
+                          style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5), letterSpacing: 2),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         IconButton(
                           onPressed: () => showDialog(
                             context: context,
                             builder: (_) => _ChangePasswordDialog(onUpdated: widget.onUpdated),
                           ),
-                          icon: const Icon(Icons.edit_outlined),
+                          icon: const Icon(Icons.edit_outlined, size: 14),
                           color: const Color(0xFF888888),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          visualDensity: VisualDensity.compact,
                           tooltip: 'Change password',
                         ),
                       ],
