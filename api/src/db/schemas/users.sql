@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash       TEXT,
     preferred_platform  TEXT,
     email_verified_at   TEXT,
+    notify_email        INTEGER NOT NULL DEFAULT 1,
     created_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
