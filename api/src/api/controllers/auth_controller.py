@@ -8,6 +8,7 @@ from app.constants import APP_BASE_URL, EMAIL_FROM, PLATFORMS
 from clients import email as email_client
 from db.db import execute, fetch_one
 from db.queries import users as queries
+from emails import auth as auth_emails
 from models.user import public_user, to_db_params
 from utils.api_result import error_result
 from utils.auth.auth_validation import normalise_email, weak_password_error
@@ -25,13 +26,8 @@ logger = get_logger()
 async def _send_verification_email(uid: str, email: str) -> None:
     token = create_verification_token(uid, settings.SESSION_SECRET)
     link = f"{APP_BASE_URL}/settings?verify={token}"
-    await email_client.send(
-        to=email,
-        from_address=EMAIL_FROM,
-        subject="Verify your kurl email",
-        html=f'<p>Verify your kurl email:</p><p><a href="{link}">{link}</a></p><p>This link expires in 24 hours.</p>',
-        text=f"Verify your kurl email: {link}\n\nThis link expires in 24 hours.",
-    )
+    subject, html, text = auth_emails.verification_email(link)
+    await email_client.send(to=email, from_address=EMAIL_FROM, subject=subject, html=html, text=text)
     logger.info("Sent verification email to %s", uid)
 
 
@@ -96,15 +92,8 @@ async def forgot_password(db, data: dict) -> dict:
         if row:
             token = create_reset_token(row["uid"], row["password_hash"], settings.SESSION_SECRET)
             link = f"{APP_BASE_URL}/settings?reset={token}"
-            await email_client.send(
-                to=email,
-                from_address=EMAIL_FROM,
-                subject="Reset your kurl password",
-                html=f'<p>Reset your kurl password:</p><p><a href="{link}">{link}</a></p>'
-                f"<p>This link expires in 30 minutes. If you didn't request this, ignore this email.</p>",
-                text=f"Reset your kurl password: {link}\n\n"
-                "This link expires in 30 minutes. If you didn't request this, ignore this email.",
-            )
+            subject, html, text = auth_emails.reset_email(link)
+            await email_client.send(to=email, from_address=EMAIL_FROM, subject=subject, html=html, text=text)
             logger.info("Sent password reset email to %s", row["uid"])
     return {"status": "success", "message": "If that email has an account, a reset link has been sent.", "data": {}}
 
