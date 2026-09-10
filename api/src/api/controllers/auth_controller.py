@@ -62,6 +62,7 @@ async def signup(db, data: dict) -> dict:
                 "username": username,
                 "preferredPlatform": None,
                 "emailVerified": False,
+                "notifyEmail": True,
             },
         },
     }
@@ -160,7 +161,7 @@ async def get_me(db, user_uid: str) -> dict:
 
 
 async def update_profile(db, user_uid: str, data: dict) -> dict:
-    """Partial update -- applies whichever of email/username/preferredPlatform/password are present."""
+    """Partial update -- applies whichever of email/username/preferredPlatform/notifyEmail/password are present."""
     if "email" in data:
         email = normalise_email(data.get("email"))
         if not email or "@" not in email:
@@ -204,6 +205,11 @@ async def update_profile(db, user_uid: str, data: dict) -> dict:
             return error_result("UNKNOWN_PLATFORM", "Unknown platform.")
         await execute(db, queries.UPDATE_PREFERRED_PLATFORM, platform, user_uid)
         logger.info("Updated preferred platform for %s: %s", user_uid, platform)
+
+    if "notifyEmail" in data:
+        enabled = 1 if data.get("notifyEmail") else 0
+        await execute(db, queries.UPDATE_NOTIFY_EMAIL, enabled, user_uid)
+        logger.info("Updated notify_email for %s: %s", user_uid, enabled)
 
     row = await fetch_one(db, queries.GET_BY_UID, user_uid)
     return {"status": "success", "message": "Profile updated.", "data": public_user(row)}

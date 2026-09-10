@@ -178,6 +178,28 @@ class TestUpdateProfile:
         assert result["data"]["preferredPlatform"] is None
         assert execute_mock.await_args.args[-2:] == (None, "USR_X")
 
+    async def test_updates_notify_email(self):
+        execute_mock = AsyncMock()
+        stub = _fetch_one_stub(
+            by_uid={
+                "uid": "USR_X",
+                "email": "a@b.com",
+                "username": "my-name",
+                "preferred_platform": None,
+                "notify_email": 0,
+                "created_at": "2026-01-01T00:00:00.000Z",
+            }
+        )
+        with patch("api.controllers.auth_controller.execute", execute_mock), patch(
+            "api.controllers.auth_controller.fetch_one", stub
+        ):
+            result = await auth_controller.update_profile(
+                db=object(), user_uid="USR_X", data={"notifyEmail": False}
+            )
+        assert result["status"] == "success"
+        assert result["data"]["notifyEmail"] is False
+        assert execute_mock.await_args.args[-2:] == (0, "USR_X")
+
     async def test_rejects_short_password(self):
         result = await auth_controller.update_profile(db=object(), user_uid="USR_X", data={"password": "short"})
         assert result["status"] == "error"
