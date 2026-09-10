@@ -3,7 +3,7 @@ Thread Model
 Field mapping for the threads list row and for a single thread's header.
 """
 
-from models.message import _loads
+from models.message import loads
 
 
 def thread_summary(row) -> dict:
@@ -21,7 +21,7 @@ def _preview(row) -> dict | None:
         return None
     return {
         "body": row["last_body"],
-        "kurl": _loads(row["last_kurl"]),
+        "kurl": loads(row["last_kurl"]),
         "senderUid": row["last_sender_uid"],
         "createdAt": row["last_at"],
     }

@@ -5,14 +5,12 @@ threads, read a thread, delete a message. Sending requires an accepted
 friendship; a thread is created on the first message to a new recipient.
 """
 
-import json
-
 from db.db import execute, fetch_all, fetch_one
 from db.queries import friends as friend_queries
 from db.queries import messages as queries
 from db.queries import threads as thread_queries
 from db.queries import users as user_queries
-from models.message import public_message
+from models.message import public_message, to_db_params
 from models.thread import thread_header, thread_summary
 from utils.api_result import error_result
 from utils.logging import get_logger
@@ -106,12 +104,7 @@ async def send(db, user_uid: str, data: dict) -> dict:
     await execute(
         db,
         queries.INSERT,
-        uid,
-        thread["uid"],
-        user_uid,
-        body,
-        json.dumps(kurl) if kurl is not None else None,
-        json.dumps(kurl_recipient) if kurl_recipient is not None else None,
+        *to_db_params(uid, thread["uid"], user_uid, body, kurl, kurl_recipient),
     )
     await execute(db, thread_queries.TOUCH, thread["uid"])
     await _mark_read(db, thread, user_uid)
