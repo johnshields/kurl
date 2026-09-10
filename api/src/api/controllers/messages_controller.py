@@ -195,7 +195,8 @@ async def _notify_recipient(db, recipient_uid: str, sender_uid: str, body, kurl)
         sender = await fetch_one(db, user_queries.GET_BY_UID, sender_uid)
         subject, html, text = social_emails.message_received_email(
             sender["username"] if sender else "Someone",
-            _preview_text(body, kurl),
+            body,
+            kurl,
             f"{APP_BASE_URL}/messages",
         )
         await email_client.send(
@@ -203,15 +204,3 @@ async def _notify_recipient(db, recipient_uid: str, sender_uid: str, body, kurl)
         )
     except Exception as e:
         logger.warning("Message-received email failed for %s: %s", recipient_uid, e)
-
-
-def _preview_text(body, kurl) -> str:
-    if body:
-        return body if len(body) <= 140 else body[:139] + "…"
-    if kurl:
-        artist, title = kurl.get("artist"), kurl.get("title")
-        if artist and title:
-            return f"Sent a kurl: {artist} - {title}"
-        if title:
-            return f"Sent a kurl: {title}"
-    return "Sent you a kurl."
