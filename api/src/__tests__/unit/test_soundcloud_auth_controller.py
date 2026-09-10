@@ -7,7 +7,7 @@ session) modes.
 from unittest.mock import AsyncMock, patch
 
 from api.controllers.oauth import soundcloud_auth_controller
-from utils.oauth_state import create_oauth_state
+from utils.auth.oauth_state import create_oauth_state
 
 
 def _configured_settings(mock_settings):

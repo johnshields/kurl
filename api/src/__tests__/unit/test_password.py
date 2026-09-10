@@ -1,8 +1,8 @@
 """
-Tests for utils.password -- PBKDF2-HMAC-SHA256 hashing, stdlib only.
+Tests for utils.auth.password -- PBKDF2-HMAC-SHA256 hashing, stdlib only.
 """
 
-from utils.password import hash_password, verify_password
+from utils.auth.password import hash_password, verify_password
 
 
 class TestHashPassword:

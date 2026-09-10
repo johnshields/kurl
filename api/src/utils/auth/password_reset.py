@@ -6,7 +6,7 @@ self-invalidates once the password actually changes.
 
 import hashlib
 
-from utils.jwt_token import sign, verify
+from utils.auth.jwt_token import sign, verify
 
 _EXPIRY_SECONDS = 1800  # 30 minutes
 

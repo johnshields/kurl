@@ -22,7 +22,7 @@ _stub.Response = _StubResponse
 sys.modules.setdefault("workers", _stub)
 
 from api.middleware.session_auth import get_session_user_uid, require_session  # noqa: E402
-from utils.session import create_session_token  # noqa: E402
+from utils.auth.session import create_session_token  # noqa: E402
 
 
 def _req(auth_header: str | None = None):

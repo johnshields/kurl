@@ -10,14 +10,14 @@ from db.db import execute, fetch_one
 from db.queries import users as queries
 from models.user import public_user, to_db_params
 from utils.api_result import error_result
-from utils.auth_validation import normalise_email, weak_password_error
-from utils.email_verification import create_verification_token, decode_verification_token
+from utils.auth.auth_validation import normalise_email, weak_password_error
+from utils.auth.email_verification import create_verification_token, decode_verification_token
+from utils.auth.password import hash_password, verify_password
+from utils.auth.password_reset import create_reset_token, decode_reset_token, matches_current_password
+from utils.auth.session import create_session_token
+from utils.auth.username import is_valid_username, unique_username
 from utils.logging import get_logger
-from utils.password import hash_password, verify_password
-from utils.password_reset import create_reset_token, decode_reset_token, matches_current_password
-from utils.session import create_session_token
 from utils.uid import gen_uid
-from utils.username import is_valid_username, unique_username
 
 logger = get_logger()
 

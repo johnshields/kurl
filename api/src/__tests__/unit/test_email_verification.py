@@ -1,10 +1,10 @@
 """
-Tests for utils.email_verification -- signed email-verification tokens.
+Tests for utils.auth.email_verification -- signed email-verification tokens.
 """
 
 from unittest.mock import patch
 
-from utils.email_verification import create_verification_token, decode_verification_token
+from utils.auth.email_verification import create_verification_token, decode_verification_token
 
 
 class TestCreateAndDecode:
@@ -24,7 +24,7 @@ class TestCreateAndDecode:
         assert decode_verification_token("not-a-jwt", "test-secret") is None
 
     def test_expired_token_fails(self):
-        with patch("utils.jwt_token.time") as mock_time:
+        with patch("utils.auth.jwt_token.time") as mock_time:
             mock_time.time.return_value = 0.0
             token = create_verification_token("USR_ABC123", "test-secret")
 

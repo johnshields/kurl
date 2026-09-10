@@ -6,7 +6,7 @@ sign-in. An optional PKCE verifier can also be carried for providers that
 need one back at token exchange.
 """
 
-from utils.jwt_token import sign, verify
+from utils.auth.jwt_token import sign, verify
 
 _EXPIRY_SECONDS = 600  # 10 minutes -- long enough to complete a consent screen
 

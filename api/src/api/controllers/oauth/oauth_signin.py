@@ -12,12 +12,12 @@ from app.config import settings
 from db.db import execute, fetch_one
 from db.queries import users as user_queries
 from models.user import to_db_params as to_user_db_params
+from utils.auth.oauth_state import create_oauth_state, verify_oauth_state
+from utils.auth.session import create_session_token
+from utils.auth.token_crypto import encrypt_token
+from utils.auth.username import unique_username
 from utils.logging import get_logger
-from utils.oauth_state import create_oauth_state, verify_oauth_state
-from utils.session import create_session_token
-from utils.token_crypto import encrypt_token
 from utils.uid import gen_uid
-from utils.username import unique_username
 
 logger = get_logger()
 

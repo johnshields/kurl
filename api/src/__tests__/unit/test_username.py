@@ -1,8 +1,8 @@
 """
-Tests for utils.username -- coolname-based generation and validation.
+Tests for utils.auth.username -- coolname-based generation and validation.
 """
 
-from utils.username import generate_username, generate_username_with_suffix, is_valid_username
+from utils.auth.username import generate_username, generate_username_with_suffix, is_valid_username
 
 
 class TestGenerateUsername:

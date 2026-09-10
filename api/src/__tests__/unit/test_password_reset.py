@@ -1,10 +1,10 @@
 """
-Tests for utils.password_reset -- stateless forgot-password tokens.
+Tests for utils.auth.password_reset -- stateless forgot-password tokens.
 """
 
 from unittest.mock import patch
 
-from utils.password_reset import create_reset_token, decode_reset_token, matches_current_password
+from utils.auth.password_reset import create_reset_token, decode_reset_token, matches_current_password
 
 
 class TestCreateAndDecode:
@@ -28,7 +28,7 @@ class TestCreateAndDecode:
         assert decode_reset_token("not-a-jwt", "test-secret") is None
 
     def test_expired_token_fails(self):
-        with patch("utils.jwt_token.time") as mock_time:
+        with patch("utils.auth.jwt_token.time") as mock_time:
             mock_time.time.return_value = 0.0
             token = create_reset_token("USR_X", "some-hash", "test-secret")
         assert decode_reset_token(token, "test-secret") is None

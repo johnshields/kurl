@@ -66,7 +66,7 @@ class TestLogin:
         assert result["code"] == "INVALID_CREDENTIALS"
 
     async def test_wrong_password_fails(self):
-        from utils.password import hash_password
+        from utils.auth.password import hash_password
 
         row = {"uid": "USR_X", "password_hash": hash_password("correct-password")}
         with patch("api.controllers.auth_controller.fetch_one", _fetch_one_stub(by_email=row)):
@@ -75,7 +75,7 @@ class TestLogin:
         assert result["code"] == "INVALID_CREDENTIALS"
 
     async def test_correct_credentials_succeed(self):
-        from utils.password import hash_password
+        from utils.auth.password import hash_password
 
         row = {
             "uid": "USR_X",
@@ -281,7 +281,7 @@ class TestResetPassword:
         assert result["code"] == "INVALID_TOKEN"
 
     async def test_rejects_a_stale_token_after_password_already_changed(self):
-        from utils.password_reset import create_reset_token
+        from utils.auth.password_reset import create_reset_token
 
         with patch("api.controllers.auth_controller.settings") as mock_settings:
             mock_settings.SESSION_SECRET = "test-secret"
@@ -296,7 +296,7 @@ class TestResetPassword:
         assert result["code"] == "INVALID_TOKEN"
 
     async def test_resets_password_and_returns_a_session(self):
-        from utils.password_reset import create_reset_token
+        from utils.auth.password_reset import create_reset_token
 
         execute_mock = AsyncMock()
         with patch("api.controllers.auth_controller.settings") as mock_settings:
@@ -332,7 +332,7 @@ class TestVerifyEmail:
         assert result["code"] == "INVALID_TOKEN"
 
     async def test_rejects_unknown_account(self):
-        from utils.email_verification import create_verification_token
+        from utils.auth.email_verification import create_verification_token
 
         with patch("api.controllers.auth_controller.settings") as mock_settings:
             mock_settings.SESSION_SECRET = "test-secret"
@@ -343,7 +343,7 @@ class TestVerifyEmail:
         assert result["code"] == "NOT_FOUND"
 
     async def test_marks_the_account_verified(self):
-        from utils.email_verification import create_verification_token
+        from utils.auth.email_verification import create_verification_token
 
         execute_mock = AsyncMock()
         with patch("api.controllers.auth_controller.settings") as mock_settings:
@@ -358,7 +358,7 @@ class TestVerifyEmail:
         execute_mock.assert_awaited_once()
 
     async def test_is_idempotent_when_already_verified(self):
-        from utils.email_verification import create_verification_token
+        from utils.auth.email_verification import create_verification_token
 
         execute_mock = AsyncMock()
         with patch("api.controllers.auth_controller.settings") as mock_settings:

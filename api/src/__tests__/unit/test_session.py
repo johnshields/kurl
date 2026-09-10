@@ -1,10 +1,10 @@
 """
-Tests for utils.session -- stateless JWT session tokens.
+Tests for utils.auth.session -- stateless JWT session tokens.
 """
 
 from unittest.mock import patch
 
-from utils.session import create_session_token, verify_session_token
+from utils.auth.session import create_session_token, verify_session_token
 
 
 class TestCreateAndVerify:
@@ -26,7 +26,7 @@ class TestCreateAndVerify:
     def test_expired_token_fails(self):
         # Fix creation time to the epoch -- exp lands 30 days later, in 1970,
         # always in the past relative to real wall-clock time at verify.
-        with patch("utils.jwt_token.time") as mock_time:
+        with patch("utils.auth.jwt_token.time") as mock_time:
             mock_time.time.return_value = 0.0
             token = create_session_token("USR_ABC123", "test-secret")
 

@@ -5,7 +5,7 @@ client-side token discard only. Signed with SESSION_SECRET, a dedicated
 secret separate from KURL_API_KEY (the admin/API key).
 """
 
-from utils.jwt_token import sign, verify
+from utils.auth.jwt_token import sign, verify
 
 _EXPIRY_SECONDS = 60 * 60 * 24 * 30  # 30 days
 

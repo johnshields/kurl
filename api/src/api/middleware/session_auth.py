@@ -8,8 +8,8 @@ token as "anonymous" rather than a failure.
 """
 
 from app.config import settings
+from utils.auth.session import verify_session_token
 from utils.http.response import json_error
-from utils.session import verify_session_token
 
 
 def get_session_user_uid(request) -> str | None:

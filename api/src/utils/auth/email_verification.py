@@ -6,7 +6,7 @@ verified account is a harmless no-op, so the token doesn't need to
 self-invalidate on use.
 """
 
-from utils.jwt_token import sign, verify
+from utils.auth.jwt_token import sign, verify
 
 _EXPIRY_SECONDS = 60 * 60 * 24  # 24 hours
 
