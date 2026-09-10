@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from api.controllers.auth_controller import unique_username
 from app.config import settings
 from db.db import execute, fetch_one
 from db.queries import users as user_queries
@@ -18,6 +17,7 @@ from utils.oauth_state import create_oauth_state, verify_oauth_state
 from utils.session import create_session_token
 from utils.token_crypto import encrypt_token
 from utils.uid import gen_uid
+from utils.username import unique_username
 
 logger = get_logger()
 

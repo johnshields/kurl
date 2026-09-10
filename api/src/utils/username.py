@@ -1,12 +1,18 @@
 """
 Username generation
 Random two-word slugs via coolname (pure Python, no deps -- safe for the
-Pyodide/Workers runtime). Uniqueness is checked by the caller against the DB.
+Pyodide/Workers runtime).
 """
 
 import secrets
 
+from db.db import fetch_one
+from db.queries import users as queries
+
 _MAX_LENGTH = 40
+
+# Safety cap so a full username table can't loop signup forever.
+_MAX_ATTEMPTS = 10
 
 
 def generate_username() -> str:
@@ -28,3 +34,12 @@ def is_valid_username(username: str) -> bool:
     return 3 <= len(username) <= _MAX_LENGTH and all(
         c.isalnum() or c in "-_" for c in username
     )
+
+
+async def unique_username(db) -> str:
+    for _ in range(_MAX_ATTEMPTS):
+        candidate = generate_username()
+        if not await fetch_one(db, queries.GET_BY_USERNAME, candidate):
+            return candidate
+    # Exhausted retries -- add a short random suffix, still checked once.
+    return generate_username_with_suffix()

@@ -3,33 +3,19 @@ Events Controller
 Business logic for analytics events against D1 (SQLite).
 """
 
-from datetime import datetime, timedelta
-
 from db.db import execute, fetch_all
 from db.queries import events as queries
 from models.event import from_db_row, to_db_params
+from utils.bot_detection import is_bot
+from utils.dates import iso_days_ago
 from utils.logging import get_logger
 from utils.uid import gen_uid
 
 logger = get_logger()
 
-BOT_PATTERNS = [
-    "bot", "crawler", "spider", "headlesschrome", "ahrefsbot",
-    "googlebot", "bingbot", "slurp", "duckduckbot",
-    "facebookexternalhit", "semrushbot",
-]
-
-
-def _is_bot(user_agent: str) -> bool:
-    ua = (user_agent or "").lower()
-    # Real browsers always send a User-Agent; scripted/headless clients often skip it.
-    if not ua:
-        return True
-    return any(p in ua for p in BOT_PATTERNS)
-
 
 async def create_event(db, data: dict, meta: dict) -> dict:
-    if _is_bot(meta.get("userAgent", "")):
+    if is_bot(meta.get("userAgent", "")):
         return {"status": "success", "message": "Ignored.", "uid": None}
 
     uid = gen_uid("EVT")
@@ -40,12 +26,8 @@ async def create_event(db, data: dict, meta: dict) -> dict:
     return {"status": "success", "message": "Event recorded.", "uid": uid}
 
 
-def _since(days: int) -> str:
-    return (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-
 async def get_summary(db, days: int = 7) -> dict:
-    since = _since(days)
+    since = iso_days_ago(days)
 
     by_type = await fetch_all(db, queries.SUMMARY_BY_TYPE, since)
     top_platforms = await fetch_all(db, queries.TOP_PLATFORMS, since)
@@ -75,7 +57,7 @@ async def get_summary(db, days: int = 7) -> dict:
 
 
 async def get_approx_pairs(db, days: int = 7) -> dict:
-    since = _since(days)
+    since = iso_days_ago(days)
     rows = await fetch_all(db, queries.APPROX_PAIRS, since)
     logger.info("Fetched approx pairs for last %d days", days)
     return {

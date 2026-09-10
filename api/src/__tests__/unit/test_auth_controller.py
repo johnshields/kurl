@@ -45,13 +45,15 @@ class TestSignup:
         execute_mock = AsyncMock()
         with patch("api.controllers.auth_controller.execute", execute_mock), patch(
             "api.controllers.auth_controller.fetch_one", _fetch_one_stub()
+        ), patch(
+            "api.controllers.auth_controller.unique_username", AsyncMock(return_value="brave-otter")
         ), patch("api.controllers.auth_controller.settings") as mock_settings:
             mock_settings.SESSION_SECRET = "test-secret"
             result = await auth_controller.signup(db=object(), data={"email": "new@b.com", "password": "longenough"})
 
         assert result["status"] == "success"
         assert result["data"]["user"]["email"] == "new@b.com"
-        assert result["data"]["user"]["username"]
+        assert result["data"]["user"]["username"] == "brave-otter"
         assert result["data"]["token"]
         execute_mock.assert_awaited_once()
 

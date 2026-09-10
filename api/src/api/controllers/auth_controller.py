@@ -17,21 +17,9 @@ from utils.password import hash_password, verify_password
 from utils.password_reset import create_reset_token, decode_reset_token, matches_current_password
 from utils.session import create_session_token
 from utils.uid import gen_uid
-from utils.username import generate_username, generate_username_with_suffix, is_valid_username
+from utils.username import is_valid_username, unique_username
 
 logger = get_logger()
-
-# Safety cap so a full username table can't loop signup forever.
-_USERNAME_GEN_ATTEMPTS = 10
-
-
-async def unique_username(db) -> str:
-    for _ in range(_USERNAME_GEN_ATTEMPTS):
-        candidate = generate_username()
-        if not await fetch_one(db, queries.GET_BY_USERNAME, candidate):
-            return candidate
-    # Exhausted retries -- add a short random suffix, still checked once.
-    return generate_username_with_suffix()
 
 
 async def _send_verification_email(uid: str, email: str) -> None:
