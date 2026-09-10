@@ -15,6 +15,7 @@ import 'package:kurl/utils/url_state.dart';
 import 'package:kurl/utils/url_validator.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
+import 'package:kurl/widgets/shared/send_kurl_sheet.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 class KurlScreen extends StatefulWidget {
@@ -37,6 +38,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   bool _pressed = false;
   bool _noCache = false;
   bool _targetFromUrl = false;
+  bool _loggedIn = false;
   String? _error;
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
   StreamSubscription<Uri>? _linkSub;
@@ -63,10 +65,30 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   // the default when nothing else has already chosen one.
   Future<void> _loadPreferredPlatform() async {
     final user = await AuthService.getProfile();
+    if (!mounted) return;
+    setState(() => _loggedIn = user != null);
     final preferred = user?.preferredPlatform;
     if (preferred == null || findPlatform(preferred) == null) return;
-    if (mounted && _selectedPlatform == null && !_targetFromUrl) {
+    if (_selectedPlatform == null && !_targetFromUrl) {
       setState(() => _selectedPlatform = preferred);
+    }
+  }
+
+  Future<void> _openSendSheet() async {
+    final result = _result;
+    if (result == null) return;
+    final sentTo = await showDialog<String>(
+      context: context,
+      builder: (_) => SendKurlSheet(kurl: result, sourceUrl: _urlController.text.trim()),
+    );
+    if (sentTo != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sent to $sentTo'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -295,7 +317,10 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                     ],
                     if (_result != null) ...[
                       const SizedBox(height: 16),
-                      ResultCard(result: _result!),
+                      ResultCard(
+                        result: _result!,
+                        onSend: _loggedIn ? _openSendSheet : null,
+                      ),
                     ],
                     const SizedBox(height: 32),
                     Center(

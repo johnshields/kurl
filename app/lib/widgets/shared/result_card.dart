@@ -13,8 +13,9 @@ import 'package:kurl/widgets/shared/marquee_text.dart';
 class ResultCard extends StatelessWidget {
   final KurlResult result;
   final VoidCallback? onDelete;
+  final VoidCallback? onSend;
 
-  const ResultCard({super.key, required this.result, this.onDelete});
+  const ResultCard({super.key, required this.result, this.onDelete, this.onSend});
 
   Future<void> _share(BuildContext context) async {
     try {
@@ -230,20 +231,13 @@ class ResultCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onSend != null) ...[
+                const SizedBox(width: 8),
+                _IconAction(icon: Icons.send_rounded, onTap: onSend!),
+              ],
               if (onDelete != null) ...[
                 const SizedBox(width: 8),
-                Material(
-                  color: const Color(0xFF222222),
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    onTap: onDelete,
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFE5E5E5)),
-                    ),
-                  ),
-                ),
+                _IconAction(icon: Icons.delete_outline_rounded, onTap: onDelete!),
               ],
             ],
           ),
@@ -257,6 +251,29 @@ class ResultCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _IconAction extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _IconAction({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF222222),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Icon(icon, size: 18, color: const Color(0xFFE5E5E5)),
+        ),
       ),
     );
   }
