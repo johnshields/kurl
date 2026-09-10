@@ -4,7 +4,7 @@ HTTP endpoints for Sign in with SoundCloud. Callback is
 state-authenticated, not session-gated -- it's SoundCloud's own redirect.
 """
 
-from api.controllers import soundcloud_auth_controller as _controller
+from api.controllers.oauth import soundcloud_auth_controller as _controller
 from api.routes import _oauth
 
 _LABEL = "SoundCloud"

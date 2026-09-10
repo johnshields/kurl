@@ -4,7 +4,7 @@ HTTP endpoints for Sign in with Spotify. Callback is state-authenticated,
 not session-gated -- it's Spotify's own redirect.
 """
 
-from api.controllers import spotify_auth_controller as _controller
+from api.controllers.oauth import spotify_auth_controller as _controller
 from api.routes import _oauth
 
 _LABEL = "Spotify"

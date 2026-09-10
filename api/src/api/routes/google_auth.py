@@ -4,7 +4,7 @@ HTTP endpoints for Sign in with YouTube. Callback is state-authenticated,
 not session-gated -- it's Google's own redirect.
 """
 
-from api.controllers import google_auth_controller as _controller
+from api.controllers.oauth import google_auth_controller as _controller
 from api.routes import _oauth
 
 _LABEL = "YouTube"

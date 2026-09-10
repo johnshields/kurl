@@ -5,7 +5,7 @@ Sign in with YouTube: identity only, anonymous or linked to an existing session.
 
 from functools import partial
 
-from api.controllers import oauth_signin
+from api.controllers.oauth import oauth_signin
 from clients import google_oauth_client
 from db.queries.streaming_accounts import account_queries
 from models.streaming_account import public_account, to_db_params

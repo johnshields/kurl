@@ -1,25 +1,28 @@
 """
-Spotify Auth Controller
-Sign in with Spotify: identity only, anonymous or linked to an existing session.
+SoundCloud Auth Controller
+Sign in with SoundCloud. No email available, so matching is by
+soundcloud_user_id only.
 """
 
 from functools import partial
 
-from api.controllers import oauth_signin
-from clients import spotify_oauth_client
+from api.controllers.oauth import oauth_signin
+from clients import soundcloud_oauth_client
 from db.queries.streaming_accounts import account_queries
 from models.streaming_account import public_account, to_db_params
 
 PROVIDER = oauth_signin.OAuthProvider(
-    key="spotify",
-    label="Spotify",
-    settings_prefix="SPOTIFY",
-    client=spotify_oauth_client,
-    queries=account_queries("spotify_accounts", "spotify_user_id"),
+    key="soundcloud",
+    label="SoundCloud",
+    settings_prefix="SOUNDCLOUD",
+    client=soundcloud_oauth_client,
+    queries=account_queries("soundcloud_accounts", "soundcloud_user_id"),
     to_db_params=to_db_params,
-    public_account=partial(public_account, id_column="spotify_user_id", id_key="spotifyUserId"),
+    public_account=partial(public_account, id_column="soundcloud_user_id", id_key="soundcloudUserId"),
     profile_id_key="id",
-    display_name_keys=("display_name",),
+    display_name_keys=("username", "full_name"),
+    uses_pkce=True,
+    has_email=False,
 )
 
 
