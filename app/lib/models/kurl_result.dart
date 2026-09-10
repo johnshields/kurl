@@ -19,6 +19,16 @@ class KurlResult {
 
   bool get isSearch => via == 'search';
 
+  /// Wire shape for an attached kurl -- snake_case, matching [fromJson].
+  Map<String, dynamic> toJson() => {
+        'title': ?title,
+        'artist': ?artist,
+        'resolved_url': resolvedUrl,
+        'platform': platform,
+        'via': via,
+        'artwork_url': ?artworkUrl,
+      };
+
   factory KurlResult.fromJson(Map<String, dynamic> json) {
     return KurlResult(
       title: json['title'],
