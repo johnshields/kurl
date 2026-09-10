@@ -19,18 +19,6 @@ LIST_FOR_THREAD = """
     LIMIT 200
 """
 
-LATEST_FOR_THREAD = """
-    SELECT * FROM messages
-    WHERE thread_uid = ?
-    ORDER BY created_at DESC
-    LIMIT 1
-"""
-
-UNREAD_COUNT = """
-    SELECT COUNT(*) AS count FROM messages
-    WHERE thread_uid = ? AND sender_uid != ? AND created_at > ?
-"""
-
 DELETE = """
     DELETE FROM messages WHERE uid = ? AND sender_uid = ?
 """
