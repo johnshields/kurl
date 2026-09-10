@@ -58,7 +58,7 @@ async def _fetch_artwork(title: str | None, artist: str | None) -> str | None:
     return deezer.extract_artwork(track) if track else None
 
 
-async def kurl(
+async def resolve(
     url: str,
     target_platform: str,
     *,
@@ -66,8 +66,9 @@ async def kurl(
     db=None,
     user_uid: str | None = None,
     save_history: bool = True,
-):
-    """Kurl a streaming URL to the target platform.
+) -> dict:
+    """Resolve a streaming URL to the target platform, returning the result
+    dict (with a `cached` flag). Raises ApiError on an unresolvable request.
 
     Resolution order:
     1. Direct ISRC/UPC/name via platform APIs (fast path)
@@ -77,13 +78,13 @@ async def kurl(
     Pass no_cache=True to skip cache reads; writes still happen so the next
     request gets the upgraded result.
 
-    db/user_uid are optional -- kurl works exactly as before when omitted.
-    When both are present (a signed-in user), the result is also saved to
-    their kurl history, best-effort. Pass save_history=False to resolve
-    without recording -- e.g. a page load restoring a previous result.
+    db/user_uid are optional -- resolution works exactly the same when
+    omitted. When both are present (a signed-in user), the result is also
+    saved to their kurl history, best-effort. Pass save_history=False to
+    resolve without recording -- e.g. a page load restoring a previous result.
     """
     if target_platform not in PLATFORMS:
-        return json_error(f"Unknown platform: {target_platform}", 400, code="UNKNOWN_PLATFORM")
+        raise ApiError(400, f"Unknown platform: {target_platform}", "UNKNOWN_PLATFORM")
 
     url = normalise_url(url)
 
@@ -93,7 +94,7 @@ async def kurl(
     logger.info("Kurling %s -> %s", url, target_platform)
 
     if is_search_url(url):
-        return json_error("Search URL provided, not a track link", 400, code="SEARCH_URL")
+        raise ApiError(400, "Search URL provided, not a track link", "SEARCH_URL")
 
     cache_key = hashlib.md5(f"{url}{target_platform}".encode()).hexdigest()
 
@@ -102,7 +103,8 @@ async def kurl(
         data = json.loads(cached)
         logger.info("Cache hit: %s - %s", data.get("artist"), data.get("title"))
         await _record_if_signed_in(db, user_uid, url, data, save_history=save_history)
-        return json_success("Kurled from cache", data)
+        data["cached"] = True
+        return data
 
     # Try direct ISRC/UPC resolution via platform APIs first.
     parsed_full = parse_music_url(url)
@@ -123,7 +125,8 @@ async def kurl(
                 }
                 await cache.set(cache_key, json.dumps(result))
                 await _record_if_signed_in(db, user_uid, url, result, save_history=save_history)
-                return json_success("Kurled", result)
+                result["cached"] = False
+                return result
         except Exception as e:
             logger.warning("Direct kurl failed, falling back to Odesli: %s", e)
 
@@ -196,7 +199,7 @@ async def kurl(
             if slug:
                 resolved_url = build_search_url(target_platform, slug, None)
         if not resolved_url:
-            return json_error("Track not found on streaming services", 404, code="TRACK_NOT_FOUND")
+            raise ApiError(404, "Track not found on streaming services", "TRACK_NOT_FOUND")
         via = "search"
         logger.info("Using search fallback for %s: %s", target_platform, resolved_url)
 
@@ -215,7 +218,35 @@ async def kurl(
         await cache.set(cache_key, json.dumps(result))
 
     await _record_if_signed_in(db, user_uid, url, result, save_history=save_history)
-    return json_success("Kurled", result)
+    result["cached"] = False
+    return result
+
+
+async def kurl(
+    url: str,
+    target_platform: str,
+    *,
+    no_cache: bool = False,
+    db=None,
+    user_uid: str | None = None,
+    save_history: bool = True,
+):
+    """HTTP wrapper around resolve() -- a result dict becomes a success
+    response, an ApiError becomes a structured error response."""
+    try:
+        result = await resolve(
+            url,
+            target_platform,
+            no_cache=no_cache,
+            db=db,
+            user_uid=user_uid,
+            save_history=save_history,
+        )
+    except ApiError as e:
+        return json_error(e.detail, e.status_code, code=e.code)
+
+    cached = result.pop("cached", False)
+    return json_success("Kurled from cache" if cached else "Kurled", result)
 
 
 def _slug_query(url: str) -> str | None:
