@@ -3,6 +3,9 @@ Tests for api.controllers.messages_controller -- send, list threads, read a
 thread, delete a message.
 """
 
+import json
+import sys
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from api.controllers import messages_controller
@@ -197,6 +200,90 @@ class TestSend:
         assert insert_args[6] == '{"resolved_url": "https://x"}'
         assert insert_args[7] is None
         assert result["data"]["kurl"] == {"resolved_url": "https://x"}
+
+    async def test_stores_the_recipient_reresolve_on_the_message(self):
+        execute_mock = AsyncMock()
+        router = _fetch_one_router(
+            thread_by_uid=_thread_row(),
+            are_friends=1,
+            user_by_uid={"uid": "USR_Y", "preferred_platform": "tidal"},
+            message_by_uid=_msg_row(body=None, kurl='{"source_url": "https://s"}'),
+        )
+        fake = SimpleNamespace(
+            resolve=AsyncMock(
+                return_value={"resolved_url": "https://tidal/x", "platform": "tidal", "via": "isrc"}
+            )
+        )
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.execute", execute_mock
+        ), patch.dict(sys.modules, {"api.services.urls": fake}):
+            result = await messages_controller.send(
+                db=object(),
+                user_uid="USR_X",
+                data={"threadUid": "THR_1", "kurl": {"source_url": "https://s", "platform": "spotify"}},
+            )
+        assert result["status"] == "success"
+        insert_args = execute_mock.await_args_list[0].args
+        assert json.loads(insert_args[7]) == {
+            "target_url": "https://tidal/x",
+            "platform": "tidal",
+            "via": "isrc",
+        }
+
+
+class TestResolveForRecipient:
+    async def test_none_without_a_source_url(self):
+        got = await messages_controller._resolve_for_recipient(
+            object(), "USR_Y", {"platform": "spotify"}
+        )
+        assert got is None
+
+    async def test_none_when_recipient_has_no_preference(self):
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "preferred_platform": None}),
+        ):
+            got = await messages_controller._resolve_for_recipient(
+                object(), "USR_Y", {"source_url": "https://s", "platform": "spotify"}
+            )
+        assert got is None
+
+    async def test_none_when_preference_matches_attached_platform(self):
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "preferred_platform": "spotify"}),
+        ):
+            got = await messages_controller._resolve_for_recipient(
+                object(), "USR_Y", {"source_url": "https://s", "platform": "spotify"}
+            )
+        assert got is None
+
+    async def test_reresolves_into_the_preferred_platform(self):
+        fake = SimpleNamespace(
+            resolve=AsyncMock(
+                return_value={"resolved_url": "https://tidal/x", "platform": "tidal", "via": "isrc"}
+            )
+        )
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "preferred_platform": "tidal"}),
+        ), patch.dict(sys.modules, {"api.services.urls": fake}):
+            got = await messages_controller._resolve_for_recipient(
+                object(), "USR_Y", {"source_url": "https://s", "platform": "spotify"}
+            )
+        assert got == {"target_url": "https://tidal/x", "platform": "tidal", "via": "isrc"}
+        fake.resolve.assert_awaited_once()
+
+    async def test_none_when_resolve_raises(self):
+        fake = SimpleNamespace(resolve=AsyncMock(side_effect=RuntimeError("odesli down")))
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "preferred_platform": "tidal"}),
+        ), patch.dict(sys.modules, {"api.services.urls": fake}):
+            got = await messages_controller._resolve_for_recipient(
+                object(), "USR_Y", {"source_url": "https://s", "platform": "spotify"}
+            )
+        assert got is None
 
 
 class TestGetThread:

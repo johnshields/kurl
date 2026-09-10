@@ -100,6 +100,8 @@ async def send(db, user_uid: str, data: dict) -> dict:
     if thread is None:
         thread = await _create_thread(db, user_uid, other_uid)
 
+    kurl_recipient = await _resolve_for_recipient(db, other_uid, kurl) if kurl is not None else None
+
     uid = gen_uid("MSG")
     await execute(
         db,
@@ -109,7 +111,7 @@ async def send(db, user_uid: str, data: dict) -> dict:
         user_uid,
         body,
         json.dumps(kurl) if kurl is not None else None,
-        None,
+        json.dumps(kurl_recipient) if kurl_recipient is not None else None,
     )
     await execute(db, thread_queries.TOUCH, thread["uid"])
     await _mark_read(db, thread, user_uid)
@@ -156,3 +158,30 @@ async def _create_thread(db, user_uid: str, other_uid: str) -> dict:
     await execute(db, thread_queries.INSERT, uid, a, b)
     logger.info("Thread %s created for %s + %s", uid, a, b)
     return await fetch_one(db, thread_queries.GET_BY_UID, uid)
+
+
+async def _resolve_for_recipient(db, recipient_uid: str, kurl: dict) -> dict | None:
+    """Re-resolve an attached kurl into the recipient's preferred platform.
+    Best-effort -- any miss returns None and the sender snapshot stands."""
+    source_url = kurl.get("source_url")
+    if not source_url:
+        return None
+
+    recipient = await fetch_one(db, user_queries.GET_BY_UID, recipient_uid)
+    pref = recipient.get("preferred_platform") if recipient else None
+    if not pref or pref == kurl.get("platform"):
+        return None
+
+    from api.services.urls import resolve
+
+    try:
+        result = await resolve(source_url, pref, db=db, save_history=False)
+    except Exception as e:
+        logger.warning("Recipient re-resolve failed (%s -> %s): %s", source_url, pref, e)
+        return None
+
+    return {
+        "target_url": result["resolved_url"],
+        "platform": result["platform"],
+        "via": result["via"],
+    }
