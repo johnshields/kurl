@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
 import 'package:kurl/models/friend.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/models/message.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/friendly_error.dart';
 
 /// Pick a friend, add an optional note, and send [kurl] to them as a message.
-/// Pops with the recipient's username on success, null on cancel.
+/// Pops with the created [Message] on success, null on cancel.
 class SendKurlSheet extends StatefulWidget {
   final KurlResult kurl;
   final String sourceUrl;
@@ -53,12 +54,12 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
     });
     final note = _noteController.text.trim();
     try {
-      await SocialService.sendMessage(
+      final message = await SocialService.sendMessage(
         toUid: selected.user.uid,
         body: note.isEmpty ? null : note,
         kurl: {'source_url': widget.sourceUrl, ...widget.kurl.toJson()},
       );
-      if (mounted) Navigator.of(context).pop(selected.user.username);
+      if (mounted) Navigator.of(context).pop(message);
     } catch (e) {
       if (mounted) {
         setState(() => _error = e is ApiException ? e.message : friendlyError(e));
