@@ -4,6 +4,7 @@ class KurlUser {
   final String username;
   final String? preferredPlatform;
   final bool emailVerified;
+  final bool notifyEmail;
   final String createdAt;
 
   const KurlUser({
@@ -12,6 +13,7 @@ class KurlUser {
     required this.username,
     this.preferredPlatform,
     this.emailVerified = false,
+    this.notifyEmail = true,
     required this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class KurlUser {
       username: json['username'],
       preferredPlatform: json['preferredPlatform'],
       emailVerified: json['emailVerified'] ?? false,
+      notifyEmail: json['notifyEmail'] ?? true,
       createdAt: json['createdAt'] ?? '',
     );
   }
