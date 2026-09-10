@@ -52,6 +52,7 @@ class AuthService {
     String? preferredPlatform,
     bool clearPreferredPlatform = false,
     String? password,
+    bool? notifyEmail,
   }) async {
     final token = await getToken();
     if (token == null) {
@@ -65,6 +66,7 @@ class AuthService {
         'email': ?email,
         'username': ?username,
         'password': ?password,
+        'notifyEmail': ?notifyEmail,
         if (clearPreferredPlatform) 'preferredPlatform': null else 'preferredPlatform': ?preferredPlatform,
       }),
     );
