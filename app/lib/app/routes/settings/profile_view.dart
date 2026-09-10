@@ -23,6 +23,7 @@ class ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<ProfileView> {
   bool _savingPlatform = false;
+  bool _savingNotify = false;
   final Map<StreamingProvider, StreamingAccount> _accounts = {
     for (final provider in StreamingProvider.values) provider: StreamingAccount.disconnected,
   };
@@ -115,6 +116,17 @@ class _ProfileViewState extends State<ProfileView> {
     } catch (_) {
     } finally {
       if (mounted) setState(() => _savingPlatform = false);
+    }
+  }
+
+  Future<void> _setNotifyEmail(bool value) async {
+    setState(() => _savingNotify = true);
+    try {
+      final updated = await AuthService.updateProfile(notifyEmail: value);
+      if (mounted) widget.onUpdated(updated);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _savingNotify = false);
     }
   }
 
@@ -444,6 +456,46 @@ class _ProfileViewState extends State<ProfileView> {
                     ),
                   ],
                 ),
+                if (widget.user.email.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _card(
+                    children: [
+                      Opacity(
+                        opacity: _savingNotify ? 0.5 : 1,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Message emails',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFE5E5E5),
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Email me when a friend sends a message.',
+                                    style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: widget.user.notifyEmail,
+                              onChanged: _savingNotify ? null : _setNotifyEmail,
+                              activeTrackColor: const Color(0xFF1DB954),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
