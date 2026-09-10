@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/models/message.dart';
 import 'package:kurl/models/thread.dart';
 import 'package:kurl/services/api_exception.dart';
@@ -22,6 +23,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
   final _scroll = ScrollController();
   bool _loading = true;
   bool _sending = false;
+  bool _wide = false;
   String? _error;
   ThreadDetail? _detail;
 
@@ -118,18 +120,37 @@ class _ThreadScreenState extends State<ThreadScreen> {
         ),
         iconTheme: const IconThemeData(color: Color(0xFFE5E5E5)),
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => setState(() => _wide = !_wide),
+            icon: Icon(_wide ? Icons.close_fullscreen : Icons.open_in_full, size: 18),
+            color: const Color(0xFF888888),
+            tooltip: _wide ? 'Narrow' : 'Widen',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(child: _body(otherUid)),
-            _ComposeBar(
-              controller: _composeController,
-              sending: _sending,
-              onSend: _send,
+            Expanded(child: _centred(_body(otherUid))),
+            _centred(
+              _ComposeBar(
+                controller: _composeController,
+                sending: _sending,
+                onSend: _send,
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _centred(Widget child) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: _wide ? double.infinity : kContentMaxWidth),
+        child: child,
       ),
     );
   }
