@@ -17,6 +17,7 @@ X-API-Key: <key>
 | `GET /api/readyz` | API key |
 | `GET /api/events/summary` | API key |
 | `GET /api/events/approx-pairs` | API key |
+| `/api/friends/*`, `/api/messages/*` | Session (Bearer) |
 
 ## `POST /api/kurl`
 
@@ -116,6 +117,142 @@ Source URLs that repeatedly missed on a given target platform (approximate near-
   }
 }
 ```
+
+## Friends and messages
+
+Direct messages between friends. Requires a session token (`Authorization: Bearer <token>`). Schema and behaviour in [USERS.md](USERS.md).
+
+### `GET /api/friends`
+
+Accepted friends plus pending requests in each direction.
+
+**Response**
+```json
+{
+  "status": "success",
+  "data": {
+    "friends": [
+      {
+        "uid": "FRN_...",
+        "user": {"uid": "USR_...", "username": "brave-otter"},
+        "status": "accepted",
+        "createdAt": "2026-09-10T00:00:00.000Z",
+        "respondedAt": "2026-09-10T00:01:00.000Z"
+      }
+    ],
+    "incoming": [],
+    "outgoing": []
+  }
+}
+```
+
+### `POST /api/friends`
+
+Send a request. Rejects an unknown username, self, an existing request, or an existing friendship.
+
+**Request**
+```json
+{"username": "brave-otter"}
+```
+
+### `POST /api/friends/:uid/accept`
+
+Accept a pending request. Addressee only.
+
+### `DELETE /api/friends/:uid`
+
+Decline, cancel, or unfriend. Scoped to a participant.
+
+### `GET /api/messages`
+
+Thread list, newest first. Each row carries the other participant, a preview of the last message, and the caller's unread count.
+
+**Response**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "uid": "THR_...",
+      "user": {"uid": "USR_...", "username": "brave-otter"},
+      "lastMessageAt": "2026-09-10T00:00:00.000Z",
+      "unread": 2,
+      "lastMessage": {
+        "body": "check this out",
+        "kurl": null,
+        "senderUid": "USR_...",
+        "createdAt": "2026-09-10T00:00:00.000Z"
+      }
+    }
+  ]
+}
+```
+
+### `GET /api/messages/:threadUid`
+
+Thread history, oldest first. Marks the caller's side read.
+
+**Response**
+```json
+{
+  "status": "success",
+  "data": {
+    "thread": {
+      "uid": "THR_...",
+      "user": {"uid": "USR_...", "username": "brave-otter"},
+      "lastMessageAt": "2026-09-10T00:00:00.000Z",
+      "lastReadAt": "2026-09-10T00:00:00.000Z",
+      "createdAt": "2026-09-09T00:00:00.000Z"
+    },
+    "messages": [
+      {
+        "uid": "MSG_...",
+        "threadUid": "THR_...",
+        "senderUid": "USR_...",
+        "body": "check this out",
+        "kurl": {
+          "source_url": "https://open.spotify.com/track/...",
+          "resolved_url": "https://open.spotify.com/track/...",
+          "platform": "spotify",
+          "via": "isrc",
+          "title": "Delilah (pull me out of this)",
+          "artist": "Fred again.."
+        },
+        "kurlRecipient": {"target_url": "https://tidal.com/track/...", "platform": "tidal", "via": "isrc"},
+        "createdAt": "2026-09-10T00:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### `POST /api/messages`
+
+Send a message: text, an attached kurl, or both. `toUsername`, `toUid` or `threadUid` picks the recipient; starting a new thread needs an accepted friendship. When the attached kurl's platform differs from the recipient's preferred platform it is re-resolved server-side and the override stored as `kurlRecipient`.
+
+**Request**
+```json
+{
+  "toUsername": "brave-otter",
+  "body": "check this out",
+  "kurl": {
+    "source_url": "https://open.spotify.com/track/...",
+    "resolved_url": "https://open.spotify.com/track/...",
+    "platform": "spotify",
+    "via": "isrc",
+    "title": "Delilah (pull me out of this)",
+    "artist": "Fred again.."
+  }
+}
+```
+
+### `POST /api/messages/:threadUid/read`
+
+Mark the caller's side read.
+
+### `DELETE /api/messages/:messageUid`
+
+Delete a message, sender only.
 
 ## `GET /api/readyz`
 
