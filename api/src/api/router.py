@@ -12,6 +12,7 @@ from api.routes import auth, events
 from api.routes import friends as friends_routes
 from api.routes import google_auth as google_auth_routes
 from api.routes import kurls as kurls_routes
+from api.routes import messages as messages_routes
 from api.routes import soundcloud_auth as soundcloud_auth_routes
 from api.routes import spotify_auth as spotify_auth_routes
 from api.services import urls as kurl_service
@@ -263,6 +264,34 @@ async def _accept_friend_request(db, request, uid, **kwargs):
 @route("DELETE", "/api/friends/:uid")
 async def _remove_friend(db, request, uid, **kwargs):
     return await friends_routes.remove(db, request, uid)
+
+
+# Messages (signed-in users only)
+
+
+@route("GET", "/api/messages")
+async def _list_threads(db, request, **kwargs):
+    return await messages_routes.list_threads(db, request)
+
+
+@route("POST", "/api/messages")
+async def _send_message(db, request, **kwargs):
+    return await messages_routes.send(db, request)
+
+
+@route("GET", "/api/messages/:uid")
+async def _get_thread(db, request, uid, **kwargs):
+    return await messages_routes.get_thread(db, request, uid)
+
+
+@route("POST", "/api/messages/:uid/read")
+async def _mark_thread_read(db, request, uid, **kwargs):
+    return await messages_routes.mark_read(db, request, uid)
+
+
+@route("DELETE", "/api/messages/:uid")
+async def _delete_message(db, request, uid, **kwargs):
+    return await messages_routes.delete_message(db, request, uid)
 
 
 # Event endpoints

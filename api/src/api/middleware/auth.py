@@ -38,7 +38,7 @@ PUBLIC_PREFIXES = ("/admin", "/static", "/favicon")
 
 # Dynamic session-gated routes (e.g. DELETE /api/kurls/<uid>) that can't be
 # listed in PUBLIC_PATHS as an exact string.
-SESSION_GATED_PREFIXES = ("/api/kurls/", "/api/friends")
+SESSION_GATED_PREFIXES = ("/api/kurls/", "/api/friends", "/api/messages")
 
 
 def authenticate(request, path: str, api_key: str | None):
