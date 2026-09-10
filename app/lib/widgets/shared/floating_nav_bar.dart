@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 class NavTab {
   final IconData icon;
   final String label;
+  final int badgeCount;
 
-  const NavTab({required this.icon, required this.label});
+  const NavTab({required this.icon, required this.label, this.badgeCount = 0});
 }
 
 class FloatingNavBar extends StatelessWidget {
@@ -52,7 +53,7 @@ class FloatingNavBar extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(tab.icon, size: 22, color: colour),
+                    _IconWithBadge(icon: tab.icon, colour: colour, badgeCount: tab.badgeCount),
                     const SizedBox(height: 3),
                     Text(
                       tab.label,
@@ -69,6 +70,42 @@ class FloatingNavBar extends StatelessWidget {
           );
         }),
       ),
+    );
+  }
+}
+
+class _IconWithBadge extends StatelessWidget {
+  final IconData icon;
+  final Color colour;
+  final int badgeCount;
+
+  const _IconWithBadge({required this.icon, required this.colour, required this.badgeCount});
+
+  @override
+  Widget build(BuildContext context) {
+    if (badgeCount <= 0) return Icon(icon, size: 22, color: colour);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon, size: 22, color: colour),
+        Positioned(
+          right: -6,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            constraints: const BoxConstraints(minWidth: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              badgeCount > 99 ? '99+' : '$badgeCount',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
