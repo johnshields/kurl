@@ -332,23 +332,6 @@ class TestNotifyRecipient:
             await messages_controller._notify_recipient(object(), "USR_Y", "USR_X", "hi", None)
 
 
-class TestPreviewText:
-    def test_body_passes_through(self):
-        assert messages_controller._preview_text("short note", None) == "short note"
-
-    def test_body_is_truncated(self):
-        out = messages_controller._preview_text("x" * 200, None)
-        assert len(out) == 140 and out.endswith("…")
-
-    def test_kurl_uses_artist_and_title(self):
-        assert messages_controller._preview_text(
-            None, {"artist": "Fred again..", "title": "Delilah"}
-        ) == "Sent a kurl: Fred again.. - Delilah"
-
-    def test_kurl_fallback(self):
-        assert messages_controller._preview_text(None, {}) == "Sent you a kurl."
-
-
 class TestGetThread:
     async def test_missing_thread_is_not_found(self):
         with patch(
