@@ -36,6 +36,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   bool _loading = false;
   bool _pressed = false;
   bool _noCache = false;
+  bool _targetFromUrl = false;
   String? _error;
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
   StreamSubscription<Uri>? _linkSub;
@@ -64,7 +65,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     final user = await AuthService.getProfile();
     final preferred = user?.preferredPlatform;
     if (preferred == null || findPlatform(preferred) == null) return;
-    if (mounted && _selectedPlatform == null) {
+    if (mounted && _selectedPlatform == null && !_targetFromUrl) {
       setState(() => _selectedPlatform = preferred);
     }
   }
@@ -105,8 +106,11 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     _noCache = uri.queryParameters['cache'] == 'false';
     if (!hasUrl && !validTarget) return;
 
+    if (validTarget) {
+      _targetFromUrl = true;
+      setState(() => _selectedPlatform = target);
+    }
     if (hasUrl) _populateUrl(compactDecode(encoded));
-    if (validTarget) setState(() => _selectedPlatform = target);
 
     // Both params present -> auto-fire conversion (deep-link, share, or refresh restore).
     if (hasUrl && validTarget) {
