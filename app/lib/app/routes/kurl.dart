@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/kurl_result.dart';
+import 'package:kurl/models/message.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
@@ -77,17 +79,13 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   Future<void> _openSendSheet() async {
     final result = _result;
     if (result == null) return;
-    final sentTo = await showDialog<String>(
+    final sent = await showDialog<Message>(
       context: context,
       builder: (_) => SendKurlSheet(kurl: result, sourceUrl: _urlController.text.trim()),
     );
-    if (sentTo != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Sent to $sentTo'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+    if (sent != null && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ThreadScreen(threadUid: sent.threadUid)),
       );
     }
   }
