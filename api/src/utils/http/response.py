@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from workers import Response
 
 from app.constants import CORS_HEADERS
+from utils.api_result import error_result
 
 
 def json_response(data: dict, status: int = 200) -> Response:
@@ -20,10 +21,7 @@ def json_response(data: dict, status: int = 200) -> Response:
 
 
 def json_error(message: str, status: int, code: str = "INTERNAL_ERROR") -> Response:
-    return json_response(
-        {"status": "error", "code": code, "message": message},
-        status,
-    )
+    return json_response(error_result(code, message), status)
 
 
 def json_success(message: str, data: dict) -> Response:
