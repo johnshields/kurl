@@ -13,11 +13,8 @@ class KurlApp extends StatelessWidget {
       scaffoldBackgroundColor: const Color(0xFF0A0A0A),
     );
 
-    // MainShell manages its own tab routing via history.pushState, entirely
-    // outside Flutter's Navigator. Without telling MaterialApp the current
-    // location is already the "correct" route, it assumes the default route
-    // (/) and syncs the address bar back to that on first frame -- wiping
-    // any deep-linked path or query (e.g. /settings?reset=...).
+    // Seed the real location so MaterialApp keeps deep-link query params
+    // instead of resetting the URL to / on the first frame.
     final initialRoute = kIsWeb ? '${Uri.base.path}${Uri.base.hasQuery ? '?${Uri.base.query}' : ''}' : '/';
 
     return MaterialApp(

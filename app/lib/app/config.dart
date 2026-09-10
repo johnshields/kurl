@@ -14,11 +14,8 @@ String _localUrl() {
   return 'http://localhost:$_localPort';
 }
 
-// Candidate base URLs in priority order. Release builds use prod only.
-// Debug builds try local first, fall back to prod when worker is offline,
-// so the app keeps working without `pywrangler dev` running. A web build
-// served from kurl.online (or any non-local host) is treated as live
-// regardless of build mode -- never probes localhost.
+// Base URLs in priority order. Release builds and live web hosts use prod
+// only; debug builds try local first, then fall back to prod.
 List<String> _candidates() {
   if (_apiUrlOverride.isNotEmpty) return [_apiUrlOverride];
   if (kReleaseMode || _isLiveWebHost()) return [_prodUrl];
