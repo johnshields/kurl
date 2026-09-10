@@ -286,6 +286,69 @@ class TestResolveForRecipient:
         assert got is None
 
 
+class TestNotifyRecipient:
+    async def test_skips_when_opted_out(self):
+        send_mock = AsyncMock()
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "email": "y@b.com", "notify_email": 0}),
+        ), patch("api.controllers.messages_controller.email_client.send", send_mock):
+            await messages_controller._notify_recipient(object(), "USR_Y", "USR_X", "hi", None)
+        send_mock.assert_not_awaited()
+
+    async def test_skips_when_recipient_has_no_email(self):
+        send_mock = AsyncMock()
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(user_by_uid={"uid": "USR_Y", "email": None, "notify_email": 1}),
+        ), patch("api.controllers.messages_controller.email_client.send", send_mock):
+            await messages_controller._notify_recipient(object(), "USR_Y", "USR_X", "hi", None)
+        send_mock.assert_not_awaited()
+
+    async def test_sends_when_opted_in(self):
+        send_mock = AsyncMock()
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            _fetch_one_router(
+                user_by_uid={
+                    "uid": "USR_Y",
+                    "email": "y@b.com",
+                    "username": "cool-cat",
+                    "notify_email": 1,
+                }
+            ),
+        ), patch("api.controllers.messages_controller.email_client.send", send_mock):
+            await messages_controller._notify_recipient(object(), "USR_Y", "USR_X", "hey there", None)
+        send_mock.assert_awaited_once()
+        kwargs = send_mock.await_args.kwargs
+        assert kwargs["to"] == "y@b.com"
+        assert "cool-cat" in kwargs["subject"]
+
+    async def test_never_raises_on_failure(self):
+        with patch(
+            "api.controllers.messages_controller.fetch_one",
+            AsyncMock(side_effect=RuntimeError("d1 down")),
+        ):
+            await messages_controller._notify_recipient(object(), "USR_Y", "USR_X", "hi", None)
+
+
+class TestPreviewText:
+    def test_body_passes_through(self):
+        assert messages_controller._preview_text("short note", None) == "short note"
+
+    def test_body_is_truncated(self):
+        out = messages_controller._preview_text("x" * 200, None)
+        assert len(out) == 140 and out.endswith("…")
+
+    def test_kurl_uses_artist_and_title(self):
+        assert messages_controller._preview_text(
+            None, {"artist": "Fred again..", "title": "Delilah"}
+        ) == "Sent a kurl: Fred again.. - Delilah"
+
+    def test_kurl_fallback(self):
+        assert messages_controller._preview_text(None, {}) == "Sent you a kurl."
+
+
 class TestGetThread:
     async def test_missing_thread_is_not_found(self):
         with patch(

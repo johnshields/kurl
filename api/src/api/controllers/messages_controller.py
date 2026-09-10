@@ -5,11 +5,14 @@ threads, read a thread, delete a message. Sending requires an accepted
 friendship; a thread is created on the first message to a new recipient.
 """
 
+from app.constants import APP_BASE_URL, EMAIL_FROM
+from clients import email as email_client
 from db.db import execute, fetch_all, fetch_one
 from db.queries import friends as friend_queries
 from db.queries import messages as queries
 from db.queries import threads as thread_queries
 from db.queries import users as user_queries
+from emails import social as social_emails
 from models.message import public_message, to_db_params
 from models.thread import thread_header, thread_summary
 from utils.api_result import error_result
@@ -110,6 +113,8 @@ async def send(db, user_uid: str, data: dict) -> dict:
     await _mark_read(db, thread, user_uid)
     logger.info("Message %s in thread %s from %s", uid, thread["uid"], user_uid)
 
+    await _notify_recipient(db, other_uid, user_uid, body, kurl)
+
     row = await fetch_one(db, queries.GET_BY_UID, uid)
     return {"status": "success", "message": "Sent.", "data": public_message(row)}
 
@@ -178,3 +183,35 @@ async def _resolve_for_recipient(db, recipient_uid: str, kurl: dict) -> dict | N
         "platform": result["platform"],
         "via": result["via"],
     }
+
+
+async def _notify_recipient(db, recipient_uid: str, sender_uid: str, body, kurl) -> None:
+    """Best-effort 'new message' email -- respects the recipient's notify_email
+    opt-out and never affects the send."""
+    try:
+        recipient = await fetch_one(db, user_queries.GET_BY_UID, recipient_uid)
+        if not recipient or not recipient.get("notify_email") or not recipient.get("email"):
+            return
+        sender = await fetch_one(db, user_queries.GET_BY_UID, sender_uid)
+        subject, html, text = social_emails.message_received_email(
+            sender["username"] if sender else "Someone",
+            _preview_text(body, kurl),
+            f"{APP_BASE_URL}/messages",
+        )
+        await email_client.send(
+            to=recipient["email"], from_address=EMAIL_FROM, subject=subject, html=html, text=text
+        )
+    except Exception as e:
+        logger.warning("Message-received email failed for %s: %s", recipient_uid, e)
+
+
+def _preview_text(body, kurl) -> str:
+    if body:
+        return body if len(body) <= 140 else body[:139] + "…"
+    if kurl:
+        artist, title = kurl.get("artist"), kurl.get("title")
+        if artist and title:
+            return f"Sent a kurl: {artist} - {title}"
+        if title:
+            return f"Sent a kurl: {title}"
+    return "Sent you a kurl."
