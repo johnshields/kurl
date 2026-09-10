@@ -9,6 +9,7 @@ import time
 
 from api.middleware.session_auth import get_session_user_uid
 from api.routes import auth, events
+from api.routes import friends as friends_routes
 from api.routes import google_auth as google_auth_routes
 from api.routes import kurls as kurls_routes
 from api.routes import soundcloud_auth as soundcloud_auth_routes
@@ -239,6 +240,29 @@ async def _list_kurls(db, request, **kwargs):
 @route("DELETE", "/api/kurls/:uid")
 async def _delete_kurl(db, request, uid, **kwargs):
     return await kurls_routes.delete_kurl(db, request, uid)
+
+
+# Friends (signed-in users only)
+
+
+@route("GET", "/api/friends")
+async def _list_friends(db, request, **kwargs):
+    return await friends_routes.list_friends(db, request)
+
+
+@route("POST", "/api/friends")
+async def _send_friend_request(db, request, **kwargs):
+    return await friends_routes.send_request(db, request)
+
+
+@route("POST", "/api/friends/:uid/accept")
+async def _accept_friend_request(db, request, uid, **kwargs):
+    return await friends_routes.accept_request(db, request, uid)
+
+
+@route("DELETE", "/api/friends/:uid")
+async def _remove_friend(db, request, uid, **kwargs):
+    return await friends_routes.remove(db, request, uid)
 
 
 # Event endpoints
