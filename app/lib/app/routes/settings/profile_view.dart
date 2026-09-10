@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/routes/settings/friends_view.dart';
 import 'package:kurl/app/routes/settings/settings_dialogs.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
 import 'package:kurl/models/platform.dart';
@@ -419,6 +420,27 @@ class _ProfileViewState extends State<ProfileView> {
                         onDeselect: _deselectPlatform,
                         disabled: _savingPlatform,
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _card(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Friends',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE5E5E5)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                          ),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                          child: const Text('Manage', style: TextStyle(fontSize: 13, color: Color(0xFFE5E5E5))),
+                        ),
+                      ],
                     ),
                   ],
                 ),
