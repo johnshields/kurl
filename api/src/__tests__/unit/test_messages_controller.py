@@ -313,6 +313,27 @@ class TestSend:
             "via": "isrc",
         }
 
+    async def test_does_not_block_the_response_on_the_notify_email(self):
+        """The notify email must not gate send()'s response -- it goes
+        through run_in_background rather than being awaited inline."""
+        router = _fetch_one_router(
+            thread_by_uid=_thread_row(), are_friends=1, message_by_uid=_msg_row(body="yo")
+        )
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.execute", AsyncMock()
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.encrypt_body",
+            AsyncMock(return_value="iv:cipher"),
+        ), patch(
+            "api.controllers.messages_controller.run_in_background",
+            side_effect=lambda coro: coro.close(),
+        ) as run_in_background:
+            result = await messages_controller.send(
+                db=object(), user_uid="USR_X", data={"threadUid": "THR_1", "body": "yo"}
+            )
+        assert result["status"] == "success"
+        run_in_background.assert_called_once()
+
 
 class TestResolveForRecipient:
     async def test_none_without_a_source_url(self):
