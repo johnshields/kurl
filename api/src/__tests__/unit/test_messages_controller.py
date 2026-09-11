@@ -81,6 +81,23 @@ def _summary_row(uid="THR_1"):
     }
 
 
+class TestHasAllowedScheme:
+    def test_accepts_http_and_https(self):
+        assert messages_controller._has_allowed_scheme("https://open.spotify.com/track/1")
+        assert messages_controller._has_allowed_scheme("http://example.com")
+
+    def test_rejects_other_schemes(self):
+        assert not messages_controller._has_allowed_scheme("javascript:alert(1)")
+        assert not messages_controller._has_allowed_scheme("data:text/html,x")
+        assert not messages_controller._has_allowed_scheme("file:///etc/passwd")
+
+    def test_rejects_missing_or_non_string(self):
+        assert not messages_controller._has_allowed_scheme(None)
+        assert not messages_controller._has_allowed_scheme("")
+        assert not messages_controller._has_allowed_scheme(123)
+        assert not messages_controller._has_allowed_scheme("open.spotify.com/track/1")
+
+
 class TestSend:
     async def test_rejects_empty_message(self):
         result = await messages_controller.send(db=object(), user_uid="USR_X", data={})
@@ -95,6 +112,30 @@ class TestSend:
     async def test_rejects_non_object_kurl(self):
         result = await messages_controller.send(
             db=object(), user_uid="USR_X", data={"kurl": "not-an-object"}
+        )
+        assert result["code"] == "INVALID_REQUEST"
+
+    async def test_rejects_a_javascript_scheme_resolved_url(self):
+        result = await messages_controller.send(
+            db=object(),
+            user_uid="USR_X",
+            data={"threadUid": "THR_1", "kurl": {"resolved_url": "javascript:alert(1)"}},
+        )
+        assert result["code"] == "INVALID_REQUEST"
+
+    async def test_rejects_a_data_scheme_source_url(self):
+        result = await messages_controller.send(
+            db=object(),
+            user_uid="USR_X",
+            data={"threadUid": "THR_1", "kurl": {"source_url": "data:text/html,<script>1</script>"}},
+        )
+        assert result["code"] == "INVALID_REQUEST"
+
+    async def test_rejects_a_schemeless_url(self):
+        result = await messages_controller.send(
+            db=object(),
+            user_uid="USR_X",
+            data={"threadUid": "THR_1", "kurl": {"resolved_url": "open.spotify.com/track/1"}},
         )
         assert result["code"] == "INVALID_REQUEST"
 

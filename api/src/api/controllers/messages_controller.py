@@ -5,6 +5,8 @@ threads, read a thread, delete a message. Sending requires an accepted
 friendship; a thread is created on the first message to a new recipient.
 """
 
+from urllib.parse import urlparse
+
 from app.constants import APP_BASE_URL, EMAIL_FROM
 from clients import email as email_client
 from db.db import execute, fetch_all, fetch_one
@@ -22,6 +24,16 @@ from utils.uid import gen_uid
 logger = get_logger()
 
 _MAX_BODY = 2000
+_ALLOWED_KURL_SCHEMES = ("http", "https")
+
+
+def _has_allowed_scheme(url) -> bool:
+    if not isinstance(url, str) or not url:
+        return False
+    try:
+        return urlparse(url).scheme in _ALLOWED_KURL_SCHEMES
+    except ValueError:
+        return False
 
 
 def _pair(a: str, b: str) -> tuple[str, str]:
@@ -86,8 +98,12 @@ async def send(db, user_uid: str, data: dict) -> dict:
         return error_result("EMPTY_MESSAGE", "A message needs text or an attached kurl.")
     if body and len(body) > _MAX_BODY:
         return error_result("BODY_TOO_LONG", f"Message must be {_MAX_BODY} characters or fewer.")
-    if kurl is not None and not isinstance(kurl, dict):
-        return error_result("INVALID_REQUEST", "kurl must be an object.")
+    if kurl is not None:
+        if not isinstance(kurl, dict):
+            return error_result("INVALID_REQUEST", "kurl must be an object.")
+        for key in ("resolved_url", "source_url"):
+            if key in kurl and not _has_allowed_scheme(kurl.get(key)):
+                return error_result("INVALID_REQUEST", "kurl URLs must be http or https.")
 
     thread, other_uid, err = await _resolve_thread(db, user_uid, data)
     if err:
