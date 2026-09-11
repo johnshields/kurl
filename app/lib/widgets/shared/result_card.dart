@@ -128,107 +128,35 @@ class ResultCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Material(
-                  color: colour,
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    onTap: () => _share(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (platform != null) ...[
-                            Icon(platform.icon, size: 18, color: onColour),
-                            const SizedBox(width: 8),
-                          ],
-                          Flexible(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                // Narrow viewports drop platform name -- icon
-                                // already shows which service is being shared.
-                                final label = constraints.maxWidth < 140
-                                    ? 'Share'
-                                    : 'Share ${platform?.name ?? result.platform}';
-                                return Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: onColour,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: _ActionButton(
+                  icon: platform?.icon,
+                  label: 'Share ${platform?.name ?? result.platform}',
+                  background: colour,
+                  foreground: onColour,
+                  onTap: () => _share(context),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Material(
-                  color: const Color(0xFF222222),
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    onTap: () {
-                      Analytics.trackOpenResult(result.platform);
-                      launchUrl(Uri.parse(result.resolvedUrl));
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.headphones, size: 18, color: Color(0xFFE5E5E5)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Listen',
-                            style: TextStyle(
-                              color: Color(0xFFE5E5E5),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: _ActionButton(
+                  icon: Icons.headphones,
+                  label: 'Listen',
+                  background: const Color(0xFF222222),
+                  foreground: const Color(0xFFE5E5E5),
+                  onTap: () {
+                    Analytics.trackOpenResult(result.platform);
+                    launchUrl(Uri.parse(result.resolvedUrl));
+                  },
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Material(
-                  color: const Color(0xFF222222),
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    onTap: () => _copy(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.copy, size: 18, color: Color(0xFFE5E5E5)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Copy',
-                            style: TextStyle(
-                              color: Color(0xFFE5E5E5),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: _ActionButton(
+                  icon: Icons.copy,
+                  label: 'Copy',
+                  background: const Color(0xFF222222),
+                  foreground: const Color(0xFFE5E5E5),
+                  onTap: () => _copy(context),
                 ),
               ),
               if (onSend != null) ...[
@@ -251,6 +179,57 @@ class ResultCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: foreground),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(color: foreground, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
