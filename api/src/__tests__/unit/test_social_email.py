@@ -33,3 +33,9 @@ def test_kurl_uses_artist_and_title():
 def test_kurl_fallback_when_no_metadata():
     _, _, text = message_received_email("cool-cat", None, {}, _LINK)
     assert "Sent you a kurl." in text
+
+
+def test_html_escapes_a_malicious_body():
+    _, html, _ = message_received_email("cool-cat", "<script>alert(1)</script>", None, _LINK)
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html

@@ -3,6 +3,8 @@ Email Layout (shared)
 Branded HTML/text bodies for a kurl link email -- heading, blurb, CTA button.
 """
 
+import html
+
 _BG = "#0A0A0A"
 _CARD = "#141414"
 _BORDER = "#333333"
@@ -13,6 +15,11 @@ _FONT = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monosp
 
 
 def render_html(heading: str, body: str, button_label: str, url: str, note: str) -> str:
+    # heading/body/note can carry user-authored text (e.g. a message preview) -- escape
+    # before interpolating into HTML.
+    heading = html.escape(heading)
+    body = html.escape(body)
+    note = html.escape(note)
     return (
         f'<body style="margin:0;padding:0;background:{_BG};">'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{_BG};padding:40px 16px;">'
