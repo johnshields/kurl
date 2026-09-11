@@ -6,6 +6,7 @@ from app.constants import ITUNES_SEARCH_URL, SCRAPER_USER_AGENT
 from clients import cache
 from clients._http import get_client
 from utils.logging import get_logger
+from utils.scraping import decode_entities
 
 logger = get_logger()
 
@@ -89,7 +90,12 @@ async def canonicalise(title: str | None, artist: str | None) -> tuple[str | Non
     result = await _search_one(title, artist)
     if not result:
         return title, artist
-    return result.get("trackName") or title, result.get("artistName") or artist
+    itunes_title = result.get("trackName")
+    itunes_artist = result.get("artistName")
+    return (
+        decode_entities(itunes_title) if itunes_title else title,
+        decode_entities(itunes_artist) if itunes_artist else artist,
+    )
 
 
 async def fetch_apple_album_url(title: str | None, artist: str | None) -> str | None:

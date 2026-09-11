@@ -10,6 +10,7 @@ from app.constants import (
 from clients._http import get_client
 from utils.http.errors import ApiError
 from utils.logging import get_logger
+from utils.scraping import decode_entities
 
 logger = get_logger()
 
@@ -94,5 +95,5 @@ def extract_metadata(data: dict) -> tuple[str | None, str | None]:
         title = entity.get("title")
         artist = entity.get("artistName")
         if title:
-            return title, artist
+            return decode_entities(title), decode_entities(artist) if artist else None
     return None, None

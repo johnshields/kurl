@@ -55,3 +55,11 @@ class TestExtractMetadata:
 
     def test_returns_none_when_no_entities(self):
         assert odesli.extract_metadata({"entitiesByUniqueId": {}}) == (None, None)
+
+    def test_decodes_html_entities(self):
+        data = {"entitiesByUniqueId": {
+            "a": {"title": "These Things Will Come&#39;", "artistName": "Tom &amp; Jerry"},
+        }}
+        title, artist = odesli.extract_metadata(data)
+        assert title == "These Things Will Come'"
+        assert artist == "Tom & Jerry"
