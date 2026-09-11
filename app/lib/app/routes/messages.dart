@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/thread.dart';
 import 'package:kurl/services/auth_service.dart';
 import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/date_format.dart';
+import 'package:kurl/widgets/shared/empty_state.dart';
 
 /// One-line preview for a thread row: the last message's text, or a note that
 /// it carried a kurl, or a placeholder for an empty thread.
@@ -89,13 +91,13 @@ class MessagesScreenState extends State<MessagesScreen> {
                 child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
               )
             : !_loggedIn
-                ? const _EmptyState(
+                ? const EmptyState(
                     icon: Icons.lock_outline_rounded,
                     title: 'Sign in to see your messages',
                     subtitle: 'Head to Settings to create an account.',
                   )
                 : _threads.isEmpty
-                    ? const _EmptyState(
+                    ? const EmptyState(
                         icon: Icons.forum_outlined,
                         title: 'No messages yet',
                         subtitle: 'Send a kurl to a friend to start a thread.',
@@ -115,38 +117,6 @@ class MessagesScreenState extends State<MessagesScreen> {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _EmptyState({required this.icon, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 40, color: const Color(0xFF555555)),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFE5E5E5),
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF888888))),
-        ],
-      ),
-    );
-  }
-}
-
 class _ThreadList extends StatelessWidget {
   final List<MessageThread> threads;
   final ValueChanged<MessageThread> onOpen;
@@ -158,7 +128,7 @@ class _ThreadList extends StatelessWidget {
     return SingleChildScrollView(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 100),
             child: Column(

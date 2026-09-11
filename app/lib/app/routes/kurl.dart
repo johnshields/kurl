@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/message.dart';
@@ -208,7 +209,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
         child: SingleChildScrollView(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
+              constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
                 child: Column(

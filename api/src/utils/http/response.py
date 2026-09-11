@@ -28,6 +28,14 @@ def json_success(message: str, data: dict) -> Response:
     return json_response({"status": "success", "message": message, "data": data})
 
 
+def respond(result: dict, error_status: dict[str, int], success_status: int = 200) -> Response:
+    """Wrap a controller result dict: {status: error} maps its code through
+    error_status (default 400), otherwise it is a success response."""
+    if result["status"] == "error":
+        return json_error(result["message"], error_status.get(result["code"], 400), code=result["code"])
+    return json_response(result, success_status)
+
+
 def preflight() -> Response:
     # 204 must have null body, not empty string -- Workers warns on the latter.
     return Response(None, status=204, headers=CORS_HEADERS)

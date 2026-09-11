@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/settings/friends_view.dart';
 import 'package:kurl/app/routes/settings/settings_dialogs.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
@@ -229,7 +230,7 @@ class _ProfileViewState extends State<ProfileView> {
     return SingleChildScrollView(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 140),
             child: Column(
