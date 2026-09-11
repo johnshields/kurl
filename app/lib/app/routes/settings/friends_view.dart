@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
@@ -20,15 +22,18 @@ class _FriendsScreenState extends State<FriendsScreen> {
   String? _addError;
   FriendsOverview _overview = FriendsOverview.empty;
   final Set<String> _busy = {}; // friendship uids with an accept/remove in flight
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) => _load());
   }
 
   @override
   void dispose() {
+    _poll?.cancel();
     _usernameController.dispose();
     super.dispose();
   }
