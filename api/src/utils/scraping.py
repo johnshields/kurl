@@ -23,15 +23,15 @@ _RELEASE_SUFFIX = re.compile(
 
 def extract_og_title(html: str) -> str | None:
     m = _OG_TITLE.search(html) or _OG_TITLE_SQ.search(html)
-    return _decode_entities(m.group(1).strip()) if m else None
+    return decode_entities(m.group(1).strip()) if m else None
 
 
 def extract_og_description(html: str) -> str | None:
     m = _OG_DESC.search(html) or _OG_DESC_SQ.search(html)
-    return _decode_entities(m.group(1).strip()) if m else None
+    return decode_entities(m.group(1).strip()) if m else None
 
 
-def _decode_entities(text: str) -> str:
+def decode_entities(text: str) -> str:
     """Decode common HTML entities (&#x27; &#39; &amp; etc.)."""
     import html
 
