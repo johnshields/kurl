@@ -154,5 +154,11 @@ class Settings:
     def TOKEN_ENCRYPTION_KEY(self) -> str | None:
         return self._get("TOKEN_ENCRYPTION_KEY")
 
+    # AES-256-GCM key for encrypting message bodies at rest (64 hex chars / 32 bytes).
+    # Separate from TOKEN_ENCRYPTION_KEY -- different blast radius if one leaks.
+    @property
+    def MESSAGE_ENCRYPTION_KEY(self) -> str | None:
+        return self._get("MESSAGE_ENCRYPTION_KEY")
+
 
 settings = Settings()

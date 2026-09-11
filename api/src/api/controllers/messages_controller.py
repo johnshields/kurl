@@ -15,6 +15,7 @@ from db.queries import users as user_queries
 from emails import social as social_emails
 from models.message import public_message, to_db_params
 from models.thread import thread_header, thread_summary
+from utils import message_crypto
 from utils.api_result import error_result
 from utils.logging import get_logger
 from utils.uid import gen_uid
@@ -45,11 +46,25 @@ async def _mark_read(db, thread_row: dict, viewer_uid: str) -> None:
     await execute(db, query, thread_row["uid"])
 
 
+async def _decrypt_body(value: str | None) -> str | None:
+    """Decrypt a stored body. Unreadable rows show a placeholder."""
+    try:
+        return await message_crypto.decrypt_body(value)
+    except message_crypto.MessageCryptoError as e:
+        logger.warning("Failed to decrypt a message body: %s", e)
+        return "[unable to decrypt message]"
+
+
 async def list_threads(db, user_uid: str) -> dict:
     rows = await fetch_all(
         db, thread_queries.LIST_FOR_USER, user_uid, user_uid, user_uid, user_uid, user_uid
     )
-    return {"status": "success", "data": [thread_summary(r) for r in rows]}
+    summaries = []
+    for row in rows:
+        row = dict(row)
+        row["last_body"] = await _decrypt_body(row.get("last_body"))
+        summaries.append(thread_summary(row))
+    return {"status": "success", "data": summaries}
 
 
 async def get_thread(db, user_uid: str, thread_uid: str) -> dict:
@@ -61,11 +76,17 @@ async def get_thread(db, user_uid: str, thread_uid: str) -> dict:
     messages = await fetch_all(db, queries.LIST_FOR_THREAD, thread_uid)
     await _mark_read(db, thread, user_uid)
 
+    decrypted = []
+    for message in messages:
+        message = dict(message)
+        message["body"] = await _decrypt_body(message.get("body"))
+        decrypted.append(message)
+
     return {
         "status": "success",
         "data": {
             "thread": thread_header(thread, other, user_uid),
-            "messages": [public_message(m) for m in messages],
+            "messages": [public_message(m) for m in decrypted],
         },
     }
 
@@ -103,11 +124,21 @@ async def send(db, user_uid: str, data: dict) -> dict:
 
     kurl_recipient = await _resolve_for_recipient(db, other_uid, kurl) if kurl is not None else None
 
+    encrypted_body = None
+    if body is not None:
+        try:
+            encrypted_body = await message_crypto.encrypt_body(body)
+        except message_crypto.MessageCryptoError as e:
+            logger.error("Failed to encrypt message body: %s", e)
+            return error_result(
+                "ENCRYPTION_UNAVAILABLE", "Couldn't send your message right now. Try again shortly."
+            )
+
     uid = gen_uid("MSG")
     await execute(
         db,
         queries.INSERT,
-        *to_db_params(uid, thread["uid"], user_uid, body, kurl, kurl_recipient),
+        *to_db_params(uid, thread["uid"], user_uid, encrypted_body, kurl, kurl_recipient),
     )
     await execute(db, thread_queries.TOUCH, thread["uid"])
     await _mark_read(db, thread, user_uid)
@@ -116,6 +147,8 @@ async def send(db, user_uid: str, data: dict) -> dict:
     await _notify_recipient(db, other_uid, user_uid, body, kurl)
 
     row = await fetch_one(db, queries.GET_BY_UID, uid)
+    row = dict(row)
+    row["body"] = body  # already plaintext
     return {"status": "success", "message": "Sent.", "data": public_message(row)}
 
 

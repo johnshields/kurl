@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from api.controllers import messages_controller
+from utils.message_crypto import MessageCryptoError
 
 
 def _fetch_one_router(**rows):
@@ -151,6 +152,9 @@ class TestSend:
         )
         with patch("api.controllers.messages_controller.fetch_one", router), patch(
             "api.controllers.messages_controller.execute", execute_mock
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.encrypt_body",
+            AsyncMock(return_value="iv:cipher"),
         ):
             result = await messages_controller.send(
                 db=object(), user_uid="USR_X", data={"toUsername": "cool-cat", "body": "hi"}
@@ -170,6 +174,9 @@ class TestSend:
         )
         with patch("api.controllers.messages_controller.fetch_one", router), patch(
             "api.controllers.messages_controller.execute", execute_mock
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.encrypt_body",
+            AsyncMock(return_value="iv:cipher"),
         ):
             result = await messages_controller.send(
                 db=object(), user_uid="USR_X", data={"threadUid": "THR_1", "body": "yo"}
@@ -177,6 +184,41 @@ class TestSend:
         assert result["status"] == "success"
         # message INSERT, thread TOUCH, mark-read -- no thread INSERT
         assert execute_mock.await_count == 3
+
+    async def test_stores_the_encrypted_body_not_the_plaintext(self):
+        execute_mock = AsyncMock()
+        router = _fetch_one_router(
+            thread_by_uid=_thread_row(), are_friends=1, message_by_uid=_msg_row(body="yo")
+        )
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.execute", execute_mock
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.encrypt_body",
+            AsyncMock(return_value="iv:cipher"),
+        ):
+            result = await messages_controller.send(
+                db=object(), user_uid="USR_X", data={"threadUid": "THR_1", "body": "yo"}
+            )
+        # execute(db, sql, uid, thread_uid, sender_uid, body, kurl_json, kurl_recipient)
+        insert_args = execute_mock.await_args_list[0].args
+        assert insert_args[5] == "iv:cipher"
+        # the response still carries the plaintext the sender typed
+        assert result["data"]["body"] == "yo"
+
+    async def test_fails_the_send_when_encryption_is_unavailable(self):
+        execute_mock = AsyncMock()
+        router = _fetch_one_router(thread_by_uid=_thread_row(), are_friends=1)
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.execute", execute_mock
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.encrypt_body",
+            AsyncMock(side_effect=MessageCryptoError("no key")),
+        ):
+            result = await messages_controller.send(
+                db=object(), user_uid="USR_X", data={"threadUid": "THR_1", "body": "yo"}
+            )
+        assert result["code"] == "ENCRYPTION_UNAVAILABLE"
+        execute_mock.assert_not_awaited()
 
     async def test_attached_kurl_is_json_encoded_on_insert(self):
         execute_mock = AsyncMock()
@@ -369,6 +411,38 @@ class TestGetThread:
         assert [m["uid"] for m in result["data"]["messages"]] == ["MSG_1", "MSG_2"]
         execute_mock.assert_awaited_once()
 
+    async def test_decrypts_each_message_body(self):
+        router = _fetch_one_router(
+            thread_by_uid=_thread_row(), user_by_uid={"uid": "USR_Y", "username": "cool-cat"}
+        )
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.fetch_all",
+            _fetch_all_router(messages=[_msg_row(body="iv:cipher")]),
+        ), patch("api.controllers.messages_controller.execute", AsyncMock()), patch(
+            "api.controllers.messages_controller.message_crypto.decrypt_body",
+            AsyncMock(return_value="hi"),
+        ):
+            result = await messages_controller.get_thread(
+                db=object(), user_uid="USR_X", thread_uid="THR_1"
+            )
+        assert result["data"]["messages"][0]["body"] == "hi"
+
+    async def test_shows_a_placeholder_when_a_body_cannot_be_decrypted(self):
+        router = _fetch_one_router(
+            thread_by_uid=_thread_row(), user_by_uid={"uid": "USR_Y", "username": "cool-cat"}
+        )
+        with patch("api.controllers.messages_controller.fetch_one", router), patch(
+            "api.controllers.messages_controller.fetch_all",
+            _fetch_all_router(messages=[_msg_row(body="iv:cipher")]),
+        ), patch("api.controllers.messages_controller.execute", AsyncMock()), patch(
+            "api.controllers.messages_controller.message_crypto.decrypt_body",
+            AsyncMock(side_effect=MessageCryptoError("bad key")),
+        ):
+            result = await messages_controller.get_thread(
+                db=object(), user_uid="USR_X", thread_uid="THR_1"
+            )
+        assert result["data"]["messages"][0]["body"] == "[unable to decrypt message]"
+
 
 class TestMarkRead:
     async def test_non_participant_is_not_found(self):
@@ -415,3 +489,14 @@ class TestListThreads:
         assert [t["uid"] for t in result["data"]] == ["THR_1", "THR_2"]
         assert result["data"][0]["unread"] == 2
         assert result["data"][0]["lastMessage"]["body"] == "yo"
+
+    async def test_decrypts_the_last_message_preview(self):
+        with patch(
+            "api.controllers.messages_controller.fetch_all",
+            _fetch_all_router(threads=[_summary_row()]),
+        ), patch(
+            "api.controllers.messages_controller.message_crypto.decrypt_body",
+            AsyncMock(return_value="decrypted preview"),
+        ):
+            result = await messages_controller.list_threads(db=object(), user_uid="USR_X")
+        assert result["data"][0]["lastMessage"]["body"] == "decrypted preview"
