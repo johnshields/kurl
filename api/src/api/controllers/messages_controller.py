@@ -19,6 +19,7 @@ from models.message import public_message, to_db_params
 from models.thread import thread_header, thread_summary
 from utils import message_crypto
 from utils.api_result import error_result
+from utils.background import run_in_background
 from utils.logging import get_logger
 from utils.uid import gen_uid
 
@@ -160,7 +161,7 @@ async def send(db, user_uid: str, data: dict) -> dict:
     await _mark_read(db, thread, user_uid)
     logger.info("Message %s in thread %s from %s", uid, thread["uid"], user_uid)
 
-    await _notify_recipient(db, other_uid, user_uid, body, kurl)
+    run_in_background(_notify_recipient(db, other_uid, user_uid, body, kurl))
 
     row = await fetch_one(db, queries.GET_BY_UID, uid)
     row = dict(row)

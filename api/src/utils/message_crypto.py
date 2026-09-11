@@ -42,6 +42,18 @@ async def _import_key(crypto, Object, to_js):
     )
 
 
+# Imported once per isolate -- the key material is static for the isolate's
+# lifetime, so re-importing it on every encrypt/decrypt call is pure waste.
+_cached_key = None
+
+
+async def _get_key(crypto, Object, to_js):
+    global _cached_key
+    if _cached_key is None:
+        _cached_key = await _import_key(crypto, Object, to_js)
+    return _cached_key
+
+
 def _looks_encrypted(stored: str) -> bool:
     """"<iv_b64>:<ciphertext_b64>" shape, both halves strict base64."""
     parts = stored.split(":", 1)
@@ -62,7 +74,7 @@ async def encrypt_body(plaintext: str) -> str:
     try:
         crypto, Object, to_js = _js_crypto()
         iv = secrets.token_bytes(_IV_BYTES)
-        key = await _import_key(crypto, Object, to_js)
+        key = await _get_key(crypto, Object, to_js)
         ciphertext = await crypto.subtle.encrypt(
             to_js({"name": _ALGORITHM, "iv": to_js(iv)}, dict_converter=Object.fromEntries),
             key,
@@ -84,7 +96,7 @@ async def decrypt_body(stored: str | None) -> str | None:
     try:
         iv_b64, ciphertext_b64 = stored.split(":", 1)
         crypto, Object, to_js = _js_crypto()
-        key = await _import_key(crypto, Object, to_js)
+        key = await _get_key(crypto, Object, to_js)
         plaintext = await crypto.subtle.decrypt(
             to_js(
                 {"name": _ALGORITHM, "iv": to_js(base64.b64decode(iv_b64))},
