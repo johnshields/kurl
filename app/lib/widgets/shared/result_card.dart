@@ -130,7 +130,7 @@ class ResultCard extends StatelessWidget {
               Expanded(
                 child: _ActionButton(
                   icon: platform?.icon,
-                  label: 'Share ${platform?.name ?? result.platform}',
+                  label: 'Share',
                   background: colour,
                   foreground: onColour,
                   onTap: () => _share(context),
