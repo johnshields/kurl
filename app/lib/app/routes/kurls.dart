@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/models/kurl_history_item.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/auth_service.dart';
+import 'package:kurl/widgets/shared/empty_state.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
 
 const _errorRed = Color(0xFFEF4444);
@@ -71,50 +73,18 @@ class KurlsScreenState extends State<KurlsScreen> {
                 child: CircularProgressIndicator(color: Color(0xFF555555), strokeWidth: 2),
               )
             : !_loggedIn
-                ? const _EmptyState(
+                ? const EmptyState(
                     icon: Icons.lock_outline_rounded,
                     title: 'Sign in to see your kurls',
                     subtitle: 'Head to Settings to create an account.',
                   )
                 : _kurls.isEmpty
-                    ? const _EmptyState(
+                    ? const EmptyState(
                         icon: Icons.link_rounded,
                         title: 'No kurls yet',
                         subtitle: 'Kurl something and it will show up here.',
                       )
                     : _KurlsList(kurls: _kurls, onDelete: _delete),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _EmptyState({required this.icon, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 40, color: const Color(0xFF555555)),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFE5E5E5),
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF888888))),
-        ],
       ),
     );
   }
@@ -131,7 +101,7 @@ class _KurlsList extends StatelessWidget {
     return SingleChildScrollView(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 100),
             child: Column(

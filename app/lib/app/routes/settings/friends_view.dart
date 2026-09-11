@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
 import 'package:kurl/models/friend.dart';
 import 'package:kurl/services/api_exception.dart';
@@ -128,7 +129,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             : SingleChildScrollView(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
+                    constraints: const BoxConstraints(maxWidth: kContentMaxWidth),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
                       child: Column(

@@ -5,7 +5,7 @@ HTTP endpoints for direct messages between friends (signed-in users only).
 
 from api.controllers import messages_controller
 from api.middleware.session_auth import require_session
-from utils.http.response import json_error, json_response, parse_json_body
+from utils.http.response import parse_json_body, respond
 
 _ERROR_STATUS = {
     "INVALID_REQUEST": 400,
@@ -16,17 +16,11 @@ _ERROR_STATUS = {
 }
 
 
-def _respond(result: dict, success_status: int = 200):
-    if result["status"] == "error":
-        return json_error(result["message"], _ERROR_STATUS.get(result["code"], 400), code=result["code"])
-    return json_response(result, success_status)
-
-
 async def list_threads(db, request):
     user_uid, error = require_session(request)
     if error:
         return error
-    return _respond(await messages_controller.list_threads(db, user_uid))
+    return respond(await messages_controller.list_threads(db, user_uid), _ERROR_STATUS)
 
 
 async def send(db, request):
@@ -34,25 +28,25 @@ async def send(db, request):
     if error:
         return error
     body = await parse_json_body(request)
-    return _respond(await messages_controller.send(db, user_uid, body), 201)
+    return respond(await messages_controller.send(db, user_uid, body), _ERROR_STATUS, 201)
 
 
 async def get_thread(db, request, uid: str):
     user_uid, error = require_session(request)
     if error:
         return error
-    return _respond(await messages_controller.get_thread(db, user_uid, uid))
+    return respond(await messages_controller.get_thread(db, user_uid, uid), _ERROR_STATUS)
 
 
 async def mark_read(db, request, uid: str):
     user_uid, error = require_session(request)
     if error:
         return error
-    return _respond(await messages_controller.mark_read(db, user_uid, uid))
+    return respond(await messages_controller.mark_read(db, user_uid, uid), _ERROR_STATUS)
 
 
 async def delete_message(db, request, uid: str):
     user_uid, error = require_session(request)
     if error:
         return error
-    return _respond(await messages_controller.delete_message(db, user_uid, uid))
+    return respond(await messages_controller.delete_message(db, user_uid, uid), _ERROR_STATUS)
