@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kurl/app/layout.dart';
 import 'package:kurl/models/message.dart';
@@ -26,11 +28,13 @@ class _ThreadScreenState extends State<ThreadScreen> {
   bool _wide = false;
   String? _error;
   ThreadDetail? _detail;
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());
   }
 
   Future<void> _load() async {
@@ -51,6 +55,21 @@ class _ThreadScreenState extends State<ThreadScreen> {
           _loading = false;
         });
       }
+    }
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final detail = await SocialService.thread(widget.threadUid);
+      if (!mounted) return;
+      final gotNew = (_detail?.messages.length ?? 0) < detail.messages.length;
+      setState(() => _detail = detail);
+      if (gotNew) {
+        _scrollToBottom();
+        _markRead();
+      }
+    } catch (_) {
+      // Silent -- the next poll retries.
     }
   }
 
@@ -99,6 +118,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
 
   @override
   void dispose() {
+    _poll?.cancel();
     _composeController.dispose();
     _scroll.dispose();
     super.dispose();
