@@ -5,7 +5,7 @@ optional -- kurling itself never requires one.
 """
 
 from api.controllers import auth_controller
-from api.middleware.session_auth import require_session
+from api.middleware.session_auth import with_session
 from utils.http.response import parse_json_body, respond
 
 _ERROR_STATUS = {
@@ -52,26 +52,20 @@ async def verify_email(db, request):
     return respond(result, _ERROR_STATUS)
 
 
-async def resend_verification(db, request):
-    user_uid, error = require_session(request)
-    if error:
-        return error
+@with_session
+async def resend_verification(db, request, user_uid):
     result = await auth_controller.resend_verification(db, user_uid)
     return respond(result, _ERROR_STATUS)
 
 
-async def get_profile(db, request):
-    user_uid, error = require_session(request)
-    if error:
-        return error
+@with_session
+async def get_profile(db, request, user_uid):
     result = await auth_controller.get_me(db, user_uid)
     return respond(result, _ERROR_STATUS)
 
 
-async def update_profile(db, request):
-    user_uid, error = require_session(request)
-    if error:
-        return error
+@with_session
+async def update_profile(db, request, user_uid):
     body = await parse_json_body(request)
     result = await auth_controller.update_profile(db, user_uid, body)
     return respond(result, _ERROR_STATUS)

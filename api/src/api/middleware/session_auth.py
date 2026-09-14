@@ -1,11 +1,10 @@
 """
 Session Auth Middleware
-Verifies a per-user session token (Bearer JWT), separate from the shared
-API-key check in auth.py -- that gates admin/analytics endpoints, this
-gates account endpoints. get_session_user_uid never errors, so callers on
-routes where login is optional (e.g. /api/kurl) can treat a missing/invalid
-token as "anonymous" rather than a failure.
+Verifies a per-user session token (Bearer JWT); separate from the shared
+admin API key checked by middleware.auth.
 """
+
+from functools import wraps
 
 from app.config import settings
 from utils.auth.session import verify_session_token
@@ -26,3 +25,17 @@ def require_session(request):
     if not user_uid:
         return None, json_error("Login required.", 401, code="AUTH_REQUIRED")
     return user_uid, None
+
+
+def with_session(fn):
+    """Route decorator: injects user_uid as the first arg after (db, request),
+    or short-circuits with the 401 response."""
+
+    @wraps(fn)
+    async def wrapper(db, request, *args, **kwargs):
+        user_uid, error = require_session(request)
+        if error:
+            return error
+        return await fn(db, request, user_uid, *args, **kwargs)
+
+    return wrapper

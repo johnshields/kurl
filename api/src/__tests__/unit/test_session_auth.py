@@ -21,7 +21,7 @@ _stub = ModuleType("workers")
 _stub.Response = _StubResponse
 sys.modules.setdefault("workers", _stub)
 
-from api.middleware.session_auth import get_session_user_uid, require_session  # noqa: E402
+from api.middleware.session_auth import get_session_user_uid, require_session, with_session  # noqa: E402
 from utils.auth.session import create_session_token  # noqa: E402
 
 
@@ -73,3 +73,26 @@ class TestRequireSession:
         assert user_uid is None
         assert error is not None
         assert error.status == 401
+
+
+class TestWithSession:
+    async def test_injects_user_uid_and_forwards_extra_args(self):
+        @with_session
+        async def handler(db, request, user_uid, uid):
+            return db, user_uid, uid
+
+        with patch("api.middleware.session_auth.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            token = create_session_token("USR_X", "test-secret")
+            result = await handler("db", _req(f"Bearer {token}"), "KRL_1")
+        assert result == ("db", "USR_X", "KRL_1")
+
+    async def test_short_circuits_with_401_when_signed_out(self):
+        @with_session
+        async def handler(db, request, user_uid):
+            raise AssertionError("should not be called without a session")
+
+        with patch("api.middleware.session_auth.settings") as mock_settings:
+            mock_settings.SESSION_SECRET = "test-secret"
+            result = await handler("db", _req())
+        assert result.status == 401
