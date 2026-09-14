@@ -8,6 +8,7 @@ import 'package:kurl/models/thread.dart';
 import 'package:kurl/services/auth_service.dart';
 import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/date_format.dart';
+import 'package:kurl/widgets/shared/count_badge.dart';
 import 'package:kurl/widgets/shared/empty_state.dart';
 
 /// One-line preview for a thread row: the last message's text, or a note that
@@ -40,6 +41,7 @@ class MessagesScreenState extends State<MessagesScreen> {
   bool _loading = true;
   bool _loggedIn = false;
   List<MessageThread> _threads = [];
+  int _incomingRequests = 0;
   Timer? _poll;
 
   @override
@@ -73,12 +75,13 @@ class MessagesScreenState extends State<MessagesScreen> {
     }
 
     try {
-      final threads = await SocialService.threads();
-      final incomingRequests = await SocialService.friends().then((o) => o.incoming.length);
+      final (threads, friends) = await (SocialService.threads(), SocialService.friends()).wait;
+      final incomingRequests = friends.incoming.length;
       if (mounted) {
         setState(() {
           _loggedIn = true;
           _threads = threads;
+          _incomingRequests = incomingRequests;
           _loading = false;
         });
       }
@@ -115,7 +118,11 @@ class MessagesScreenState extends State<MessagesScreen> {
                         title: 'No messages yet',
                         subtitle: 'Send a kurl to a friend to start a thread.',
                       )
-                    : _ThreadList(threads: _threads, onOpen: _open),
+                    : _ThreadList(
+                        threads: _threads,
+                        incomingRequests: _incomingRequests,
+                        onOpen: _open,
+                      ),
       ),
     );
   }
@@ -132,9 +139,10 @@ class MessagesScreenState extends State<MessagesScreen> {
 
 class _ThreadList extends StatelessWidget {
   final List<MessageThread> threads;
+  final int incomingRequests;
   final ValueChanged<MessageThread> onOpen;
 
-  const _ThreadList({required this.threads, required this.onOpen});
+  const _ThreadList({required this.threads, required this.incomingRequests, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -159,14 +167,7 @@ class _ThreadList extends StatelessWidget {
                         letterSpacing: -0.5,
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const FriendsScreen()),
-                      ),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
-                      icon: const Icon(Icons.people_outline, size: 18, color: Color(0xFFE5E5E5)),
-                      label: const Text('Friends', style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5))),
-                    ),
+                    _FriendsButton(badgeCount: incomingRequests),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -179,6 +180,35 @@ class _ThreadList extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FriendsButton extends StatelessWidget {
+  final int badgeCount;
+
+  const _FriendsButton({required this.badgeCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const FriendsScreen()),
+      ),
+      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.people_outline, size: 18, color: Color(0xFFE5E5E5)),
+          if (badgeCount > 0)
+            Positioned(
+              right: -6,
+              top: -4,
+              child: CountBadge(count: badgeCount, compact: true),
+            ),
+        ],
+      ),
+      label: const Text('Friends', style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5))),
     );
   }
 }
@@ -240,23 +270,7 @@ class _ThreadTile extends StatelessWidget {
                     Text(date, style: const TextStyle(color: Color(0xFF888888), fontSize: 12)),
                   if (unread > 0) ...[
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                      constraints: const BoxConstraints(minWidth: 18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Text(
-                        unread > 99 ? '99+' : '$unread',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                    CountBadge(count: unread),
                   ],
                 ],
               ),
