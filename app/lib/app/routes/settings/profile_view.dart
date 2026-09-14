@@ -489,7 +489,11 @@ class _ProfileViewState extends State<ProfileView> {
                             Switch(
                               value: widget.user.notifyEmail,
                               onChanged: _savingNotify ? null : _setNotifyEmail,
-                              activeTrackColor: const Color(0xFF1DB954),
+                              activeThumbColor: const Color(0xFFE5E5E5),
+                              activeTrackColor: const Color(0xFF333333),
+                              inactiveThumbColor: const Color(0xFF888888),
+                              inactiveTrackColor: const Color(0xFF333333),
+                              trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
                             ),
                           ],
                         ),
