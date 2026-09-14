@@ -27,6 +27,12 @@ _WRAPPING_QUOTE_PAIRS = {
     ("“", "”"),
 }
 
+# YouTube upload convention: "Artist - Title (Official Audio/Video/Lyrics...)".
+_UPLOAD_TAG_SUFFIX = re.compile(
+    r"\s*[([](official\s+(music\s+)?video|official\s+audio|official\s+lyric\s+video|lyrics?|audio|visualizer|hd|4k)[)\]]\s*$",
+    re.I,
+)
+
 
 def extract_og_title(html: str) -> str | None:
     m = _OG_TITLE.search(html) or _OG_TITLE_SQ.search(html)
@@ -73,3 +79,8 @@ def strip_platform_suffix(text: str) -> str:
 def strip_release_suffix(text: str) -> str:
     """Remove trailing ' - Single' / ' - EP' / ' - Album' release-type tags."""
     return _RELEASE_SUFFIX.sub("", text).strip()
+
+
+def strip_upload_tags(text: str) -> str:
+    """Remove trailing '(Official Audio)' / '(Lyrics)' etc. upload tags."""
+    return _UPLOAD_TAG_SUFFIX.sub("", text).strip()

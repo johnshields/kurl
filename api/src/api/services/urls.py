@@ -14,6 +14,7 @@ from utils.http.response import json_error, json_success
 from utils.kurler import is_exact
 from utils.kurler import kurl as kurl_direct
 from utils.logging import get_logger
+from utils.scraping import strip_upload_tags, strip_wrapping_quotes
 from utils.url.normalise import normalise_url
 from utils.url.search_url import build_search_url
 from utils.url.short_links import is_short_link, resolve_short_link
@@ -45,6 +46,10 @@ async def _fetch_artwork(title: str | None, artist: str | None) -> str | None:
     """Hi-res artwork -- iTunes first, Deezer as fallback when iTunes misses
     (rate-limited or no match), since Deezer's public API isn't subject to
     Apple's shared-pool rate limit."""
+    # Upload-styled titles ("'Song' (Official Audio)") don't match iTunes/Deezer
+    # catalogue titles -- search on a cleaned copy, display keeps the original.
+    if title:
+        title = strip_wrapping_quotes(strip_upload_tags(title))
     artwork = await itunes.fetch_artwork(title, artist)
     if artwork:
         return artwork
