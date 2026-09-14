@@ -9,8 +9,8 @@ Cross-platform music link resolver built with Flutter and Python on Cloudflare W
 
 ## Components
 
-- **api**: Cloudflare Workers Python service. Parses the source URL, resolves via ISRC/UPC against the source and target platform APIs (`via=isrc`/`upc`), falls back to a rescue-resolver chain (iTunes, Genius, Last.fm, DuckDuckGo search) for platforms without a native client, then Odesli, then a search-page deep-link (`via=search`). Results cached in KV; every kurl and page view logged to D1 for the `/admin` analytics console.
-- **app**: Flutter client (iOS, Android, Web). Share-sheet and universal-link intake, platform picker, result card. Calls `POST /api/kurl`.
+- **api**: Cloudflare Workers Python service. Parses the source URL, resolves via ISRC/UPC against the source and target platform APIs (`via=isrc`/`upc`), falls back to a rescue-resolver chain (iTunes, Genius, Last.fm, DuckDuckGo search) for platforms without a native client, then Odesli, then a search-page deep-link (`via=search`). Results cached in KV; every kurl and page view logged to D1 for the `/admin` analytics console. Also handles accounts (OAuth via Spotify/SoundCloud/Google, or email/password) and friend-to-friend messaging with attached kurls.
+- **app**: Flutter client (iOS, Android, Web). Share-sheet and universal-link intake, platform picker, result card, accounts, friends, and messaging. Calls `POST /api/kurl`.
 
 All communication between app and api runs over the public HTTP API - see [.assets/API.md](.assets/API.md).
 
