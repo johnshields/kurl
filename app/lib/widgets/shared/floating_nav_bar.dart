@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/widgets/shared/count_badge.dart';
 
 class NavTab {
   final IconData icon;
@@ -91,19 +92,7 @@ class _IconWithBadge extends StatelessWidget {
         Positioned(
           right: -6,
           top: -4,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            constraints: const BoxConstraints(minWidth: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEF4444),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              badgeCount > 99 ? '99+' : '$badgeCount',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
-            ),
-          ),
+          child: CountBadge(count: badgeCount, compact: true),
         ),
       ],
     );
