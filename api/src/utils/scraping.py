@@ -20,6 +20,13 @@ _RELEASE_SUFFIX = re.compile(
     re.I,
 )
 
+_WRAPPING_QUOTE_PAIRS = {
+    ("'", "'"),
+    ('"', '"'),
+    ("‘", "’"),
+    ("“", "”"),
+}
+
 
 def extract_og_title(html: str) -> str | None:
     m = _OG_TITLE.search(html) or _OG_TITLE_SQ.search(html)
@@ -35,7 +42,14 @@ def decode_entities(text: str) -> str:
     """Decode common HTML entities (&#x27; &#39; &amp; etc.)."""
     import html
 
-    return html.unescape(text)
+    return html.unescape(text).strip()
+
+
+def strip_wrapping_quotes(text: str) -> str:
+    """Strip a matching pair of quote marks wrapping the whole string."""
+    if len(text) > 1 and (text[0], text[-1]) in _WRAPPING_QUOTE_PAIRS:
+        return text[1:-1].strip()
+    return text
 
 
 def extract_next_data(html: str) -> str | None:

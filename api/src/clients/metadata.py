@@ -1,4 +1,3 @@
-import html
 import json
 import re
 from urllib.parse import urlparse
@@ -7,6 +6,7 @@ from app.constants import SCRAPER_TIMEOUT, SCRAPER_USER_AGENT, SPOTIFY_EMBED_URL
 from clients._http import get_client
 from utils.logging import get_logger
 from utils.scraping import (
+    decode_entities,
     extract_next_data,
     extract_og_description,
     extract_og_title,
@@ -23,8 +23,8 @@ _ISRC_PATTERN = re.compile(r'"isrc"\s*:\s*"([A-Z]{2}[A-Z0-9]{3}\d{7})"', re.I)
 
 
 def _clean(s: str | None) -> str | None:
-    """Decode HTML entities (&#39; -> ') and trim whitespace."""
-    return html.unescape(s).strip() if s else s
+    """Decode HTML entities and strip wrapping quotes; trims whitespace."""
+    return decode_entities(s) if s else s
 
 
 def _get_client():

@@ -2,7 +2,7 @@ from app.config import settings
 from app.constants import YOUTUBE_API_BASE
 from clients.platforms._http import get_client
 from utils.logging import get_logger
-from utils.scraping import decode_entities
+from utils.scraping import decode_entities, strip_wrapping_quotes
 from utils.url.canonical_url import build_track_url
 
 logger = get_logger()
@@ -151,8 +151,8 @@ def _parse_title(raw: str, channel: str | None) -> tuple[str, str | None]:
     for sep in (" - ", " \u2013 ", " \u2014 "):
         if sep in raw:
             left, right = raw.split(sep, 1)
-            return right.strip(), left.strip()
+            return strip_wrapping_quotes(right.strip()), left.strip()
     artist = None
     if channel:
         artist = channel.removesuffix("VEVO").removesuffix(" - Topic").strip() or None
-    return raw, artist
+    return strip_wrapping_quotes(raw), artist
