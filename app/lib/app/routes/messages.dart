@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kurl/app/layout.dart';
+import 'package:kurl/app/routes/settings/friends_view.dart';
 import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/thread.dart';
 import 'package:kurl/services/auth_service.dart';
@@ -134,14 +135,27 @@ class _ThreadList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'messages',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFE5E5E5),
-                    letterSpacing: -0.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'messages',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE5E5E5),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                      ),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                      icon: const Icon(Icons.people_outline, size: 18, color: Color(0xFFE5E5E5)),
+                      label: const Text('Friends', style: TextStyle(fontSize: 14, color: Color(0xFFE5E5E5))),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 for (final thread in threads) ...[
