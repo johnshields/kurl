@@ -5,6 +5,7 @@ import 'package:kurl/models/kurl_history_item.dart';
 import 'package:kurl/models/streaming_account.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/api_base.dart';
+import 'package:kurl/services/api_client.dart';
 import 'package:kurl/services/api_exception.dart';
 
 const _tokenKey = 'kurl_session_token';
@@ -71,7 +72,7 @@ class AuthService {
       }),
     );
     final json = jsonDecode(response.body);
-    _throwIfError(json, response.statusCode);
+    throwIfError(json, response.statusCode);
     return KurlUser.fromJson(json['data']);
   }
 
@@ -146,7 +147,7 @@ class AuthService {
       body: jsonEncode(body),
     );
     final json = jsonDecode(response.body);
-    _throwIfError(json, response.statusCode);
+    throwIfError(json, response.statusCode);
     return json['data'] ?? {};
   }
 
@@ -158,23 +159,7 @@ class AuthService {
       throw ApiException(code: 'AUTH_REQUIRED', message: 'Login required.', status: 401);
     }
     final base = await resolveApiBase();
-    final uri = Uri.parse('$base$path');
-    final headers = {'Authorization': 'Bearer $token'};
-    final response = switch (method) {
-      'DELETE' => await http.delete(uri, headers: headers),
-      'POST' => await http.post(uri, headers: headers),
-      _ => throw ArgumentError('unsupported method: $method'),
-    };
-    _throwIfError(jsonDecode(response.body), response.statusCode);
-  }
-
-  static void _throwIfError(Map<String, dynamic> json, int statusCode) {
-    if (json['status'] != 'error') return;
-    throw ApiException(
-      code: json['code'] as String? ?? 'INTERNAL_ERROR',
-      message: json['message'] as String? ?? 'Request failed',
-      status: statusCode,
-    );
+    await authedSend(method, Uri.parse('$base$path'), token);
   }
 
   /// Null on logged-out, no session, or an invalid/expired token -- clears
