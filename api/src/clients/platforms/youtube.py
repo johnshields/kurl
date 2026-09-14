@@ -2,6 +2,7 @@ from app.config import settings
 from app.constants import YOUTUBE_API_BASE
 from clients.platforms._http import get_client
 from utils.logging import get_logger
+from utils.scraping import decode_entities
 from utils.url.canonical_url import build_track_url
 
 logger = get_logger()
@@ -130,16 +131,19 @@ def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     channel = snippet.get("channelTitle")
     if not raw_title:
         return None, None
-    return _parse_title(raw_title, channel)
+    return _parse_title(decode_entities(raw_title), decode_entities(channel) if channel else None)
 
 
 def extract_album_metadata(album: dict) -> tuple[str | None, str | None]:
     snippet = album.get("snippet", {})
-    return snippet.get("title"), snippet.get("channelTitle")
+    title = snippet.get("title")
+    channel = snippet.get("channelTitle")
+    return decode_entities(title) if title else None, decode_entities(channel) if channel else None
 
 
 def extract_artist_name(artist: dict) -> str | None:
-    return artist.get("snippet", {}).get("title")
+    name = artist.get("snippet", {}).get("title")
+    return decode_entities(name) if name else None
 
 
 def _parse_title(raw: str, channel: str | None) -> tuple[str, str | None]:
