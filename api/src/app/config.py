@@ -66,15 +66,14 @@ class Settings:
     def SPOTIFY_CLIENT_SECRET(self) -> str | None:
         return self._get("SPOTIFY_CLIENT_SECRET")
 
-    # Spotify (OAuth authorization_code -- Sign in with Spotify)
+    # Spotify (OAuth authorization_code -- Sign in with Spotify; redirect URI
+    # must match the app dashboard exactly)
     @property
     def SPOTIFY_REDIRECT_URI(self) -> str | None:
-        """Must exactly match a redirect URI registered in the Spotify app dashboard."""
         return self._get("SPOTIFY_REDIRECT_URI")
 
     @property
     def SPOTIFY_APP_REDIRECT_URL(self) -> str:
-        """Frontend URL the callback bounces the browser back to once done."""
         return self._get("SPOTIFY_APP_REDIRECT_URL", "https://kurl.online/settings")
 
     # Apple Music (JWT via MusicKit)
@@ -113,19 +112,18 @@ class Settings:
     def SOUNDCLOUD_CLIENT_SECRET(self) -> str | None:
         return self._get("SOUNDCLOUD_CLIENT_SECRET")
 
-    # SoundCloud (OAuth 2.1 authorization_code + PKCE -- Sign in with SoundCloud)
+    # SoundCloud (OAuth 2.1 authorization_code + PKCE -- Sign in with
+    # SoundCloud; redirect URI must match the app dashboard exactly)
     @property
     def SOUNDCLOUD_REDIRECT_URI(self) -> str | None:
-        """Must exactly match a redirect URI registered in the SoundCloud app dashboard."""
         return self._get("SOUNDCLOUD_REDIRECT_URI")
 
     @property
     def SOUNDCLOUD_APP_REDIRECT_URL(self) -> str:
-        """Frontend URL the callback bounces the browser back to once done."""
         return self._get("SOUNDCLOUD_APP_REDIRECT_URL", "https://kurl.online/settings")
 
-    # Google (OAuth authorization_code -- Sign in with YouTube). Separate
-    # from YOUTUBE_API_KEY above, which is an unrelated Data API v3 key.
+    # Google (OAuth -- Sign in with YouTube; distinct from YOUTUBE_API_KEY,
+    # redirect URI must match the OAuth client exactly)
     @property
     def GOOGLE_CLIENT_ID(self) -> str | None:
         return self._get("GOOGLE_CLIENT_ID")
@@ -136,12 +134,10 @@ class Settings:
 
     @property
     def GOOGLE_REDIRECT_URI(self) -> str | None:
-        """Must exactly match a redirect URI registered in the Google Cloud OAuth client."""
         return self._get("GOOGLE_REDIRECT_URI")
 
     @property
     def GOOGLE_APP_REDIRECT_URL(self) -> str:
-        """Frontend URL the callback bounces the browser back to once done."""
         return self._get("GOOGLE_APP_REDIRECT_URL", "https://kurl.online/settings")
 
     # User accounts (session JWT signing key -- distinct from KURL_API_KEY)
@@ -149,13 +145,13 @@ class Settings:
     def SESSION_SECRET(self) -> str | None:
         return self._get("SESSION_SECRET")
 
-    # AES-256-GCM key for encrypting stored OAuth tokens (64 hex chars / 32 bytes).
+    # AES-256-GCM key for stored OAuth tokens (64 hex chars / 32 bytes)
     @property
     def TOKEN_ENCRYPTION_KEY(self) -> str | None:
         return self._get("TOKEN_ENCRYPTION_KEY")
 
-    # AES-256-GCM key for encrypting message bodies at rest (64 hex chars / 32 bytes).
-    # Separate from TOKEN_ENCRYPTION_KEY -- different blast radius if one leaks.
+    # AES-256-GCM key for message bodies at rest -- separate from
+    # TOKEN_ENCRYPTION_KEY, different blast radius if one leaks
     @property
     def MESSAGE_ENCRYPTION_KEY(self) -> str | None:
         return self._get("MESSAGE_ENCRYPTION_KEY")

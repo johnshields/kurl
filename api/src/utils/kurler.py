@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from app.constants import DEFAULT_STOREFRONT, RESCUE_PLATFORMS
+from app.constants import DEFAULT_STOREFRONT, ISRC_CACHE_NEGATIVE_TTL, ISRC_CACHE_POSITIVE_TTL, RESCUE_PLATFORMS
 from clients import cache, metadata
 from clients.platforms import apple, deezer, soundcloud, spotify, tidal, youtube
 from clients.resolvers import bandcamp_search, beatport_search, genius, itunes, lastfm, spotify_search
@@ -318,26 +318,41 @@ async def _search_by_identifier(
     hint_title: str | None = None,
     hint_artist: str | None = None,
 ) -> KurlMatch | None:
-    """Search target by identifier; build KurlMatch."""
+    """Search target by identifier; build KurlMatch. Cached by (via, identifier,
+    target_platform), positive and negative hits on separate TTLs."""
     client = _get_client(target_platform)
     if not client:
         return None
 
+    cache_key = f"{via}:{identifier}:{target_platform}"
+    cached = await cache.get(cache_key)
+    if cached is not None:
+        if cached == "null":
+            return None
+        data = json.loads(cached)
+        return KurlMatch(url=data["url"], title=data.get("title"), artist=data.get("artist"), via=via)
+
+    async def _cache_and_return(result: KurlMatch | None) -> KurlMatch | None:
+        if result:
+            payload = json.dumps({"url": result.url, "title": result.title, "artist": result.artist})
+            await cache.set(cache_key, payload, ttl=ISRC_CACHE_POSITIVE_TTL)
+        else:
+            await cache.set(cache_key, "null", ttl=ISRC_CACHE_NEGATIVE_TTL)
+        return result
+
     try:
         match = await getattr(client, search)(identifier, **_ctx(target_platform))
         if not match:
-            return None
+            return await _cache_and_return(None)
         url = getattr(client, url_getter)(match)
         if not url:
-            return None
+            return await _cache_and_return(None)
         title, artist = getattr(client, metadata_fn)(match)
-        return KurlMatch(
-            url=url,
-            title=title or hint_title,
-            artist=artist or hint_artist,
-            via=via,
+        return await _cache_and_return(
+            KurlMatch(url=url, title=title or hint_title, artist=artist or hint_artist, via=via)
         )
     except Exception as e:
+        # Transient failure, not a genuine miss -- don't poison the cache.
         logger.warning("%s search on %s failed: %s", via.upper(), target_platform, e)
         return None
 
