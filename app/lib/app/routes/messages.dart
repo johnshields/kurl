@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/settings/friends_view.dart';
@@ -38,11 +40,19 @@ class MessagesScreenState extends State<MessagesScreen> {
   bool _loading = true;
   bool _loggedIn = false;
   List<MessageThread> _threads = [];
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
   }
 
   // Called by MainShell when this tab becomes active -- IndexedStack keeps
@@ -64,6 +74,7 @@ class MessagesScreenState extends State<MessagesScreen> {
 
     try {
       final threads = await SocialService.threads();
+      final incomingRequests = await SocialService.friends().then((o) => o.incoming.length);
       if (mounted) {
         setState(() {
           _loggedIn = true;
@@ -71,7 +82,8 @@ class MessagesScreenState extends State<MessagesScreen> {
           _loading = false;
         });
       }
-      widget.onUnread?.call(threads.fold(0, (sum, t) => sum + t.unread));
+      final unread = threads.fold(0, (sum, t) => sum + t.unread);
+      widget.onUnread?.call(unread + incomingRequests);
     } catch (_) {
       if (mounted) {
         setState(() {
