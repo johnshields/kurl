@@ -40,7 +40,6 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   bool _loading = false;
   bool _pressed = false;
   bool _noCache = false;
-  bool _targetFromUrl = false;
   bool _loggedIn = false;
   String? _error;
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
@@ -61,20 +60,12 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
       _listenForUniversalLinks();
     }
     _handleUri(Uri.base);
-    _loadPreferredPlatform();
+    _checkLoggedIn();
   }
 
-  // A deep-link target (handled above) takes priority; this only fills in
-  // the default when nothing else has already chosen one.
-  Future<void> _loadPreferredPlatform() async {
+  Future<void> _checkLoggedIn() async {
     final user = await AuthService.getProfile();
-    if (!mounted) return;
-    setState(() => _loggedIn = user != null);
-    final preferred = user?.preferredPlatform;
-    if (preferred == null || findPlatform(preferred) == null) return;
-    if (_selectedPlatform == null && !_targetFromUrl) {
-      setState(() => _selectedPlatform = preferred);
-    }
+    if (mounted) setState(() => _loggedIn = user != null);
   }
 
   Future<void> _openSendSheet() async {
@@ -128,7 +119,6 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
     if (!hasUrl && !validTarget) return;
 
     if (validTarget) {
-      _targetFromUrl = true;
       setState(() => _selectedPlatform = target);
     }
     if (hasUrl) _populateUrl(compactDecode(encoded));
