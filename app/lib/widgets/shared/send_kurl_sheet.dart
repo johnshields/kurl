@@ -116,7 +116,11 @@ class _SendKurlSheetState extends State<_SendKurlSheet> {
           ],
         ],
       ),
-      content: _loading
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      constraints: const BoxConstraints(maxWidth: 720),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: _loading
           ? const SizedBox(
               height: 48,
               child: Center(
@@ -163,6 +167,7 @@ class _SendKurlSheetState extends State<_SendKurlSheet> {
                     ],
                   ],
                 ),
+      ),
       actions: [
         TextButton(
           onPressed: _sending ? null : () => Navigator.of(context).pop(),
