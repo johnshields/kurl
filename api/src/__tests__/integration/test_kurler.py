@@ -66,6 +66,38 @@ class TestIsrcHappyPath:
         assert result.via == "isrc"
 
 
+class TestSourceArtwork:
+    async def test_match_carries_artwork_read_from_the_source_track(self, mock_clients):
+        source_track = {"isrc": "GBX1234", "title": "Hello", "artists": [{"name": "Adele"}]}
+        mock_clients["spotify"].get_track = AsyncMock(return_value=source_track)
+        mock_clients["spotify"].extract_isrc.return_value = "GBX1234"
+        mock_clients["spotify"].extract_metadata.return_value = ("Hello", "Adele")
+        mock_clients["spotify"].extract_artwork.return_value = "https://i.scdn.co/image/abc"
+
+        mock_clients["deezer"].search_by_isrc = AsyncMock(return_value={"link": "https://deezer.com/track/999"})
+        mock_clients["deezer"].extract_track_url.return_value = "https://deezer.com/track/999"
+        mock_clients["deezer"].extract_metadata.return_value = ("Hello", "Adele")
+
+        result = await kurl(ParsedMusicUrl("spotify", "track", "abc"), "deezer")
+
+        assert result.artwork_url == "https://i.scdn.co/image/abc"
+
+    async def test_source_without_artwork_leaves_it_empty(self, mock_clients):
+        source_track = {"isrc": "GBX1234"}
+        mock_clients["spotify"].get_track = AsyncMock(return_value=source_track)
+        mock_clients["spotify"].extract_isrc.return_value = "GBX1234"
+        mock_clients["spotify"].extract_metadata.return_value = ("Hello", "Adele")
+        mock_clients["spotify"].extract_artwork.return_value = None
+
+        mock_clients["deezer"].search_by_isrc = AsyncMock(return_value={"link": "https://deezer.com/track/999"})
+        mock_clients["deezer"].extract_track_url.return_value = "https://deezer.com/track/999"
+        mock_clients["deezer"].extract_metadata.return_value = ("Hello", "Adele")
+
+        result = await kurl(ParsedMusicUrl("spotify", "track", "abc"), "deezer")
+
+        assert result.artwork_url is None
+
+
 class TestIsrcMissFallsBackToMetadataSearch:
     async def test_when_source_has_no_isrc_metadata_search_is_used(self, mock_clients):
         """Source returns no ISRC -- should scrape metadata and search target."""

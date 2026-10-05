@@ -119,7 +119,7 @@ async def resolve(
             match = await kurl_direct(parsed_full, target_platform)
             if match:
                 logger.info("Direct kurl: %s - %s -> %s (via %s)", match.artist, match.title, match.url, match.via)
-                artwork = await _fetch_artwork(match.title, match.artist)
+                artwork = match.artwork_url or await _fetch_artwork(match.title, match.artist)
                 result = {
                     "title": match.title,
                     "artist": match.artist,

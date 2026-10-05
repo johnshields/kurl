@@ -35,6 +35,19 @@ class KurlMatch:
     title: str | None = None
     artist: str | None = None
     via: str = "isrc"
+    artwork_url: str | None = None
+
+
+def _with_artwork(match: KurlMatch | None, artwork: str | None) -> KurlMatch | None:
+    if match and artwork:
+        match.artwork_url = artwork
+    return match
+
+
+def _artwork_of(client, entity: dict) -> str | None:
+    extract = getattr(client, "extract_artwork", None)
+    artwork = extract(entity) if extract else None
+    return artwork if isinstance(artwork, str) else None
 
 
 def _get_client(platform: str):
@@ -69,7 +82,7 @@ async def kurl(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None
 
 
 async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
-    isrc, title, artist = await _lookup_identifier(
+    isrc, title, artist, artwork = await _lookup_identifier(
         source,
         fetch="get_track",
         extract="extract_isrc",
@@ -86,7 +99,7 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
             hint_artist=artist,
         )
         if match:
-            return match
+            return _with_artwork(match, artwork)
 
     if not title or not artist:
         scraped_title, scraped_artist, _ = await metadata.fetch_metadata(
@@ -105,9 +118,9 @@ async def _kurl_track(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
     if target_platform in RESCUE_PLATFORMS:
         rescued = await _rescue_url(target_platform, title, artist)
         if rescued:
-            return KurlMatch(url=rescued, title=title, artist=artist, via="isrc")
+            return _with_artwork(KurlMatch(url=rescued, title=title, artist=artist, via="isrc"), artwork)
 
-    return await _search_track_by_metadata(target_platform, title, artist)
+    return _with_artwork(await _search_track_by_metadata(target_platform, title, artist), artwork)
 
 
 # (module, attr, label) per target; attr lookup at call time keeps test patches working.
@@ -155,7 +168,7 @@ async def _rescue_album_url(target_platform: str, title: str, artist: str) -> st
 
 
 async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch | None:
-    upc, title, artist = await _lookup_identifier(
+    upc, title, artist, artwork = await _lookup_identifier(
         source,
         fetch="get_album",
         extract="extract_upc",
@@ -175,7 +188,7 @@ async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
             hint_artist=artist,
         )
         if match:
-            return match
+            return _with_artwork(match, artwork)
 
     # No UPC or target lookup missed -- scrape album page for title + artist
     # and try the album rescue chain.
@@ -194,7 +207,7 @@ async def _kurl_album(source: ParsedMusicUrl, target_platform: str) -> KurlMatch
 
     rescued = await _rescue_album_url(target_platform, title, artist)
     if rescued:
-        return KurlMatch(url=rescued, title=title, artist=artist, via="upc")
+        return _with_artwork(KurlMatch(url=rescued, title=title, artist=artist, via="upc"), artwork)
     return None
 
 
@@ -238,15 +251,15 @@ async def _lookup_identifier(
     extract: str,
     label: str,
     metadata_fn: str = "extract_metadata",
-) -> tuple[str | None, str | None, str | None]:
-    """Fetch (identifier, title, artist) from source. Cached by entity."""
+) -> tuple[str | None, str | None, str | None, str | None]:
+    """Fetch (identifier, title, artist, artwork) from source. Cached by entity."""
     cache_key = f"{label.lower()}:{source.platform}:{source.entity_type}:{source.id}"
     cached = await cache.get(cache_key)
     if cached:
         try:
             data = json.loads(cached)
             logger.info("Cache hit %s: %s", cache_key, data.get("id"))
-            return data.get("id"), data.get("title"), data.get("artist")
+            return data.get("id"), data.get("title"), data.get("artist"), data.get("artwork")
         except Exception:
             pass
 
@@ -254,12 +267,14 @@ async def _lookup_identifier(
     identifier: str | None = None
     title: str | None = None
     artist: str | None = None
+    artwork: str | None = None
 
     if client:
         try:
             entity = await getattr(client, fetch)(source.id, **_ctx(source.platform, source.country))
             identifier = getattr(client, extract)(entity)
             title, artist = getattr(client, metadata_fn)(entity)
+            artwork = _artwork_of(client, entity)
             logger.info(
                 "Source %s %s=%s id=%s (%s - %s)",
                 source.platform,
@@ -301,10 +316,10 @@ async def _lookup_identifier(
     if identifier:
         await cache.set(
             cache_key,
-            json.dumps({"id": identifier, "title": title, "artist": artist}),
+            json.dumps({"id": identifier, "title": title, "artist": artist, "artwork": artwork}),
         )
 
-    return identifier, title, artist
+    return identifier, title, artist, artwork
 
 
 async def _search_by_identifier(

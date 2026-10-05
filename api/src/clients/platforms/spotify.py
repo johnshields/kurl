@@ -99,6 +99,11 @@ def extract_artist_url(artist: dict) -> str | None:
     return artist.get("external_urls", {}).get("spotify")
 
 
+def extract_artwork(entity: dict) -> str | None:
+    images = (entity.get("album") or entity).get("images") or []
+    return images[0].get("url") if images else None
+
+
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     title = track.get("name")
     artists = [a.get("name") for a in track.get("artists", []) if a.get("name")]

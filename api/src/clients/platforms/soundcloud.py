@@ -135,6 +135,11 @@ def extract_artist_url(artist: dict) -> str | None:
     return artist.get("permalink_url")
 
 
+def extract_artwork(entity: dict) -> str | None:
+    url = entity.get("artwork_url")
+    return url.replace("-large.", "-t500x500.") if url else None
+
+
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     title = track.get("title")
     pub = track.get("publisher_metadata") or {}

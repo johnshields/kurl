@@ -41,13 +41,14 @@ async def _search_one(title: str, artist: str | None, entity: str = "song") -> d
             params={"term": query, "entity": entity, "limit": 1, "media": "music"},
         )
         if response.status_code == 429:
-            # Transient -- don't cache the miss.
+            # Transient -- never memoise or persist a failure.
             logger.warning("iTunes search rate-limited for %r", query)
             result = None
             persist = False
         elif response.status_code != 200:
             logger.warning("iTunes search returned %s for %r: %s", response.status_code, query, response.text[:200])
             result = None
+            persist = False
         else:
             results = response.json().get("results") or []
             if not results:
@@ -58,8 +59,8 @@ async def _search_one(title: str, artist: str | None, entity: str = "song") -> d
         result = None
         persist = False
 
-    _search_cache[key] = result
     if persist:
+        _search_cache[key] = result
         await cache.set(cache_key, json.dumps(result), ttl=_CACHE_TTL)
     return result
 

@@ -121,6 +121,11 @@ def extract_artist_url(artist: dict) -> str | None:
     return artist.get("attributes", {}).get("url")
 
 
+def extract_artwork(entity: dict) -> str | None:
+    url = ((entity.get("attributes") or {}).get("artwork") or {}).get("url")
+    return url.replace("{w}", "600").replace("{h}", "600") if url else None
+
+
 def extract_metadata(track: dict) -> tuple[str | None, str | None]:
     attrs = track.get("attributes", {})
     return attrs.get("name"), attrs.get("artistName")
