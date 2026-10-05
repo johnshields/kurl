@@ -51,7 +51,7 @@ class ResultCard extends StatelessWidget {
               const SizedBox(height: 4),
               _ShareOption(
                 icon: Icons.ios_share,
-                label: 'Share link',
+                label: 'Share kurl',
                 onTap: () => Navigator.pop(ctx, false),
               ),
             ],

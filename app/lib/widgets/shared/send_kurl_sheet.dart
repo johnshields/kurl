@@ -42,6 +42,11 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
   Friend? _selected;
   String? _error;
 
+  String? get _kurlLabel {
+    final parts = [widget.kurl.artist, widget.kurl.title].whereType<String>();
+    return parts.isEmpty ? null : parts.join(' - ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,7 +99,21 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF141414),
-      title: const Text('Send to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Send to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
+          if (_kurlLabel != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _kurlLabel!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF888888), fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ],
+      ),
       content: _loading
           ? const SizedBox(
               height: 48,
@@ -104,7 +123,7 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
             )
           : _friends.isEmpty
               ? const Text(
-                  'Add a friend first, then you can send them kurls.',
+                  'Add a friend first (Messages > Friends), then you can send them kurls.',
                   style: TextStyle(color: Color(0xFF888888), fontSize: 13),
                 )
               : Column(
@@ -112,16 +131,18 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 180),
+                      constraints: const BoxConstraints(maxHeight: 240),
                       child: SingleChildScrollView(
                         child: Column(
                           children: [
-                            for (final friend in _friends)
+                            for (final friend in _friends) ...[
                               _FriendOption(
                                 username: friend.user.username,
                                 selected: friend.uid == _selected?.uid,
                                 onTap: _sending ? null : () => setState(() => _selected = friend),
                               ),
+                              const SizedBox(height: 6),
+                            ],
                           ],
                         ),
                       ),
@@ -146,9 +167,16 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
           child: const Text('Cancel', style: TextStyle(color: Color(0xFF888888))),
         ),
         if (_friends.isNotEmpty)
-          TextButton(
+          FilledButton.icon(
             onPressed: (_sending || _selected == null) ? null : _send,
-            child: Text(_sending ? 'Sending...' : 'Send'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE5E5E5),
+              foregroundColor: Colors.black,
+              disabledBackgroundColor: const Color(0xFF222222),
+              disabledForegroundColor: const Color(0xFF555555),
+            ),
+            icon: const Icon(Icons.send_rounded, size: 16),
+            label: Text(_sending ? 'Sending...' : 'Send'),
           ),
       ],
     );
@@ -165,25 +193,37 @@ class _FriendOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tappable(
-      color: selected ? const Color(0xFF1F1F1F) : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      color: Colors.transparent,
+      padding: EdgeInsets.zero,
       onTap: onTap,
-      child: Row(
-        children: [
-          Icon(
-            selected ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: selected ? const Color(0xFFE5E5E5) : const Color(0xFF555555),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              username,
-              style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
-              overflow: TextOverflow.ellipsis,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF1F1F1F) : Colors.transparent,
+          border: Border.all(color: selected ? const Color(0xFF888888) : const Color(0xFF2A2A2A)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: const Color(0xFF222222),
+              child: Text(
+                username.isEmpty ? '?' : username[0].toUpperCase(),
+                style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 12, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                username,
+                style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (selected) const Icon(Icons.check_circle, size: 18, color: Color(0xFFE5E5E5)),
+          ],
+        ),
       ),
     );
   }
