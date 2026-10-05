@@ -7,6 +7,7 @@ import 'package:kurl/models/streaming_account.dart';
 import 'package:kurl/models/streaming_provider.dart';
 import 'package:kurl/models/user.dart';
 import 'package:kurl/services/auth_service.dart';
+import 'package:kurl/utils/initial.dart';
 import 'package:kurl/utils/url_state.dart';
 import 'package:kurl/widgets/shared/platform_picker.dart';
 
@@ -220,11 +221,7 @@ class _ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    final initial = widget.user.email.isNotEmpty
-        ? widget.user.email[0].toUpperCase()
-        : widget.user.username.isNotEmpty
-            ? widget.user.username[0].toUpperCase()
-            : '?';
+    final initial = initialOf(widget.user.email.isNotEmpty ? widget.user.email : widget.user.username);
 
     return SingleChildScrollView(
       child: Center(

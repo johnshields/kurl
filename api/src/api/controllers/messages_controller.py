@@ -19,7 +19,7 @@ from utils import message_crypto
 from utils.api_result import error_result
 from utils.background import run_in_background
 from utils.logging import get_logger
-from utils.messages import has_allowed_scheme, is_participant, other_participant, pair
+from utils.messages import has_allowed_scheme, is_participant, is_user_a, other_participant, pair
 from utils.uid import gen_uid
 
 logger = get_logger()
@@ -30,7 +30,7 @@ _MAX_BODY = 2000
 async def _mark_read(db, thread_row: dict, viewer_uid: str) -> None:
     query = (
         thread_queries.MARK_READ_A
-        if thread_row["user_a_uid"] == viewer_uid
+        if is_user_a(thread_row, viewer_uid)
         else thread_queries.MARK_READ_B
     )
     await execute(db, query, thread_row["uid"])

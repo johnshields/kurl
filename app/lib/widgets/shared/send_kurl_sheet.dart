@@ -7,6 +7,7 @@ import 'package:kurl/models/message.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/friendly_error.dart';
+import 'package:kurl/utils/initial.dart';
 import 'package:kurl/widgets/shared/tappable.dart';
 
 /// Opens the send dialog, then the new thread once the kurl is sent.
@@ -204,7 +205,7 @@ class _FriendOption extends StatelessWidget {
             radius: 14,
             backgroundColor: const Color(0xFF222222),
             child: Text(
-              username.isEmpty ? '?' : username[0].toUpperCase(),
+              initialOf(username),
               style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),

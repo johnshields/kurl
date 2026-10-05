@@ -16,9 +16,13 @@ def pair(a: str, b: str) -> tuple[str, str]:
     return (a, b) if a < b else (b, a)
 
 
+def is_user_a(row: dict, viewer_uid: str) -> bool:
+    return row["user_a_uid"] == viewer_uid
+
+
 def is_participant(row: dict, viewer_uid: str) -> bool:
     return viewer_uid in (row["user_a_uid"], row["user_b_uid"])
 
 
 def other_participant(row: dict, viewer_uid: str) -> str:
-    return row["user_b_uid"] if row["user_a_uid"] == viewer_uid else row["user_a_uid"]
+    return row["user_b_uid"] if is_user_a(row, viewer_uid) else row["user_a_uid"]

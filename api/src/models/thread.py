@@ -4,6 +4,7 @@ Field mapping for the threads list row and for a single thread's header.
 """
 
 from models.message import loads
+from utils.messages import is_user_a
 
 
 def thread_summary(row) -> dict:
@@ -28,7 +29,7 @@ def _preview(row) -> dict | None:
 
 
 def thread_header(row, other: dict, viewer_uid: str) -> dict:
-    last_read = row["last_read_a_at"] if row["user_a_uid"] == viewer_uid else row["last_read_b_at"]
+    last_read = row["last_read_a_at"] if is_user_a(row, viewer_uid) else row["last_read_b_at"]
     return {
         "uid": row["uid"],
         "user": {"uid": other["uid"], "username": other["username"]},
