@@ -288,11 +288,11 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                         style: const TextStyle(color: _errorRed, fontSize: 13),
                       ),
                     ],
-                    if (_result != null) ...[
+                    if (_result case final result?) ...[
                       const SizedBox(height: 16),
                       ResultCard(
-                        result: _result!,
-                        onSend: _loggedIn ? () => sendKurlToFriend(context, _result!, _urlController.text.trim()) : null,
+                        result: result,
+                        onSend: _loggedIn ? () => sendKurlToFriend(context, result, _urlController.text.trim()) : null,
                       ),
                     ],
                     const SizedBox(height: 32),

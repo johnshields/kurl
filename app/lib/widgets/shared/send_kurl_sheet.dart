@@ -13,7 +13,7 @@ import 'package:kurl/widgets/shared/tappable.dart';
 Future<void> sendKurlToFriend(BuildContext context, KurlResult kurl, String sourceUrl) async {
   final sent = await showDialog<Message>(
     context: context,
-    builder: (_) => SendKurlSheet(kurl: kurl, sourceUrl: sourceUrl),
+    builder: (_) => _SendKurlSheet(kurl: kurl, sourceUrl: sourceUrl),
   );
   if (sent != null && context.mounted) {
     Navigator.of(context).push(
@@ -24,17 +24,17 @@ Future<void> sendKurlToFriend(BuildContext context, KurlResult kurl, String sour
 
 /// Pick a friend, add an optional note, and send [kurl] to them as a message.
 /// Pops with the created [Message] on success, null on cancel.
-class SendKurlSheet extends StatefulWidget {
+class _SendKurlSheet extends StatefulWidget {
   final KurlResult kurl;
   final String sourceUrl;
 
-  const SendKurlSheet({super.key, required this.kurl, required this.sourceUrl});
+  const _SendKurlSheet({required this.kurl, required this.sourceUrl});
 
   @override
-  State<SendKurlSheet> createState() => _SendKurlSheetState();
+  State<_SendKurlSheet> createState() => _SendKurlSheetState();
 }
 
-class _SendKurlSheetState extends State<SendKurlSheet> {
+class _SendKurlSheetState extends State<_SendKurlSheet> {
   final _noteController = TextEditingController();
   bool _loading = true;
   bool _sending = false;
@@ -97,16 +97,17 @@ class _SendKurlSheetState extends State<SendKurlSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final label = _kurlLabel;
     return AlertDialog(
       backgroundColor: const Color(0xFF141414),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Send to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
-          if (_kurlLabel != null) ...[
+          const Text('Kurl to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
+          if (label != null) ...[
             const SizedBox(height: 4),
             Text(
-              _kurlLabel!,
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Color(0xFF888888), fontSize: 12, fontWeight: FontWeight.normal),
@@ -193,37 +194,30 @@ class _FriendOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tappable(
-      color: Colors.transparent,
-      padding: EdgeInsets.zero,
+      color: selected ? const Color(0xFF1F1F1F) : Colors.transparent,
+      borderColor: selected ? const Color(0xFF888888) : const Color(0xFF2A2A2A),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF1F1F1F) : Colors.transparent,
-          border: Border.all(color: selected ? const Color(0xFF888888) : const Color(0xFF2A2A2A)),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: const Color(0xFF222222),
-              child: Text(
-                username.isEmpty ? '?' : username[0].toUpperCase(),
-                style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 12, fontWeight: FontWeight.w600),
-              ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: const Color(0xFF222222),
+            child: Text(
+              username.isEmpty ? '?' : username[0].toUpperCase(),
+              style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 12, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                username,
-                style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
-                overflow: TextOverflow.ellipsis,
-              ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              username,
+              style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
+              overflow: TextOverflow.ellipsis,
             ),
-            if (selected) const Icon(Icons.check_circle, size: 18, color: Color(0xFFE5E5E5)),
-          ],
-        ),
+          ),
+          if (selected) const Icon(Icons.check_circle, size: 18, color: Color(0xFFE5E5E5)),
+        ],
       ),
     );
   }

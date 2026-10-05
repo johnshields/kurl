@@ -28,8 +28,8 @@ class ResultCard extends StatelessWidget {
     }
   }
 
-  Future<void> _shareOptions(BuildContext context) async {
-    final send = await showModalBottomSheet<bool>(
+  Future<void> _shareOptions(BuildContext context) {
+    return showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF141414),
       constraints: const BoxConstraints(maxWidth: 480),
@@ -45,22 +45,26 @@ class ResultCard extends StatelessWidget {
             children: [
               _ShareOption(
                 icon: Icons.send_rounded,
-                label: 'Send to a friend',
-                onTap: () => Navigator.pop(ctx, true),
+                label: 'Kurl to a friend',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onSend!();
+                },
               ),
               const SizedBox(height: 4),
               _ShareOption(
                 icon: Icons.ios_share,
                 label: 'Share kurl',
-                onTap: () => Navigator.pop(ctx, false),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _share(context);
+                },
               ),
             ],
           ),
         ),
       ),
     );
-    if (send == null || !context.mounted) return;
-    send ? onSend!() : _share(context);
   }
 
   void _copy(BuildContext context) {
@@ -197,7 +201,12 @@ class ResultCard extends StatelessWidget {
               ),
               if (onDelete != null) ...[
                 const SizedBox(width: 8),
-                _IconAction(icon: Icons.delete_outline_rounded, onTap: onDelete!),
+                Tappable(
+                  color: const Color(0xFF222222),
+                  padding: const EdgeInsets.all(12),
+                  onTap: onDelete,
+                  child: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFE5E5E5)),
+                ),
               ],
             ],
           ),
@@ -271,7 +280,6 @@ class _ShareOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tappable(
-      color: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       onTap: onTap,
       child: Row(
@@ -281,23 +289,6 @@ class _ShareOption extends StatelessWidget {
           Text(label, style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14)),
         ],
       ),
-    );
-  }
-}
-
-class _IconAction extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _IconAction({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tappable(
-      color: const Color(0xFF222222),
-      padding: const EdgeInsets.all(12),
-      onTap: onTap,
-      child: Icon(icon, size: 18, color: const Color(0xFFE5E5E5)),
     );
   }
 }
