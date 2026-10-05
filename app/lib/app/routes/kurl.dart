@@ -4,9 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:kurl/app/layout.dart';
-import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/kurl_result.dart';
-import 'package:kurl/models/message.dart';
 import 'package:kurl/models/platform.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/services/api_service.dart';
@@ -66,20 +64,6 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
   Future<void> _checkLoggedIn() async {
     final user = await AuthService.getProfile();
     if (mounted) setState(() => _loggedIn = user != null);
-  }
-
-  Future<void> _openSendSheet() async {
-    final result = _result;
-    if (result == null) return;
-    final sent = await showDialog<Message>(
-      context: context,
-      builder: (_) => SendKurlSheet(kurl: result, sourceUrl: _urlController.text.trim()),
-    );
-    if (sent != null && mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ThreadScreen(threadUid: sent.threadUid)),
-      );
-    }
   }
 
   void _listenForShares() {
@@ -308,7 +292,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       ResultCard(
                         result: _result!,
-                        onSend: _loggedIn ? _openSendSheet : null,
+                        onSend: _loggedIn ? () => sendKurlToFriend(context, _result!, _urlController.text.trim()) : null,
                       ),
                     ],
                     const SizedBox(height: 32),

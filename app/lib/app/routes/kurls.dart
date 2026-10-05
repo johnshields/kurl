@@ -5,6 +5,7 @@ import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/auth_service.dart';
 import 'package:kurl/widgets/shared/empty_state.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
+import 'package:kurl/widgets/shared/send_kurl_sheet.dart';
 
 const _errorRed = Color(0xFFEF4444);
 
@@ -165,15 +166,17 @@ class _KurlTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final result = KurlResult(
+      title: kurl.title,
+      artist: kurl.artist,
+      resolvedUrl: kurl.targetUrl,
+      platform: kurl.platform,
+      via: kurl.via,
+      createdAt: kurl.createdAt,
+    );
     return ResultCard(
-      result: KurlResult(
-        title: kurl.title,
-        artist: kurl.artist,
-        resolvedUrl: kurl.targetUrl,
-        platform: kurl.platform,
-        via: kurl.via,
-        createdAt: kurl.createdAt,
-      ),
+      result: result,
+      onSend: () => sendKurlToFriend(context, result, kurl.sourceUrl),
       onDelete: () => _confirmDelete(context),
     );
   }

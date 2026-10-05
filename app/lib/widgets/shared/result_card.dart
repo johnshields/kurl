@@ -9,6 +9,7 @@ import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/services/analytics_service.dart';
 import 'package:kurl/utils/date_format.dart';
 import 'package:kurl/widgets/shared/marquee_text.dart';
+import 'package:kurl/widgets/shared/tappable.dart';
 
 class ResultCard extends StatelessWidget {
   final KurlResult result;
@@ -25,6 +26,41 @@ class ResultCard extends StatelessWidget {
       developer.log('share failed: $e', name: 'kurl.share', error: e, stackTrace: st);
       if (context.mounted) _copy(context);
     }
+  }
+
+  Future<void> _shareOptions(BuildContext context) async {
+    final send = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: const Color(0xFF141414),
+      constraints: const BoxConstraints(maxWidth: 480),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+        side: BorderSide(color: Color(0xFF333333)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ShareOption(
+                icon: Icons.send_rounded,
+                label: 'Send to a friend',
+                onTap: () => Navigator.pop(ctx, true),
+              ),
+              const SizedBox(height: 4),
+              _ShareOption(
+                icon: Icons.ios_share,
+                label: 'Share link',
+                onTap: () => Navigator.pop(ctx, false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (send == null || !context.mounted) return;
+    send ? onSend!() : _share(context);
   }
 
   void _copy(BuildContext context) {
@@ -133,7 +169,7 @@ class ResultCard extends StatelessWidget {
                   label: 'Share',
                   background: colour,
                   foreground: onColour,
-                  onTap: () => _share(context),
+                  onTap: () => onSend == null ? _share(context) : _shareOptions(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -159,10 +195,6 @@ class ResultCard extends StatelessWidget {
                   onTap: () => _copy(context),
                 ),
               ),
-              if (onSend != null) ...[
-                const SizedBox(width: 8),
-                _IconAction(icon: Icons.send_rounded, onTap: onSend!),
-              ],
               if (onDelete != null) ...[
                 const SizedBox(width: 8),
                 _IconAction(icon: Icons.delete_outline_rounded, onTap: onDelete!),
@@ -201,35 +233,53 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Tappable(
       color: background,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18, color: foreground),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(color: foreground, fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      onTap: onTap,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: foreground),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(color: foreground, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShareOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ShareOption({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tappable(
+      color: Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFFE5E5E5)),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14)),
+        ],
       ),
     );
   }
@@ -243,17 +293,11 @@ class _IconAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Tappable(
       color: const Color(0xFF222222),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(icon, size: 18, color: const Color(0xFFE5E5E5)),
-        ),
-      ),
+      padding: const EdgeInsets.all(12),
+      onTap: onTap,
+      child: Icon(icon, size: 18, color: const Color(0xFFE5E5E5)),
     );
   }
 }

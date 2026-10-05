@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
+import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/friend.dart';
 import 'package:kurl/models/kurl_result.dart';
 import 'package:kurl/models/message.dart';
 import 'package:kurl/services/api_exception.dart';
 import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/friendly_error.dart';
+import 'package:kurl/widgets/shared/tappable.dart';
+
+/// Opens the send dialog, then the new thread once the kurl is sent.
+Future<void> sendKurlToFriend(BuildContext context, KurlResult kurl, String sourceUrl) async {
+  final sent = await showDialog<Message>(
+    context: context,
+    builder: (_) => SendKurlSheet(kurl: kurl, sourceUrl: sourceUrl),
+  );
+  if (sent != null && context.mounted) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ThreadScreen(threadUid: sent.threadUid)),
+    );
+  }
+}
 
 /// Pick a friend, add an optional note, and send [kurl] to them as a message.
 /// Pops with the created [Message] on success, null on cancel.
@@ -149,32 +164,26 @@ class _FriendOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Tappable(
       color: selected ? const Color(0xFF1F1F1F) : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                selected ? Icons.check_circle : Icons.circle_outlined,
-                size: 16,
-                color: selected ? const Color(0xFFE5E5E5) : const Color(0xFF555555),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  username,
-                  style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(
+            selected ? Icons.check_circle : Icons.circle_outlined,
+            size: 16,
+            color: selected ? const Color(0xFFE5E5E5) : const Color(0xFF555555),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              username,
+              style: const TextStyle(color: Color(0xFFE5E5E5), fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
