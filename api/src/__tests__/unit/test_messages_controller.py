@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 from api.controllers import messages_controller
 from utils.message_crypto import MessageCryptoError
+from utils.messages import has_allowed_scheme
 
 
 def _fetch_one_router(**rows):
@@ -84,19 +85,19 @@ def _summary_row(uid="THR_1"):
 
 class TestHasAllowedScheme:
     def test_accepts_http_and_https(self):
-        assert messages_controller._has_allowed_scheme("https://open.spotify.com/track/1")
-        assert messages_controller._has_allowed_scheme("http://example.com")
+        assert has_allowed_scheme("https://open.spotify.com/track/1")
+        assert has_allowed_scheme("http://example.com")
 
     def test_rejects_other_schemes(self):
-        assert not messages_controller._has_allowed_scheme("javascript:alert(1)")
-        assert not messages_controller._has_allowed_scheme("data:text/html,x")
-        assert not messages_controller._has_allowed_scheme("file:///etc/passwd")
+        assert not has_allowed_scheme("javascript:alert(1)")
+        assert not has_allowed_scheme("data:text/html,x")
+        assert not has_allowed_scheme("file:///etc/passwd")
 
     def test_rejects_missing_or_non_string(self):
-        assert not messages_controller._has_allowed_scheme(None)
-        assert not messages_controller._has_allowed_scheme("")
-        assert not messages_controller._has_allowed_scheme(123)
-        assert not messages_controller._has_allowed_scheme("open.spotify.com/track/1")
+        assert not has_allowed_scheme(None)
+        assert not has_allowed_scheme("")
+        assert not has_allowed_scheme(123)
+        assert not has_allowed_scheme("open.spotify.com/track/1")
 
 
 class TestSend:

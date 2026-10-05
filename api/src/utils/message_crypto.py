@@ -109,3 +109,12 @@ async def decrypt_body(stored: str | None) -> str | None:
     except Exception as e:
         logger.error("Message decryption failed: %s", e)
         raise MessageCryptoError(str(e)) from e
+
+
+async def decrypt_body_or_placeholder(stored: str | None) -> str | None:
+    """decrypt_body, but an unreadable row shows a placeholder instead of raising."""
+    try:
+        return await decrypt_body(stored)
+    except MessageCryptoError as e:
+        logger.warning("Failed to decrypt a message body: %s", e)
+        return "[unable to decrypt message]"

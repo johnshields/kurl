@@ -5,8 +5,6 @@ threads, read a thread, delete a message. Sending requires an accepted
 friendship; a thread is created on the first message to a new recipient.
 """
 
-from urllib.parse import urlparse
-
 from app.constants import APP_BASE_URL, EMAIL_FROM
 from clients import email as email_client
 from db.db import execute, fetch_all, fetch_one
@@ -21,33 +19,12 @@ from utils import message_crypto
 from utils.api_result import error_result
 from utils.background import run_in_background
 from utils.logging import get_logger
+from utils.messages import has_allowed_scheme, is_participant, other_participant, pair
 from utils.uid import gen_uid
 
 logger = get_logger()
 
 _MAX_BODY = 2000
-_ALLOWED_KURL_SCHEMES = ("http", "https")
-
-
-def _has_allowed_scheme(url) -> bool:
-    if not isinstance(url, str) or not url:
-        return False
-    try:
-        return urlparse(url).scheme in _ALLOWED_KURL_SCHEMES
-    except ValueError:
-        return False
-
-
-def _pair(a: str, b: str) -> tuple[str, str]:
-    return (a, b) if a < b else (b, a)
-
-
-def _is_participant(row: dict, viewer_uid: str) -> bool:
-    return viewer_uid in (row["user_a_uid"], row["user_b_uid"])
-
-
-def _other_participant(row: dict, viewer_uid: str) -> str:
-    return row["user_b_uid"] if row["user_a_uid"] == viewer_uid else row["user_a_uid"]
 
 
 async def _mark_read(db, thread_row: dict, viewer_uid: str) -> None:
@@ -59,15 +36,6 @@ async def _mark_read(db, thread_row: dict, viewer_uid: str) -> None:
     await execute(db, query, thread_row["uid"])
 
 
-async def _decrypt_body(value: str | None) -> str | None:
-    """Decrypt a stored body. Unreadable rows show a placeholder."""
-    try:
-        return await message_crypto.decrypt_body(value)
-    except message_crypto.MessageCryptoError as e:
-        logger.warning("Failed to decrypt a message body: %s", e)
-        return "[unable to decrypt message]"
-
-
 async def list_threads(db, user_uid: str) -> dict:
     rows = await fetch_all(
         db, thread_queries.LIST_FOR_USER, user_uid, user_uid, user_uid, user_uid, user_uid
@@ -75,24 +43,24 @@ async def list_threads(db, user_uid: str) -> dict:
     summaries = []
     for row in rows:
         row = dict(row)
-        row["last_body"] = await _decrypt_body(row.get("last_body"))
+        row["last_body"] = await message_crypto.decrypt_body_or_placeholder(row.get("last_body"))
         summaries.append(thread_summary(row))
     return {"status": "success", "data": summaries}
 
 
 async def get_thread(db, user_uid: str, thread_uid: str) -> dict:
     thread = await fetch_one(db, thread_queries.GET_BY_UID, thread_uid)
-    if not thread or not _is_participant(thread, user_uid):
+    if not thread or not is_participant(thread, user_uid):
         return error_result("NOT_FOUND", "Thread not found.")
 
-    other = await fetch_one(db, user_queries.GET_BY_UID, _other_participant(thread, user_uid))
+    other = await fetch_one(db, user_queries.GET_BY_UID, other_participant(thread, user_uid))
     messages = await fetch_all(db, queries.LIST_FOR_THREAD, thread_uid)
     await _mark_read(db, thread, user_uid)
 
     decrypted = []
     for message in messages:
         message = dict(message)
-        message["body"] = await _decrypt_body(message.get("body"))
+        message["body"] = await message_crypto.decrypt_body_or_placeholder(message.get("body"))
         decrypted.append(message)
 
     return {
@@ -106,7 +74,7 @@ async def get_thread(db, user_uid: str, thread_uid: str) -> dict:
 
 async def mark_read(db, user_uid: str, thread_uid: str) -> dict:
     thread = await fetch_one(db, thread_queries.GET_BY_UID, thread_uid)
-    if not thread or not _is_participant(thread, user_uid):
+    if not thread or not is_participant(thread, user_uid):
         return error_result("NOT_FOUND", "Thread not found.")
     await _mark_read(db, thread, user_uid)
     return {"status": "success", "message": "Marked read."}
@@ -124,7 +92,7 @@ async def send(db, user_uid: str, data: dict) -> dict:
         if not isinstance(kurl, dict):
             return error_result("INVALID_REQUEST", "kurl must be an object.")
         for key in ("resolved_url", "source_url"):
-            if key in kurl and not _has_allowed_scheme(kurl.get(key)):
+            if key in kurl and not has_allowed_scheme(kurl.get(key)):
                 return error_result("INVALID_REQUEST", "kurl URLs must be http or https.")
 
     thread, other_uid, err = await _resolve_thread(db, user_uid, data)
@@ -181,9 +149,9 @@ async def _resolve_thread(db, user_uid: str, data: dict):
     thread_uid = data.get("threadUid")
     if thread_uid:
         thread = await fetch_one(db, thread_queries.GET_BY_UID, thread_uid)
-        if not thread or not _is_participant(thread, user_uid):
+        if not thread or not is_participant(thread, user_uid):
             return None, None, error_result("NOT_FOUND", "Thread not found.")
-        return thread, _other_participant(thread, user_uid), None
+        return thread, other_participant(thread, user_uid), None
 
     target = None
     if data.get("toUid"):
@@ -195,13 +163,13 @@ async def _resolve_thread(db, user_uid: str, data: dict):
     if target["uid"] == user_uid:
         return None, None, error_result("INVALID_REQUEST", "Cannot message yourself.")
 
-    a, b = _pair(user_uid, target["uid"])
+    a, b = pair(user_uid, target["uid"])
     thread = await fetch_one(db, thread_queries.GET_BY_PAIR, a, b)
     return thread, target["uid"], None
 
 
 async def _create_thread(db, user_uid: str, other_uid: str) -> dict:
-    a, b = _pair(user_uid, other_uid)
+    a, b = pair(user_uid, other_uid)
     uid = gen_uid("THR")
     await execute(db, thread_queries.INSERT, uid, a, b)
     logger.info("Thread %s created for %s + %s", uid, a, b)

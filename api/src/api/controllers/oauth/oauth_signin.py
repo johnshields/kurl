@@ -12,6 +12,7 @@ from app.config import settings
 from db.db import execute, fetch_one
 from db.queries import users as user_queries
 from models.user import to_db_params as to_user_db_params
+from utils.auth.oauth_redirect import app_redirect
 from utils.auth.oauth_state import create_oauth_state, verify_oauth_state
 from utils.auth.session import create_session_token
 from utils.auth.token_crypto import encrypt_token
@@ -38,6 +39,9 @@ class OAuthProvider:
 
     def _setting(self, suffix: str):
         return getattr(settings, f"{self.settings_prefix}_{suffix}")
+
+    def redirect(self, status: str, token: str | None = None) -> str:
+        return app_redirect(self._setting("APP_REDIRECT_URL"), self.key, status, token)
 
 
 def is_configured(p: OAuthProvider) -> bool:
@@ -69,12 +73,12 @@ async def handle_callback(
     a session token so a new anonymous sign-in is picked up by the app."""
     if error or not code or not state:
         logger.warning("%s callback missing code/state or carrying an error: %s", p.label, error)
-        return _app_redirect(p, "error")
+        return p.redirect("error")
 
     valid, linked_user_uid, code_verifier = verify_oauth_state(state, settings.SESSION_SECRET)
     if not valid or (p.uses_pkce and not code_verifier):
         logger.warning("%s callback state failed verification (expired, tampered, or no PKCE verifier)", p.label)
-        return _app_redirect(p, "error")
+        return p.redirect("error")
 
     try:
         if p.uses_pkce:
@@ -92,12 +96,12 @@ async def handle_callback(
         profile = await p.client.fetch_profile(tokens["access_token"])
     except Exception as e:
         logger.warning("%s OAuth exchange failed: %s", p.label, e)
-        return _app_redirect(p, "error")
+        return p.redirect("error")
 
     provider_user_id = profile.get(p.profile_id_key)
     if not provider_user_id:
         logger.warning("%s profile had no %s", p.label, p.profile_id_key)
-        return _app_redirect(p, "error")
+        return p.redirect("error")
     provider_user_id = str(provider_user_id)
 
     if linked_user_uid:
@@ -127,11 +131,11 @@ async def handle_callback(
         )
     except Exception as e:
         logger.warning("%s account upsert failed for %s: %s", p.label, user_uid, e)
-        return _app_redirect(p, "error")
+        return p.redirect("error")
     logger.info("Linked %s account %s for %s", p.label, provider_user_id, user_uid)
 
     session_token = None if linked_user_uid else create_session_token(user_uid, settings.SESSION_SECRET)
-    return _app_redirect(p, "connected", session_token)
+    return p.redirect("connected", session_token)
 
 
 async def _resolve_user(p: OAuthProvider, db, provider_user_id: str, email: str | None) -> str:
@@ -158,13 +162,6 @@ async def _resolve_user(p: OAuthProvider, db, provider_user_id: str, email: str 
         raise
     logger.info("Created account %s (%s) via %s sign-in", uid, username, p.label)
     return uid
-
-
-def _app_redirect(p: OAuthProvider, status: str, token: str | None = None) -> str:
-    url = f"{p._setting('APP_REDIRECT_URL')}?{p.key}={status}"
-    if token:
-        url += f"&token={token}"
-    return url
 
 
 async def get_linked_account(p: OAuthProvider, db, user_uid: str) -> dict:
