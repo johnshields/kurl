@@ -9,6 +9,7 @@ import 'package:kurl/services/social_service.dart';
 import 'package:kurl/utils/date_format.dart';
 import 'package:kurl/utils/friendly_error.dart';
 import 'package:kurl/widgets/shared/result_card.dart';
+import 'package:kurl/widgets/shared/send_kurl_sheet.dart';
 
 class ThreadScreen extends StatefulWidget {
   final String threadUid;
@@ -251,7 +252,10 @@ class _Bubble extends StatelessWidget {
             if (body != null && body.isNotEmpty) const SizedBox(height: 6),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 360),
-              child: ResultCard(result: kurl),
+              child: ResultCard(
+                result: kurl,
+                onSend: () => kurlToFriend(context, kurl, kurl.resolvedUrl),
+              ),
             ),
           ],
           const SizedBox(height: 4),

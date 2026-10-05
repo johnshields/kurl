@@ -292,7 +292,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       ResultCard(
                         result: result,
-                        onSend: _loggedIn ? () => sendKurlToFriend(context, result, _urlController.text.trim()) : null,
+                        onSend: _loggedIn ? () => kurlToFriend(context, result, _urlController.text.trim()) : null,
                       ),
                     ],
                     const SizedBox(height: 32),

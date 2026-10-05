@@ -176,7 +176,7 @@ class _KurlTile extends StatelessWidget {
     );
     return ResultCard(
       result: result,
-      onSend: () => sendKurlToFriend(context, result, kurl.sourceUrl),
+      onSend: () => kurlToFriend(context, result, kurl.sourceUrl),
       onDelete: () => _confirmDelete(context),
     );
   }

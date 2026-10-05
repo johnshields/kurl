@@ -11,7 +11,7 @@ import 'package:kurl/utils/initial.dart';
 import 'package:kurl/widgets/shared/tappable.dart';
 
 /// Opens the send dialog, then the new thread once the kurl is sent.
-Future<void> sendKurlToFriend(BuildContext context, KurlResult kurl, String sourceUrl) async {
+Future<void> kurlToFriend(BuildContext context, KurlResult kurl, String sourceUrl) async {
   final sent = await showDialog<Message>(
     context: context,
     builder: (_) => _SendKurlSheet(kurl: kurl, sourceUrl: sourceUrl),
