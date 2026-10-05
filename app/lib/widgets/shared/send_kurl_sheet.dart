@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kurl/app/layout.dart';
 import 'package:kurl/app/routes/settings/settings_style.dart';
 import 'package:kurl/app/routes/thread.dart';
 import 'package:kurl/models/friend.dart';
@@ -117,7 +118,7 @@ class _SendKurlSheetState extends State<_SendKurlSheet> {
         ],
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      constraints: const BoxConstraints(maxWidth: 720),
+      constraints: const BoxConstraints(maxWidth: kContentMaxWidth - 48),
       content: SizedBox(
         width: double.maxFinite,
         child: _loading
