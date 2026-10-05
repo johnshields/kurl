@@ -25,7 +25,8 @@ Per-platform clients live in `api/src/clients/platforms/`.
 2. Cache hit? Return.
 3. KURLER (fast path):
    a. If source has an API client: fetch ISRC/UPC from source
-      → search target by identifier → return (via=isrc or via=upc)
+      → search target by identifier (cached as `isrc:{id}:{target}` or `upc:...`,
+        24h on a hit, 15 min on a miss) → return (via=isrc or via=upc)
    b. If (a) fails: scrape metadata from source (oEmbed / NEXT_DATA / OG tags),
       canonicalise title+artist via iTunes Search
    c. If target is a rescue platform: try its resolver chain in order

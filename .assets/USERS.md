@@ -1,6 +1,6 @@
 # Accounts
 
-Optional account system: email/password or sign in with Spotify/SoundCloud/YouTube, preferred platform, kurl history. Kurling itself stays fully anonymous by default. An account adds history, a preferred platform, and friends to message.
+Optional account system: email/password or sign in with Spotify/SoundCloud/YouTube, preferred platform, kurl history. Kurling itself stays fully anonymous by default. An account adds history, friends to message, and a preferred platform that kurls sent to you are re-resolved into.
 
 Deezer sign-in was removed (Deezer closed new app registration, so it could never go live). Recoverable from git history if that changes.
 
