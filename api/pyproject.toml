@@ -6,6 +6,7 @@ dependencies = [
     "httpx",
     "PyJWT",
     "coolname",
+    "randomname",
 ]
 
 [tool.pytest.ini_options]

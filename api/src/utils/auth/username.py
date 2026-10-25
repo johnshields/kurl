@@ -1,33 +1,48 @@
 """
 Username generation
-Random two-word slugs via coolname (pure Python, no deps -- safe for the
-Pyodide/Workers runtime).
+Random adjective-noun slugs: the adjective from coolname, the noun from
+randomname's music word lists. Falls back to coolname's own animal slugs if
+randomname is unavailable, so signup never fails on naming.
+Both packages are pure Python, safe for the Pyodide/Workers runtime.
 """
 
 import secrets
 
 from db.db import fetch_one
 from db.queries import users as queries
+from utils.logging import get_logger
+
+logger = get_logger()
 
 _MAX_LENGTH = 40
 
 # Safety cap so a full username table can't loop signup forever.
 _MAX_ATTEMPTS = 10
 
+_MUSIC_NOUNS = ("n/music_instruments", "n/music_theory")
+
+
+def _slug() -> str:
+    # Imported on use: both packages seed their RNG at import, blocked outside request context.
+    from coolname import generate, generate_slug
+
+    try:
+        import randomname
+
+        return f"{generate(2)[0]}-{randomname.generate(_MUSIC_NOUNS)}"
+    except Exception as e:
+        logger.warning("Music username generation failed, using coolname: %s", e)
+        return generate_slug(2)
+
 
 def generate_username() -> str:
-    # Deferred: coolname's RNG init calls random.randrange() at import time, blocked outside request context.
-    from coolname import generate_slug
-
-    return generate_slug(2)[:_MAX_LENGTH]
+    return _slug()[:_MAX_LENGTH]
 
 
 def generate_username_with_suffix() -> str:
     """For the rare case generate_username() keeps colliding -- adds a short
     random suffix to break the tie."""
-    from coolname import generate_slug
-
-    return f"{generate_slug(2)}-{secrets.token_hex(2)}"[:_MAX_LENGTH]
+    return f"{_slug()}-{secrets.token_hex(2)}"[:_MAX_LENGTH]
 
 
 def is_valid_username(username: str) -> bool:
