@@ -6,7 +6,8 @@ dependencies = [
     "httpx",
     "PyJWT",
     "coolname",
-    "randomname",
+    "faker",
+    "faker-music",
 ]
 
 [tool.pytest.ini_options]

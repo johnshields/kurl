@@ -13,10 +13,10 @@ from models.user import public_user, to_db_params
 from utils.api_result import error_result
 from utils.auth.auth_validation import normalise_email, weak_password_error
 from utils.auth.email_verification import create_verification_token, decode_verification_token
+from utils.auth.kurlname import is_valid_username, unique_username
 from utils.auth.password import hash_password, verify_password
 from utils.auth.password_reset import create_reset_token, decode_reset_token, matches_current_password
 from utils.auth.session import create_session_token
-from utils.auth.username import is_valid_username, unique_username
 from utils.logging import get_logger
 from utils.uid import gen_uid
 

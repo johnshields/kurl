@@ -14,7 +14,7 @@ Password hashing: `hashlib.pbkdf2_hmac("sha256", ...)`, 120,000 iterations.
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `POST /api/auth/signup` | Public | `{email, password}` -> `{token, user}`. Username auto-generated (`coolname`). |
+| `POST /api/auth/signup` | Public | `{email, password}` -> `{token, user}`. Username auto-generated (`utils/kurlname`, a coolname adjective plus a music noun). |
 | `POST /api/auth/login` | Public | `{email, password}` -> `{token, user}` |
 | `POST /api/auth/forgot-password` | Public | Always returns success, regardless of whether the email exists |
 | `POST /api/auth/reset-password` | Token | `{token, password}` |
