@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-const _prodUrl = 'https://api.kurl.online';
+const _prodUrl = 'https://kurl-api.fromlost.com';
 
 // Default debug API = pywrangler dev (port 8787).
 const _apiUrlOverride = String.fromEnvironment('KURL_API_URL');

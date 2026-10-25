@@ -46,4 +46,4 @@ Production secrets are set via `wrangler secret put`.
 
 ## Admin
 
-`https://api.kurl.online/admin/` — login with `KURL_API_KEY`. Shows match quality per platform, approx misses, totals, recent events.
+`https://kurl-api.fromlost.com/admin/` — login with `KURL_API_KEY`. Shows match quality per platform, approx misses, totals, recent events.

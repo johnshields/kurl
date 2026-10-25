@@ -18,5 +18,5 @@ void updateUrlState({String? url, String? target}) {
 }
 
 String buildShareUrl({required String url, required String target}) {
-  return 'https://kurl.online/?url=${compactEncode(url)}&target=$target';
+  return 'https://kurl-web.pages.dev/?url=${compactEncode(url)}&target=$target';
 }

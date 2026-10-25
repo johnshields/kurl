@@ -1,6 +1,6 @@
 # API
 
-Base URL: `https://api.kurl.online`
+Base URL: `https://kurl-api.fromlost.com`
 
 ## Authentication
 

@@ -13,8 +13,8 @@ from utils.auth.oauth_state import create_oauth_state
 def _configured_settings(mock_settings):
     mock_settings.SOUNDCLOUD_CLIENT_ID = "client-id"
     mock_settings.SOUNDCLOUD_CLIENT_SECRET = "client-secret"
-    mock_settings.SOUNDCLOUD_REDIRECT_URI = "https://api.kurl.online/api/auth/soundcloud/callback"
-    mock_settings.SOUNDCLOUD_APP_REDIRECT_URL = "https://kurl.online/settings"
+    mock_settings.SOUNDCLOUD_REDIRECT_URI = "https://kurl-api.fromlost.com/api/auth/soundcloud/callback"
+    mock_settings.SOUNDCLOUD_APP_REDIRECT_URL = "https://kurl-web.pages.dev/settings"
     mock_settings.SESSION_SECRET = "test-secret"
 
 
@@ -73,7 +73,7 @@ class TestHandleCallback:
         with patch("api.controllers.oauth.oauth_signin.settings") as mock_settings:
             _configured_settings(mock_settings)
             url = await soundcloud_auth_controller.handle_callback(db=object(), code=None, state=None, error=None)
-        assert url == "https://kurl.online/settings?soundcloud=error"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=error"
 
     async def test_redirects_with_error_when_soundcloud_reports_one(self):
         with patch("api.controllers.oauth.oauth_signin.settings") as mock_settings:
@@ -81,7 +81,7 @@ class TestHandleCallback:
             url = await soundcloud_auth_controller.handle_callback(
                 db=object(), code=None, state=None, error="access_denied"
             )
-        assert url == "https://kurl.online/settings?soundcloud=error"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=error"
 
     async def test_redirects_with_error_when_state_invalid(self):
         with patch("api.controllers.oauth.oauth_signin.settings") as mock_settings:
@@ -89,7 +89,7 @@ class TestHandleCallback:
             url = await soundcloud_auth_controller.handle_callback(
                 db=object(), code="a-code", state="garbage", error=None
             )
-        assert url == "https://kurl.online/settings?soundcloud=error"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=error"
 
     async def test_redirects_with_error_when_state_has_no_pkce_verifier(self):
         """A state token created without a verifier (shouldn't happen from
@@ -100,7 +100,7 @@ class TestHandleCallback:
             url = await soundcloud_auth_controller.handle_callback(
                 db=object(), code="a-code", state=state, error=None
             )
-        assert url == "https://kurl.online/settings?soundcloud=error"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=error"
 
     async def test_redirects_with_error_when_token_exchange_fails(self):
         with patch("api.controllers.oauth.oauth_signin.settings") as mock_settings:
@@ -113,7 +113,7 @@ class TestHandleCallback:
                 url = await soundcloud_auth_controller.handle_callback(
                     db=object(), code="a-code", state=state, error=None
                 )
-        assert url == "https://kurl.online/settings?soundcloud=error"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=error"
 
     async def test_links_to_existing_session_when_state_carries_a_subject(self):
         """Linked mode -- the state came from an already-signed-in session,
@@ -133,7 +133,7 @@ class TestHandleCallback:
                     db=object(), code="a-code", state=state, error=None
                 )
         # Already had a session -- no new token minted or handed back.
-        assert url == "https://kurl.online/settings?soundcloud=connected"
+        assert url == "https://kurl-web.pages.dev/settings?soundcloud=connected"
         execute_mock.assert_awaited_once()
         args = execute_mock.await_args.args
         assert args[-7] == "USR_LINKED"
@@ -156,7 +156,7 @@ class TestHandleCallback:
                 url = await soundcloud_auth_controller.handle_callback(
                     db=object(), code="a-code", state=state, error=None
                 )
-        assert url.startswith("https://kurl.online/settings?soundcloud=connected&token=")
+        assert url.startswith("https://kurl-web.pages.dev/settings?soundcloud=connected&token=")
         args = execute_mock.await_args.args
         assert args[-7] == "USR_EXISTING"
 
@@ -179,7 +179,7 @@ class TestHandleCallback:
                 url = await soundcloud_auth_controller.handle_callback(
                     db=object(), code="a-code", state=state, error=None
                 )
-        assert url.startswith("https://kurl.online/settings?soundcloud=connected&token=")
+        assert url.startswith("https://kurl-web.pages.dev/settings?soundcloud=connected&token=")
         # First execute call creates the user row (no email), second upserts the SoundCloud link.
         assert execute_mock.await_count == 2
         create_user_args = execute_mock.await_args_list[0].args

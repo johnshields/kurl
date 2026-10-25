@@ -13,12 +13,12 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "https://kurl.online",
-    "https://www.kurl.online",
+    "https://kurl-web.pages.dev",
+    "https://kurl.fromlost.com",
 ]
 
-APP_BASE_URL = "https://kurl.online"
-EMAIL_FROM = "noreply@kurl.online"
+APP_BASE_URL = "https://kurl-web.pages.dev"
+EMAIL_FROM = "kurl@fromlost.com"
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
