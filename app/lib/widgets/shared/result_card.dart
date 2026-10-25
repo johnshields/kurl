@@ -45,7 +45,7 @@ class ResultCard extends StatelessWidget {
             children: [
               _ShareOption(
                 icon: Icons.send_rounded,
-                label: 'Kurl to a friend',
+                label: 'kurl to a friend',
                 onTap: () {
                   Navigator.pop(ctx);
                   onSend!();

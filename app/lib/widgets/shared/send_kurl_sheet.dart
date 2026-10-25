@@ -105,7 +105,7 @@ class _SendKurlSheetState extends State<_SendKurlSheet> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Kurl to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
+          const Text('kurl to a friend', style: TextStyle(color: Color(0xFFE5E5E5))),
           if (label != null) ...[
             const SizedBox(height: 4),
             Text(

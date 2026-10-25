@@ -46,4 +46,4 @@ async def delete_kurl(db, user_uid: str, kurl_uid: str) -> dict:
     # Scoped to owner in the query itself -- deleting is idempotent either way.
     await execute(db, queries.DELETE, kurl_uid, user_uid)
     logger.info("Deleted kurl %s for %s", kurl_uid, user_uid)
-    return {"status": "success", "message": "Kurl deleted."}
+    return {"status": "success", "message": "kurl deleted."}

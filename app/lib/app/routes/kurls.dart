@@ -83,7 +83,7 @@ class KurlsScreenState extends State<KurlsScreen> {
                     ? const EmptyState(
                         icon: Icons.link_rounded,
                         title: 'No kurls yet',
-                        subtitle: 'Kurl something and it will show up here.',
+                        subtitle: 'kurl something and it will show up here.',
                       )
                     : _KurlsList(kurls: _kurls, onDelete: _delete),
       ),
