@@ -74,7 +74,7 @@ class Settings:
 
     @property
     def SPOTIFY_APP_REDIRECT_URL(self) -> str:
-        return self._get("SPOTIFY_APP_REDIRECT_URL", "https://kurl-web.pages.dev/settings")
+        return self._get("SPOTIFY_APP_REDIRECT_URL", "https://kurl.fromlost.com/settings")
 
     # Apple Music (JWT via MusicKit)
     @property
@@ -120,7 +120,7 @@ class Settings:
 
     @property
     def SOUNDCLOUD_APP_REDIRECT_URL(self) -> str:
-        return self._get("SOUNDCLOUD_APP_REDIRECT_URL", "https://kurl-web.pages.dev/settings")
+        return self._get("SOUNDCLOUD_APP_REDIRECT_URL", "https://kurl.fromlost.com/settings")
 
     # Google (OAuth -- Sign in with YouTube; distinct from YOUTUBE_API_KEY,
     # redirect URI must match the OAuth client exactly)
@@ -138,7 +138,7 @@ class Settings:
 
     @property
     def GOOGLE_APP_REDIRECT_URL(self) -> str:
-        return self._get("GOOGLE_APP_REDIRECT_URL", "https://kurl-web.pages.dev/settings")
+        return self._get("GOOGLE_APP_REDIRECT_URL", "https://kurl.fromlost.com/settings")
 
     # User accounts (session JWT signing key -- distinct from KURL_API_KEY)
     @property

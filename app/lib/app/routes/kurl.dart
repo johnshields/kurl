@@ -298,7 +298,7 @@ class _KurlScreenState extends State<KurlScreen> with SingleTickerProviderStateM
                     const SizedBox(height: 32),
                     Center(
                       child: Text(
-                        '© ${DateTime.now().year} kurl-web.pages.dev',
+                        '© ${DateTime.now().year} kurl.fromlost.com',
                         style: const TextStyle(color: Color(0xFF555555), fontSize: 11),
                       ),
                     ),

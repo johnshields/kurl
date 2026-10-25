@@ -5,7 +5,7 @@ preview text built from the message body or the attached kurl.
 
 from emails.social import message_received_email
 
-_LINK = "https://kurl-web.pages.dev/messages"
+_LINK = "https://kurl.fromlost.com/messages"
 
 
 def test_subject_names_the_sender():

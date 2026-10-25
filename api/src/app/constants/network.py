@@ -17,7 +17,7 @@ ALLOWED_ORIGINS = [
     "https://kurl.fromlost.com",
 ]
 
-APP_BASE_URL = "https://kurl-web.pages.dev"
+APP_BASE_URL = "https://kurl.fromlost.com"
 EMAIL_FROM = "kurl@fromlost.com"
 
 CORS_HEADERS = {

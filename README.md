@@ -2,7 +2,7 @@
 
 Cross-platform music link resolver built with Flutter and Python on Cloudflare Workers. Paste a Spotify/Apple Music/Tidal/etc. link and get back the same track on Spotify, Apple Music, YouTube Music, SoundCloud, Beatport, Bandcamp, Amazon Music, Tidal or Deezer, resolved via ISRC/UPC matching with an Odesli fallback.
 
-**[kurl-web.pages.dev](https://kurl-web.pages.dev)**
+**[kurl.fromlost.com](https://kurl.fromlost.com)**
 
 <img width="2196" height="1450" alt="image" src="https://github.com/user-attachments/assets/6aad45ca-9f3d-49e2-b9f4-28e68f1f8182" />
 
